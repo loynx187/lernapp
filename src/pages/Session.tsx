@@ -9,6 +9,7 @@ import { toPlanCard } from '../lib/stats'
 import { formatInterval } from '../lib/dates'
 import { REPORT_CATEGORIES, reportCard } from '../lib/reports'
 import { checkAnswer, formatAnswer } from '../lib/answers'
+import { SlideViewer } from '../components/SlideViewer'
 import { Rich } from '../components/Rich'
 import { Icon, Progress } from '../components/ui'
 
@@ -44,6 +45,7 @@ export function Session() {
   const [reportNote, setReportNote] = useState('')
   const [reported, setReported] = useState<Set<string>>(new Set())
   const [answerInputs, setAnswerInputs] = useState<string[]>([])
+  const [showSlide, setShowSlide] = useState(false)
   const started = useRef(Date.now())
   const sessionStart = useRef(Date.now())
 
@@ -137,7 +139,7 @@ export function Session() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
-      if (!card || reporting || tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (!card || reporting || showSlide || tag === 'INPUT' || tag === 'TEXTAREA') return
       if (!revealed && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault()
         reveal()
@@ -306,12 +308,28 @@ export function Session() {
         )}
 
         {revealed && card.source && (card.source.file || card.source.slide !== undefined) && (
-          <div className="source">
-            Quelle: {card.source.file ?? 'Skript'}
-            {card.source.slide !== undefined && `, Folie ${card.source.slide}`}
+          <div className="source row between">
+            <span>
+              Quelle: {card.source.file ?? 'Skript'}
+              {card.source.slide !== undefined && `, Folie ${card.source.slide}`}
+            </span>
+            {card.source.file && (card.source.page || Number(card.source.slide) > 0) && (
+              <button className="btn small ghost" style={{ color: 'var(--accent)' }} onClick={() => setShowSlide(true)}>
+                Folie ansehen
+              </button>
+            )}
           </div>
         )}
       </article>
+
+      {showSlide && card.source?.file && (
+        <SlideViewer
+          file={card.source.file}
+          page={card.source.page ?? Number(card.source.slide)}
+          profileId={profile.id}
+          onClose={() => setShowSlide(false)}
+        />
+      )}
 
       {reporting && (
         <div className="card stack">

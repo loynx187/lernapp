@@ -8,12 +8,15 @@ import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
 import { useSync } from '../sync-state'
 import { SEMESTER_KINDS } from '../lib/semesters'
+import { removePdf } from '../lib/pdfs'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { listBackups, restoreBackup as restoreDropboxBackup, type BackupEntry } from '../lib/syncService'
 
 export function Settings() {
   const { profile, semester, semesters } = useActive()
   const { profiles, selectProfile } = useAppState()
   const sync = useSync()
+  const pdfs = useLiveQuery(() => db.pdfs.toArray(), [])
   const [backups, setBackups] = useState<BackupEntry[] | null>(null)
 
   async function showBackups() {
@@ -228,6 +231,24 @@ export function Settings() {
           <input type="file" accept=".json,application/json" hidden onChange={(e) => importBackup(e.target.files?.[0])} />
         </label>
       </div>
+
+      {pdfs && pdfs.length > 0 && (
+        <>
+          <div className="section-title">Unterlagen auf diesem Gerät</div>
+          <div className="list">
+            {pdfs.map((p) => (
+              <div className="list-item" key={p.name}>
+                <div className="grow truncate">
+                  {p.name}
+                  <small style={{ display: 'block' }}>{(p.size / 1024 / 1024).toFixed(1)} MB</small>
+                </div>
+                <button className="btn small ghost danger" onClick={() => removePdf(p.name)}>Entfernen</button>
+              </div>
+            ))}
+          </div>
+          <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>Für „Folie ansehen“ zwischengespeichert. Entfernte Dateien werden bei Bedarf erneut aus Dropbox geladen oder ausgewählt.</p>
+        </>
+      )}
 
       <div className="section-title">Hilfe</div>
       <div className="card">

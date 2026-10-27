@@ -72,6 +72,24 @@ export function Help() {
 
       <div className="card stack">
         <details>
+          <summary>Folie ansehen</summary>
+          <p style={{ marginTop: 8 }}>
+            Nach dem Aufdecken einer Karte öffnet „Folie ansehen“ die passende Seite der Vorlesungsunterlage. Die PDF wird auf dem Gerät gespeichert – beim ersten Mal wählst du sie einmalig aus (z. B. aus der Dateien-App), oder du legst sie in Dropbox unter <i>Apps → (App-Ordner) → Unterlagen</i> ab. Der Dateiname muss dem in der Quellenangabe entsprechen.
+          </p>
+        </details>
+      </div>
+
+      <div className="card stack">
+        <details>
+          <summary>Probeklausur</summary>
+          <p style={{ marginTop: 8 }}>
+            Auf der Seite einer Prüfung (und in den letzten drei Wochen auf der Übersicht) startest du eine Probeklausur mit Zeitlimit. Die App wählt vor allem Rechenaufgaben aus allen Kapiteln, klausurrelevante Themen bevorzugt. Nach der Abgabe vergleichst du mit den Lösungen; Multiple Choice und Zahlenergebnisse werden automatisch bewertet. Die Auswertung zeigt, welche Kapitel noch Übung brauchen.
+          </p>
+        </details>
+      </div>
+
+      <div className="card stack">
+        <details>
           <summary>Karten teilen und aktualisieren</summary>
           <p style={{ marginTop: 8 }}>
             Auf der Seite einer Prüfung kannst du jedes Kartenpaket über „Teilen“ an Kommilitonen schicken (ohne deinen Lernfortschritt). Bekommst du eine neue Version desselben Pakets, importierst du sie einfach erneut: Neue Karten kommen dazu, geänderte werden aktualisiert und dein Fortschritt bleibt erhalten.

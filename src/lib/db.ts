@@ -169,6 +169,15 @@ export interface Tombstone {
   deletedAt: number
 }
 
+/** Zwischengespeicherte Vorlesungsunterlage für „Folie ansehen“ (nur auf diesem Gerät). */
+export interface StoredPdf {
+  /** Dateiname wie in source.file der Karten */
+  name: string
+  blob: Blob
+  size: number
+  addedAt: number
+}
+
 /** Geräteeinstellungen, die nicht synchronisiert werden (z. B. Dropbox-Zugang). */
 export interface Meta {
   key: string
@@ -186,6 +195,7 @@ export const db = new Dexie('lernapp') as Dexie & {
   tombstones: EntityTable<Tombstone, 'id'>
   meta: EntityTable<Meta, 'key'>
   reports: EntityTable<CardReport, 'id'>
+  pdfs: EntityTable<StoredPdf, 'name'>
 }
 
 export const uid = () =>
@@ -217,6 +227,8 @@ db.version(2)
 db.version(3).stores({ logs: null })
 
 db.version(4).stores({ reports: 'id, profileId, examId, cardId' })
+
+db.version(5).stores({ pdfs: 'name' })
 
 /** Solange aktiv, übernehmen Schreibzugriffe den mitgelieferten Änderungszeitpunkt (Sync). */
 let keepTimestamps = false
