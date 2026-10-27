@@ -107,7 +107,10 @@ export interface CardContent {
 export interface NumericAnswer {
   /** Bezeichnung bei mehreren gesuchten Größen, z. B. „σ“ */
   label?: string
-  value: number
+  /** Zahlenwert – oder stattdessen `text` für Antworten, die keine Zahl sind */
+  value?: number
+  /** Akzeptierte Textantworten (z. B. „3E8“, „01101001“, „ELSIF“); Groß-/Kleinschreibung und Leerzeichen zählen nicht */
+  text?: string[]
   unit?: string
   /** Erlaubte relative Abweichung (Standard 0,02 = 2 %) */
   tolerance?: number

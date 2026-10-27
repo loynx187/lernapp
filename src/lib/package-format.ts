@@ -60,9 +60,13 @@ export function parsePackage(raw: unknown): CardPackage {
     if (isStr(c.result)) card.result = c.result
     if (Array.isArray(c.answers)) {
       card.answers = c.answers.map((a: Record<string, unknown>, j: number): NumericAnswer => {
-        if (!a || typeof a.value !== 'number' || !Number.isFinite(a.value)) throw new Error(`${where}: Ergebnis ${j + 1} braucht einen Zahlenwert (value).`)
+        const text = isStr(a?.text) ? [a.text] : strArray(a?.text)
+        const label = isStr(a?.label) ? a.label : undefined
+        const unit = isStr(a?.unit) ? a.unit : undefined
+        if (text?.length) return { text, label, unit }
+        if (!a || typeof a.value !== 'number' || !Number.isFinite(a.value)) throw new Error(`${where}: Ergebnis ${j + 1} braucht einen Zahlenwert (value) oder einen Text (text).`)
         const tol = typeof a.tolerance === 'number' && a.tolerance > 0 && a.tolerance < 1 ? a.tolerance : undefined
-        return { value: a.value, label: isStr(a.label) ? a.label : undefined, unit: isStr(a.unit) ? a.unit : undefined, tolerance: tol }
+        return { value: a.value, label, unit, tolerance: tol }
       })
     }
     if (c.source && typeof c.source === 'object') {

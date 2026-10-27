@@ -277,11 +277,14 @@ export function Session() {
                     {a.label && <span style={{ minWidth: 28 }}><Rich text={a.label.includes('$') ? a.label : `$${a.label}$`} /></span>}
                     <input
                       type="text"
-                      inputMode="decimal"
+                      inputMode={a.text ? 'text' : 'decimal'}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck={false}
                       className="grow"
                       value={answerInputs[i] ?? ''}
                       disabled={revealed}
-                      placeholder="Zahl"
+                      placeholder={a.text ? 'Antwort' : 'Zahl'}
                       onChange={(e) => setAnswerInputs((xs) => Object.assign([...xs], { [i]: e.target.value }))}
                       onKeyDown={(e) => e.key === 'Enter' && reveal()}
                       style={{ minHeight: 40, padding: '6px 10px' }}

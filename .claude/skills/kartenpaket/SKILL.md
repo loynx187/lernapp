@@ -56,6 +56,7 @@ Allgemeine Regeln (gelten für jedes Fach):
 - **Quelle** bei jeder Karte: `{"file": "<Dateiname>", "slide": <gedruckte Foliennummer>, "page": <Seite im PDF, ab 1>}`. `page` ist wichtig, weil Foliennummer und PDF-Seite oft abweichen (fehlende/zusätzliche Folien); die App öffnet damit die Folie.
 - **Relevanz:** 3 = kommt in Altklausuren/Übungen vor oder ist als Kernaussage/Take-away markiert; 2 = normaler Stoff; 1 = Ausblick, Randinfo, Anekdoten.
 - **uids:** `k<Kapitel>-f<Folie dreistellig>-<n>`, z. B. `k3-f087-1`. Bei Updates bestehende uids unverändert lassen, nur neue vergeben. Eine fehlerhafte Karte wird **korrigiert, nicht ersetzt** (gleiche uid), damit der Lernfortschritt bleibt; nur wenn sie inhaltlich etwas völlig anderes abfragen soll, neue uid.
+- **Programmierfächer (SCL o. Ä.):** Code als Code-Block (```), Lücken `{{…}}` im Code für Syntax/Struktur, `task` zum Schreiben kleiner Programme mit Musterlösung in `steps`; eindeutige Kurzantworten (Hex-Zahl, Wahrheitstabellen-Spalte) über `answers` mit `text`.
 - **Aufbauende Reihenfolge:** Karten in Skriptreihenfolge; bei ungeordneten Unterlagen (ganzes Skript, Sammlung) so ordnen, dass Grundlagen vor darauf aufbauenden Themen kommen, und zusammenhängende Themen als eigenes Kapitel bündeln.
 - Fachliche Aussagen müssen durch die Unterlagen gedeckt sein. Wo du ergänzt (z. B. Erklärung, Beispielrechnung), muss es fachlich korrekt und klar als Erklärung erkennbar sein.
 

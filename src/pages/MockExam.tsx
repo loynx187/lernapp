@@ -295,11 +295,14 @@ export function MockExam() {
                     {a.label && <span style={{ minWidth: 28 }}><Rich text={a.label.includes('$') ? a.label : `$${a.label}$`} /></span>}
                     <input
                       type="text"
-                      inputMode="decimal"
+                      inputMode={a.text ? 'text' : 'decimal'}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      spellCheck={false}
                       className="grow"
                       value={inputs[c.id]?.[i] ?? ''}
                       disabled={reviewing}
-                      placeholder="Zahl"
+                      placeholder={a.text ? 'Antwort' : 'Zahl'}
                       onChange={(e) => setInputs((x) => ({ ...x, [c.id]: Object.assign([...(x[c.id] ?? [])], { [i]: e.target.value }) }))}
                       style={{ minHeight: 40, padding: '6px 10px' }}
                     />
