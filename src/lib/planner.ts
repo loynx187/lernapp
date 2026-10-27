@@ -10,6 +10,8 @@ export interface PlanCard {
   state: number
   due: number
   order: number
+  /** Position des Pakets innerhalb der Prüfung (Reihenfolge des ersten Imports), siehe packageBlocks. */
+  block?: number
   relevance?: number
 }
 
@@ -118,6 +120,36 @@ export function introductionDays(daysLeft: number, buffer: BufferParams = DEFAUL
 }
 
 const isCore = (c: PlanCard) => (c.relevance ?? 2) >= 2
+
+/** In den letzten Tagen vor der Klausur wird neuer Stoff paketübergreifend gemischt statt Paket für Paket. */
+export const MIX_WITHIN_DAYS = 14
+
+/**
+ * Reihenfolge neuer Karten einer Prüfung: Kernstoff vor Zusatzstoff, sonst Paket für Paket
+ * (Vorlesungsblöcke nacheinander) in Skript-Reihenfolge. `byRelevance` zieht klausurrelevante
+ * Karten vor (bei Rückstand und kurz vor der Klausur), `mix` wechselt die Pakete reihum ab
+ * (kurz vor der Klausur, siehe MIX_WITHIN_DAYS).
+ */
+export function orderNew(cards: PlanCard[], mix: boolean, byRelevance: boolean): PlanCard[] {
+  const byScript = (a: PlanCard, b: PlanCard) => (a.block ?? 0) - (b.block ?? 0) || a.order - b.order
+  const rank = new Map<string, number>()
+  if (mix) {
+    // Position innerhalb des eigenen Pakets – gleiche Positionen verschiedener Pakete wechseln sich ab.
+    const seen = new Map<number, number>()
+    for (const c of [...cards].sort(byScript)) {
+      const n = seen.get(c.block ?? 0) ?? 0
+      rank.set(c.id, n)
+      seen.set(c.block ?? 0, n + 1)
+    }
+  }
+  return [...cards].sort(
+    (a, b) =>
+      Number(isCore(b)) - Number(isCore(a)) ||
+      (byRelevance ? (b.relevance ?? 2) - (a.relevance ?? 2) : 0) ||
+      (mix ? rank.get(a.id)! - rank.get(b.id)! : 0) ||
+      byScript(a, b),
+  )
+}
 
 /**
  * Verteilt `budget` Sekunden auf Bedarfe nach Gewicht, ohne einen Bedarf zu überschreiten
@@ -280,16 +312,10 @@ export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions)
   const newGroups = examPlans.map((p) => {
     const mp = p.modes[mode]
     const count = mp.newLeft + (opts.extraNew ?? 0)
-    return cards
-      .filter((c) => c.examId === p.examId && c.mode === mode && c.state === 0)
-      .sort(
-        (a, b) =>
-          // Kernstoff vor Zusatzstoff; bei Rückstand die klausurrelevantesten Karten zuerst, sonst Skript-Reihenfolge.
-          Number(isCore(b)) - Number(isCore(a)) ||
-          (p.behind ? (b.relevance ?? 2) - (a.relevance ?? 2) : 0) ||
-          a.order - b.order,
-      )
-      .slice(0, count)
+    const fresh = cards.filter((c) => c.examId === p.examId && c.mode === mode && c.state === 0)
+    // Bei Rückstand die klausurrelevantesten Karten zuerst; kurz vor der Klausur zusätzlich paketübergreifend mischen.
+    const mix = p.daysLeft <= MIX_WITHIN_DAYS
+    return orderNew(fresh, mix, mix || p.behind).slice(0, count)
   })
 
   const reviews = interleave(reviewGroups)

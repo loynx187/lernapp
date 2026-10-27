@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildQueue, distribute, introductionDays, planDay, type PlanCard, type PlanInput } from './planner'
+import { buildQueue, distribute, introductionDays, MIX_WITHIN_DAYS, orderNew, planDay, type PlanCard, type PlanInput } from './planner'
 import { addDays, isoDate } from './dates'
 
 const NOW = new Date(2026, 9, 27, 9, 0).getTime()
@@ -129,6 +129,31 @@ describe('buildQueue', () => {
     expect(q.every((c) => c.examId === 'a')).toBe(true)
     expect(q.length).toBe(plan.exams[0].modes.mobile.newLeft + 5)
     expect(q.map((c) => c.order)).toEqual([...q.map((c) => c.order)].sort((x, y) => x - y))
+  })
+})
+
+describe('Reihenfolge neuer Karten über mehrere Pakete', () => {
+  // Zwei Pakete derselben Prüfung; beide beginnen ihre Skript-Reihenfolge bei 0.
+  const pkgs = (examId: string) =>
+    [0, 1].flatMap((block) => cards(examId, 10).map((c) => ({ ...c, id: `${c.id}-p${block}`, block })))
+
+  it('führt Pakete nacheinander ein, jeweils in Skript-Reihenfolge', () => {
+    const q = orderNew(pkgs('a').reverse(), false, false)
+    expect(q.map((c) => c.block)).toEqual([...Array(10).fill(0), ...Array(10).fill(1)])
+    expect(q.slice(0, 10).map((c) => c.order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+  })
+
+  it('mischt die Pakete kurz vor der Klausur und zieht Relevantes vor', () => {
+    const all = pkgs('a').map((c) => ({ ...c, relevance: c.block === 1 && c.order === 9 ? 3 : 2 }))
+    const far = planDay(input({ exams: [{ id: 'a', date: examIn(60), weight: 2 }], cards: all }))
+    const qFar = buildQueue(far, all, { mode: 'mobile', now: NOW })
+    expect(qFar.every((c) => c.block === 0)).toBe(true)
+
+    const near = planDay(input({ exams: [{ id: 'a', date: examIn(MIX_WITHIN_DAYS) }].map((e) => ({ ...e, weight: 2 })), cards: all }))
+    const qNear = buildQueue(near, all, { mode: 'mobile', now: NOW })
+    expect(qNear[0].id).toBe('a-mobile-0-9-p1')
+    const mixed = orderNew(all, true, true)
+    expect(mixed.slice(1, 5).map((c) => c.block)).toEqual([0, 1, 0, 1])
   })
 })
 

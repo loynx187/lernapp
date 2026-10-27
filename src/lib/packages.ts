@@ -80,6 +80,7 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
     const open = (await db.reports.where('cardId').anyOf(changed).toArray()).filter((r) => !r.resolvedAt)
     for (const r of open) await db.reports.update(r.id, { resolvedAt: now })
     result.resolvedReports = open.length
+    const previous = await db.packages.get(`${exam.id}:${pkg.id}`)
     const record: PackageRecord = {
       id: `${exam.id}:${pkg.id}`,
       profileId: exam.profileId,
@@ -88,6 +89,7 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       title: pkg.title,
       version: pkg.version,
       importedAt: now,
+      firstImportedAt: previous?.firstImportedAt ?? previous?.importedAt ?? now,
       cardCount: pkg.cards.length,
     }
     await db.packages.put(record)

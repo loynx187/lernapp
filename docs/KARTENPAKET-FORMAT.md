@@ -22,7 +22,7 @@ Ein Kartenpaket enthält die Karten zu einer Prüfung bzw. einem Skript. Es enth
 |---|---|
 | `id` | Stabile Paket-ID. Gleiche ID = Update desselben Pakets. |
 | `version` | Bei jedem Update erhöhen. |
-| `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. |
+| `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. Mehrere Pakete einer Prüfung kommen nacheinander in der Reihenfolge ihres ersten Imports; in den letzten 14 Tagen vor der Klausur werden sie gemischt. |
 | `profile` | Optional: Vorschläge für das Fachprofil der Prüfung (siehe unten). Die App übernimmt sie nur in leere oder noch unbestätigte Felder. |
 
 ## Karten

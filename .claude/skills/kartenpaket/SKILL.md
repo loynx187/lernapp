@@ -84,4 +84,4 @@ Paket-Metadaten: `id` stabil und sprechend (`<fach>-<thema>`), `title` „<Fach>
 - Im Archiv committen und pushen (Unterlagen, Paket, Profil, Meldungen).
 - Datei zusätzlich mit `SendUserFile` schicken (Dateiname `<Fach>_<Thema>.lernpaket.json`).
 - Kurze Zusammenfassung: vorgeschlagene Fachprofil-Angaben (der Nutzer bestätigt sie in der App), Anzahl Karten je Typ und Kapitel, gesetzte Schwerpunkte, fehlende Folien oder unklare Stellen, bei Updates was neu/geändert/entfernt ist, Ergebnis jeder Meldung.
-- Import-Hinweis: App → Prüfung → „Paket importieren oder aktualisieren“. Gemeldete Karten, die geändert wurden, gelten danach in der App automatisch als erledigt.
+- Import-Hinweis: App → Prüfung → „Paket importieren oder aktualisieren“. Bei mehreren neuen Paketen die Import-Reihenfolge nennen (Vorlesungsreihenfolge): Die App führt neue Karten Paket für Paket in der Reihenfolge des ersten Imports ein. Gemeldete Karten, die geändert wurden, gelten danach in der App automatisch als erledigt.

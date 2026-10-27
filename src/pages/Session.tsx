@@ -55,7 +55,7 @@ export function Session() {
     loadStudyData(profile).then((d) => {
       if (cancelled) return
       const byId = new Map(d.cards.map((c) => [c.id, c]))
-      const order = buildQueue(d.plan, d.cards.map(toPlanCard), { mode, now: Date.now(), examId: examFilter, extraNew: extra })
+      const order = buildQueue(d.plan, d.cards.map((c) => toPlanCard(c, d.blocks)), { mode, now: Date.now(), examId: examFilter, extraNew: extra })
       setExams(new Map(d.exams.map((e) => [e.id, e])))
       setQueue(order.map((p) => byId.get(p.id)!))
       started.current = Date.now()

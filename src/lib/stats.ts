@@ -1,4 +1,4 @@
-import type { Exam, Mode, ReviewLog, StudyCard } from './db'
+import type { Exam, Mode, PackageRecord, ReviewLog, StudyCard } from './db'
 import { cardMode } from './db'
 import { DEFAULT_COSTS, type Costs, type DoneToday } from './planner'
 import { addDays, parseIsoDate, studyDate, studyDayStart } from './dates'
@@ -8,6 +8,7 @@ import { retrievability } from './scheduler'
 export const SECURE_THRESHOLD = 0.9
 
 export interface ChapterStats {
+  /** Eindeutig je Paket und Kapitel (Pakete nutzen oft dieselben Kapitel-IDs wie „k1“). */
   chapter: string
   title: string
   total: number
@@ -26,20 +27,38 @@ export interface ExamStats {
   chapters: ChapterStats[]
 }
 
-export function examStats(exam: Exam, cards: StudyCard[], now: number, retention: number): ExamStats {
+/** Position jedes Pakets innerhalb seiner Prüfung (`${examId}:${packageId}` → 0, 1, …) nach dem ersten Import. */
+export function packageBlocks(packages: PackageRecord[]): Map<string, number> {
+  const first = (p: PackageRecord) => p.firstImportedAt ?? p.importedAt
+  const sorted = [...packages].sort((a, b) => a.examId.localeCompare(b.examId) || first(a) - first(b) || a.packageId.localeCompare(b.packageId))
+  const blocks = new Map<string, number>()
+  const count = new Map<string, number>()
+  for (const p of sorted) {
+    const n = count.get(p.examId) ?? 0
+    blocks.set(`${p.examId}:${p.packageId}`, n)
+    count.set(p.examId, n + 1)
+  }
+  return blocks
+}
+
+const blockOf = (c: Pick<StudyCard, 'examId' | 'packageId'>, blocks?: Map<string, number>) => blocks?.get(`${c.examId}:${c.packageId}`) ?? 0
+
+export function examStats(exam: Exam, cards: StudyCard[], now: number, retention: number, blocks?: Map<string, number>): ExamStats {
   const active = cards.filter((c) => !c.archived)
   const examAt = Math.max(now, parseIsoDate(exam.date))
   let introduced = 0
   let secure = 0
   let recallSum = 0
-  const chapters = new Map<string, ChapterStats & { recallSum: number }>()
+  const chapters = new Map<string, ChapterStats & { recallSum: number; sort: [number, number] }>()
   for (const c of active) {
-    const key = c.chapter ?? ''
+    const key = `${c.packageId}:${c.chapter ?? ''}`
     let ch = chapters.get(key)
     if (!ch) {
-      ch = { chapter: key, title: c.chapterTitle ?? (key || 'Ohne Kapitel'), total: 0, introduced: 0, recall: 0, recallSum: 0 }
+      const title = c.chapterTitle ?? (c.chapter || 'Ohne Kapitel')
+      ch = { chapter: key, title, total: 0, introduced: 0, recall: 0, recallSum: 0, sort: [blockOf(c, blocks), c.order] }
       chapters.set(key, ch)
     }
+    ch.sort[1] = Math.min(ch.sort[1], c.order)
     ch.total++
     if (c.s.state === 0) continue
     introduced++
@@ -54,7 +73,9 @@ export function examStats(exam: Exam, cards: StudyCard[], now: number, retention
     introduced,
     secure,
     recall: introduced ? recallSum / introduced : 0,
-    chapters: [...chapters.values()].map(({ recallSum: sum, ...ch }) => ({ ...ch, recall: ch.introduced ? sum / ch.introduced : 0 })),
+    chapters: [...chapters.values()]
+      .sort((a, b) => a.sort[0] - b.sort[0] || a.sort[1] - b.sort[1])
+      .map(({ recallSum: sum, sort: _sort, ...ch }) => ({ ...ch, recall: ch.introduced ? sum / ch.introduced : 0 })),
   }
 }
 
@@ -116,12 +137,13 @@ export function streak(logs: ReviewLog[], now: number): number {
   return n
 }
 
-export const toPlanCard = (c: StudyCard) => ({
+export const toPlanCard = (c: StudyCard, blocks?: Map<string, number>) => ({
   id: c.id,
   examId: c.examId,
   mode: cardMode(c),
   state: c.s.state,
   due: c.s.due,
   order: c.order,
+  block: blockOf(c, blocks),
   relevance: c.relevance,
 })
