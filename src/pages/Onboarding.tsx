@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { db, uid } from '../lib/db'
 import { useAppState } from '../state'
+import { DROPBOX_APP_KEY, startAuth } from '../lib/dropbox'
 
 /** Erster Start: Profil und erstes Semester anlegen. Auch nach dem Löschen des letzten Semesters. */
 export function Onboarding() {
@@ -46,6 +47,11 @@ export function Onboarding() {
       <button className="btn primary block" type="submit">
         Los geht’s
       </button>
+      {!profile && DROPBOX_APP_KEY && (
+        <button className="btn block" type="button" onClick={() => startAuth()}>
+          Profil von einem anderen Gerät laden (Dropbox)
+        </button>
+      )}
     </form>
   )
 }

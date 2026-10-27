@@ -6,6 +6,7 @@ import { addDays, formatCountdown, isoDate, startOfDay } from '../lib/dates'
 import { cardMode, type Mode } from '../lib/db'
 import { examStats, streak } from '../lib/stats'
 import { DayBars, PageHeader, Progress, Rings, Widget } from '../components/ui'
+import { useSync } from '../sync-state'
 
 const MODE_INFO: Record<Mode, { title: string; unit: string; extra: number }> = {
   mobile: { title: 'Unterwegs', unit: 'Karten', extra: 10 },
@@ -15,6 +16,7 @@ const MODE_INFO: Record<Mode, { title: string; unit: string; extra: number }> = 
 /** Startseite im Stil des iPadOS-Homescreens: Widgets führen zu den einzelnen Bereichen. */
 export function Dashboard() {
   const { profile, semester } = useActive()
+  const sync = useSync()
   const data = useLiveQuery(() => loadStudyData(profile), [profile])
 
   useEffect(() => {
@@ -56,7 +58,12 @@ export function Dashboard() {
       <PageHeader
         eyebrow={new Date(now).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
         title={`Hallo ${profile.name}.`}
-        subtitle={semester.name}
+        subtitle={
+          <>
+            {semester.name}
+            {sync.connected && <span className={sync.error ? 'badge-warn' : ''}>{sync.error ? ' · Abgleich fehlgeschlagen' : sync.syncing ? ' · gleicht ab …' : ' · synchronisiert'}</span>}
+          </>
+        }
       />
 
       <div className="widgets-wrap">

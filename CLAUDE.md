@@ -4,7 +4,8 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 
 ## Architektur
 - Vite + React + TypeScript, PWA via `vite-plugin-pwa`, gehostet auf GitHub Pages unter `/lernapp/` (`.github/workflows/deploy.yml`).
-- **Local-first, kein eigener Server.** Daten in IndexedDB (Dexie, `src/lib/db.ts`). Sync (Dropbox) ist für Phase 2 geplant.
+- **Local-first, kein eigener Server.** Daten in IndexedDB (Dexie, `src/lib/db.ts`).
+- Sync über die Dropbox des Nutzers (OAuth PKCE, App-Ordner): `src/lib/dropbox.ts` (API), `src/lib/sync.ts` (Zusammenführen: neuerer Datensatz gewinnt per `updatedAt`, Bewertungen werden vereinigt, Löschungen über Tombstones), `src/lib/syncService.ts` (Ablauf, `Erinnerung.txt` für die Kurzbefehle-Erinnerung). App-Schlüssel per `VITE_DROPBOX_APP_KEY` (`.env`). `updatedAt` setzen Dexie-Hooks automatisch – nie von Hand pflegen.
 - Wiederholungsalgorithmus: FSRS (`ts-fsrs`) in `src/lib/scheduler.ts`; Intervalle werden auf die Tage vor der Klausur begrenzt (`capToExam`).
 - Tagesplan über alle Prüfungen: `src/lib/planner.ts` (reine Funktionen, getestet). Zwei Modi: `mobile` (Karten) und `desk` (Rechenaufgaben), je eigenes Zeitbudget.
 - Datenmodell: Profil → Semester → Prüfung (max. 10/Semester) → Karten. Karten-ID: `${examId}:${packageId}:${uid}`.

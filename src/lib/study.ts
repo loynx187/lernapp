@@ -1,4 +1,4 @@
-import { db, type Exam, type Mode, type Profile, type ReviewLog, type StudyCard } from './db'
+import { db, tombstone, uid, type Exam, type Mode, type Profile, type ReviewLog, type StudyCard } from './db'
 import { DAY, isoDate } from './dates'
 import { planDay, type DayPlan } from './planner'
 import { review, type Grade } from './scheduler'
@@ -17,7 +17,7 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
   exams.sort((a, b) => a.date.localeCompare(b.date))
   const cards = (await Promise.all(exams.map((e) => db.cards.where('[examId+archived]').equals([e.id, 0]).toArray()))).flat()
   const examIds = new Set(exams.map((e) => e.id))
-  const logs = await db.logs
+  const logs = await db.reviews
     .where('reviewedAt')
     .above(now - 60 * DAY)
     .filter((l) => l.profileId === profile.id)
@@ -38,7 +38,7 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
 
 export interface Undo {
   card: StudyCard
-  logId: number
+  reviewId: string
 }
 
 export async function recordReview(
@@ -51,10 +51,11 @@ export async function recordReview(
   now = Date.now(),
 ): Promise<{ updated: StudyCard; undo: Undo }> {
   const updated: StudyCard = { ...card, s: review(card.s, rating, now, profile.retention, exam?.date, card.id) }
-  let logId = 0
-  await db.transaction('rw', db.cards, db.logs, async () => {
+  const reviewId = uid()
+  await db.transaction('rw', db.cards, db.reviews, async () => {
     await db.cards.put(updated)
-    logId = (await db.logs.add({
+    await db.reviews.add({
+      id: reviewId,
       profileId: profile.id,
       examId: card.examId,
       cardId: card.id,
@@ -63,15 +64,16 @@ export async function recordReview(
       stateBefore: card.s.state,
       reviewedAt: now,
       durationMs,
-    })) as number
+    })
   })
-  return { updated, undo: { card, logId } }
+  return { updated, undo: { card, reviewId } }
 }
 
 export async function undoReview(u: Undo) {
-  await db.transaction('rw', db.cards, db.logs, async () => {
+  await db.transaction('rw', db.cards, db.reviews, db.tombstones, async () => {
     await db.cards.put(u.card)
-    await db.logs.delete(u.logId)
+    await db.reviews.delete(u.reviewId)
+    await db.tombstones.put(tombstone('reviews', u.reviewId, u.card.profileId))
   })
 }
 

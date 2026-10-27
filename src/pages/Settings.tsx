@@ -6,10 +6,12 @@ import { createBackup, parseBackup, restoreBackup } from '../lib/backup'
 import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
+import { useSync } from '../sync-state'
 
 export function Settings() {
   const { profile, semester, semesters } = useActive()
   const { profiles, selectProfile } = useAppState()
+  const sync = useSync()
   const [message, setMessage] = useState('')
   const [storage, setStorage] = useState<{ persisted?: boolean; usage?: number }>({})
 
@@ -147,13 +149,51 @@ export function Settings() {
         </div>
       </div>
 
+      <div className="section-title">Synchronisation</div>
+      <div className="card stack">
+        {!sync.available ? (
+          <p className="muted" style={{ margin: 0 }}>Die Dropbox-Synchronisation ist für diese App noch nicht eingerichtet.</p>
+        ) : sync.connected ? (
+          <>
+            <p style={{ margin: 0 }}>
+              <b>Mit Dropbox verbunden.</b>{' '}
+              <span className="muted">
+                {sync.syncing
+                  ? 'Synchronisiere …'
+                  : sync.lastSync
+                    ? `Zuletzt abgeglichen: ${new Date(sync.lastSync).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}`
+                    : 'Noch nicht abgeglichen.'}
+              </span>
+            </p>
+            {sync.error && <div className="notice warn" style={{ margin: 0 }}>{sync.error}</div>}
+            <p className="muted" style={{ margin: 0, fontSize: 15 }}>
+              Dein Profil wird automatisch abgeglichen – beim Öffnen, nach dem Lernen und alle paar Minuten. Auf einem weiteren Gerät beim ersten Start „Profil von einem anderen Gerät laden“ wählen.
+            </p>
+            <div className="row">
+              <button className="btn grow" onClick={() => sync.syncNow()} disabled={sync.syncing}>Jetzt abgleichen</button>
+              <button className="btn danger grow" onClick={() => confirm('Verbindung zu Dropbox trennen? Deine Daten bleiben auf diesem Gerät und in Dropbox erhalten.') && sync.disconnect()}>
+                Trennen
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="muted" style={{ margin: 0 }}>
+              Gleicht dein Profil automatisch zwischen deinen Geräten ab (z. B. iPhone und iPad). Die App sieht nur ihren eigenen Ordner in deiner Dropbox. Ein kostenloses Dropbox-Konto reicht.
+            </p>
+            <button className="btn primary block" onClick={sync.connect}>Mit Dropbox verbinden</button>
+          </>
+        )}
+      </div>
+
       <div className="section-title">Daten & Sicherung</div>
       <div className="card stack">
         <p className="muted" style={{ margin: 0 }}>
-          Alle Daten liegen nur auf diesem Gerät
-          {storage.usage !== undefined && ` (${(storage.usage / 1024 / 1024).toFixed(1)} MB)`}.{' '}
-          {storage.persisted === false && 'Der Browser darf sie bei Speichermangel löschen – lege regelmäßig eine Sicherung an. '}
-          Mit einer Sicherungsdatei kannst du dein Profil auf ein anderes Gerät übertragen (z. B. über iCloud Drive). Automatische Synchronisation folgt in Phase 2.
+          Deine Daten liegen auf diesem Gerät
+          {storage.usage !== undefined && ` (${(storage.usage / 1024 / 1024).toFixed(1)} MB)`}
+          {sync.connected ? ' und in deiner Dropbox. ' : '. '}
+          {storage.persisted === false && !sync.connected && 'Der Browser darf sie bei Speichermangel löschen – lege regelmäßig eine Sicherung an. '}
+          Zusätzlich kannst du jederzeit eine Sicherungsdatei anlegen, z. B. in iCloud Drive.
         </p>
         <button className="btn block" onClick={exportBackup}>Sicherung exportieren</button>
         <label className="btn block">

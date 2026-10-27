@@ -16,14 +16,27 @@ export function Help() {
 
       <div className="card stack">
         <details>
+          <summary>Zwischen Geräten synchronisieren</summary>
+          <ol className="help" style={{ marginTop: 8 }}>
+            <li>Auf dem ersten Gerät: Einstellungen → Synchronisation → „Mit Dropbox verbinden“ und bei Dropbox anmelden.</li>
+            <li>Auf dem zweiten Gerät die App öffnen und beim ersten Start „Profil von einem anderen Gerät laden (Dropbox)“ wählen.</li>
+          </ol>
+          <p className="muted">Danach gleicht die App automatisch ab: beim Öffnen, nach dem Lernen und alle paar Minuten. Lernst du auf beiden Geräten offline, werden die Stände beim nächsten Abgleich zusammengeführt. Die App sieht nur ihren eigenen Ordner in deiner Dropbox.</p>
+        </details>
+      </div>
+
+      <div className="card stack">
+        <details>
           <summary>Tägliche Erinnerung einrichten</summary>
           <p style={{ marginTop: 8 }}>Die App kommt ohne Server aus und kann deshalb selbst keine Mitteilungen schicken. So bekommst du trotzdem eine Erinnerung:</p>
-          <p><b>iPhone – Erinnerungen-App:</b></p>
+          <p><b>iPhone mit Tagesplan (Dropbox-Sync nötig):</b> Bei jedem Abgleich legt die App die Datei <code>Erinnerung.txt</code> in ihrem Dropbox-Ordner ab, z. B. „Lernplan Mittwoch: Unterwegs 34 Karten · ca. 15 min“. Ein Kurzbefehl zeigt sie täglich als Mitteilung an:</p>
           <ol className="help">
-            <li>Neue Erinnerung „Lernen“ anlegen.</li>
-            <li>Auf ⓘ tippen → „Datum“ und „Uhrzeit“ aktivieren, z. B. 18:00.</li>
-            <li>„Wiederholen“ → „Täglich“.</li>
+            <li>Dropbox-App installieren und in der Dateien-App unter „Durchsuchen“ → „…“ → „Bearbeiten“ Dropbox aktivieren.</li>
+            <li>Kurzbefehle-App → „Automation“ → „+“ → „Tageszeit“ → Uhrzeit wählen, „Täglich“, „Sofort ausführen“.</li>
+            <li>Aktion „Datei abrufen“ hinzufügen, „Dokumentauswahl anzeigen“ ausschalten und die Datei <i>Dropbox → Apps → (App-Ordner) → Erinnerung.txt</i> wählen.</li>
+            <li>Aktion „Mitteilung anzeigen“ hinzufügen und als Text die „Datei“ aus dem vorigen Schritt einsetzen.</li>
           </ol>
+          <p><b>iPhone ohne Dropbox – Erinnerungen-App:</b> Neue Erinnerung „Lernen“ anlegen, über ⓘ Datum und Uhrzeit aktivieren, „Wiederholen“ → „Täglich“.</p>
           <p><b>Android:</b> In der Uhr-App einen täglichen Wecker oder im Kalender einen täglichen Termin mit Benachrichtigung anlegen.</p>
           <p className="muted">Was du heute lernen solltest, berechnet die App beim Öffnen automatisch neu – auch wenn du einen Tag ausgelassen hast.</p>
         </details>

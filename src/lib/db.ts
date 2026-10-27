@@ -3,7 +3,12 @@ import Dexie, { type EntityTable } from 'dexie'
 export type Mode = 'mobile' | 'desk'
 export type CardType = 'basic' | 'cloze' | 'mc' | 'task'
 
-export interface Profile {
+/** Änderungszeitpunkt für die Synchronisation (neuerer Stand gewinnt). Wird per Hook gesetzt. */
+interface Synced {
+  updatedAt?: number
+}
+
+export interface Profile extends Synced {
   id: string
   name: string
   createdAt: number
@@ -16,14 +21,14 @@ export interface Profile {
   activeSemesterId?: string
 }
 
-export interface Semester {
+export interface Semester extends Synced {
   id: string
   profileId: string
   name: string
   createdAt: number
 }
 
-export interface Exam {
+export interface Exam extends Synced {
   id: string
   profileId: string
   semesterId: string
@@ -72,7 +77,7 @@ export interface MemoryState {
   last_review?: number
 }
 
-export interface StudyCard extends CardContent {
+export interface StudyCard extends CardContent, Synced {
   /** `${examId}:${packageId}:${uid}` */
   id: string
   profileId: string
@@ -86,8 +91,9 @@ export interface StudyCard extends CardContent {
   s: MemoryState
 }
 
+/** Eine einzelne Bewertung. Unveränderlich; die ID ist geräteübergreifend eindeutig. */
 export interface ReviewLog {
-  id?: number
+  id: string
   profileId: string
   examId: string
   cardId: string
@@ -99,7 +105,7 @@ export interface ReviewLog {
   durationMs: number
 }
 
-export interface PackageRecord {
+export interface PackageRecord extends Synced {
   /** `${examId}:${packageId}` */
   id: string
   profileId: string
@@ -111,7 +117,7 @@ export interface PackageRecord {
   cardCount: number
 }
 
-export interface Snapshot {
+export interface Snapshot extends Synced {
   /** `${examId}:${YYYY-MM-DD}` */
   id: string
   profileId: string
@@ -122,15 +128,36 @@ export interface Snapshot {
   secure: number
 }
 
+/** Merkt sich Löschungen, damit sie bei der Synchronisation nicht wieder auftauchen. */
+export interface Tombstone {
+  /** `${table}:${key}` */
+  id: string
+  profileId: string
+  table: 'profiles' | 'semesters' | 'exams' | 'reviews'
+  key: string
+  deletedAt: number
+}
+
+/** Geräteeinstellungen, die nicht synchronisiert werden (z. B. Dropbox-Zugang). */
+export interface Meta {
+  key: string
+  value: unknown
+}
+
 export const db = new Dexie('lernapp') as Dexie & {
   profiles: EntityTable<Profile, 'id'>
   semesters: EntityTable<Semester, 'id'>
   exams: EntityTable<Exam, 'id'>
   cards: EntityTable<StudyCard, 'id'>
-  logs: EntityTable<ReviewLog, 'id'>
+  reviews: EntityTable<ReviewLog, 'id'>
   packages: EntityTable<PackageRecord, 'id'>
   snapshots: EntityTable<Snapshot, 'id'>
+  tombstones: EntityTable<Tombstone, 'id'>
+  meta: EntityTable<Meta, 'key'>
 }
+
+export const uid = () =>
+  globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36)
 
 db.version(1).stores({
   profiles: 'id',
@@ -142,8 +169,47 @@ db.version(1).stores({
   snapshots: 'id, profileId, examId',
 })
 
-export const uid = () =>
-  globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36)
+// Version 2: Bewertungen mit geräteübergreifend eindeutiger ID (statt fortlaufender Nummer),
+// dazu Löschmarken und Geräteeinstellungen für die Synchronisation.
+db.version(2)
+  .stores({
+    reviews: 'id, profileId, examId, cardId, reviewedAt',
+    tombstones: 'id, profileId',
+    meta: 'key',
+  })
+  .upgrade(async (tx) => {
+    const old = await tx.table('logs').toArray()
+    await tx.table('reviews').bulkAdd(old.map(({ id: _id, ...l }) => ({ ...l, id: uid() })))
+  })
+
+db.version(3).stores({ logs: null })
+
+/** Solange aktiv, übernehmen Schreibzugriffe den mitgelieferten Änderungszeitpunkt (Sync). */
+let keepTimestamps = false
+
+export async function withSyncedTimestamps<T>(fn: () => Promise<T>): Promise<T> {
+  keepTimestamps = true
+  try {
+    return await fn()
+  } finally {
+    keepTimestamps = false
+  }
+}
+
+for (const table of [db.profiles, db.semesters, db.exams, db.cards, db.packages, db.snapshots] as Dexie.Table<Synced>[]) {
+  table.hook('creating', (_key, obj) => {
+    if (!keepTimestamps || !obj.updatedAt) obj.updatedAt = Date.now()
+  })
+  table.hook('updating', () => (keepTimestamps ? undefined : { updatedAt: Date.now() }))
+}
+
+export const tombstone = (table: Tombstone['table'], key: string, profileId: string, deletedAt = Date.now()): Tombstone => ({
+  id: `${table}:${key}`,
+  profileId,
+  table,
+  key,
+  deletedAt,
+})
 
 export const cardMode = (c: Pick<CardContent, 'type' | 'mode'>): Mode =>
   c.mode ?? (c.type === 'task' ? 'desk' : 'mobile')
@@ -152,28 +218,34 @@ export const MAX_EXAMS_PER_SEMESTER = 10
 
 export const EXAM_COLORS = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#5856d6', '#a2845e', '#8e8e93']
 
-/** Löscht ein Profil mit allen zugehörigen Daten. */
+const PROFILE_TABLES = () => [db.semesters, db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.tombstones] as Dexie.Table[]
+
+/** Löscht ein Profil mit allen zugehörigen Daten auf diesem Gerät. */
 export async function deleteProfile(profileId: string) {
-  await db.transaction('rw', [db.profiles, db.semesters, db.exams, db.cards, db.logs, db.packages, db.snapshots], async () => {
-    for (const t of [db.semesters, db.exams, db.cards, db.logs, db.packages, db.snapshots] as const) {
-      await (t as Dexie.Table).where('profileId').equals(profileId).delete()
-    }
+  await db.transaction('rw', [db.profiles, db.meta, ...PROFILE_TABLES()], async () => {
+    for (const t of PROFILE_TABLES()) await t.where('profileId').equals(profileId).delete()
     await db.profiles.delete(profileId)
+    await db.meta.delete(`dropbox:${profileId}`)
   })
 }
 
 /** Löscht eine Prüfung mit Karten, Verlauf und Paketen. */
 export async function deleteExam(examId: string) {
-  await db.transaction('rw', [db.exams, db.cards, db.logs, db.packages, db.snapshots], async () => {
-    for (const t of [db.cards, db.logs, db.packages, db.snapshots] as const) {
-      await (t as Dexie.Table).where('examId').equals(examId).delete()
+  await db.transaction('rw', [db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.tombstones], async () => {
+    const exam = await db.exams.get(examId)
+    for (const t of [db.cards, db.reviews, db.packages, db.snapshots] as Dexie.Table[]) {
+      await t.where('examId').equals(examId).delete()
     }
     await db.exams.delete(examId)
+    // Karten, Verlauf usw. gelten bei der Synchronisation als verwaist und werden mit entfernt.
+    if (exam) await db.tombstones.put(tombstone('exams', examId, exam.profileId))
   })
 }
 
 export async function deleteSemester(semesterId: string) {
+  const semester = await db.semesters.get(semesterId)
   const exams = await db.exams.where('semesterId').equals(semesterId).toArray()
   for (const e of exams) await deleteExam(e.id)
   await db.semesters.delete(semesterId)
+  if (semester) await db.tombstones.put(tombstone('semesters', semesterId, semester.profileId))
 }

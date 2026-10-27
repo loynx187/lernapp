@@ -9,6 +9,8 @@ import { ExamForm } from './pages/ExamForm'
 import { Import } from './pages/Import'
 import { Settings } from './pages/Settings'
 import { Help } from './pages/Help'
+import { DropboxImport } from './pages/DropboxImport'
+import { SyncProvider } from './sync-state'
 
 /** Jede Sitzung neu aufbauen, auch beim direkten Wechsel zwischen zwei Sitzungen. */
 function SessionRoute() {
@@ -20,6 +22,13 @@ function Shell() {
   const { loading, profile, semester } = useAppState()
   const { pathname } = useLocation()
   if (loading) return null
+  if (pathname === '/dropbox-import') {
+    return (
+      <main className="main">
+        <DropboxImport />
+      </main>
+    )
+  }
   if (!profile || !semester) {
     return (
       <main className="main">
@@ -50,9 +59,11 @@ export function App() {
   return (
     <HashRouter>
       <AppStateProvider>
-        <div className="app">
-          <Shell />
-        </div>
+        <SyncProvider>
+          <div className="app">
+            <Shell />
+          </div>
+        </SyncProvider>
       </AppStateProvider>
     </HashRouter>
   )
