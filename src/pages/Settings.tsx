@@ -249,7 +249,11 @@ export function Settings() {
       <div className="card">
         <Link to="/hilfe">Installation, Erinnerungen & Lernmethode</Link>
       </div>
-      <p className="muted" style={{ textAlign: 'center', fontSize: 13 }}>Lernapp {__APP_VERSION__}</p>
+      <p className="muted" style={{ textAlign: 'center', fontSize: 13 }}>
+        Lernapp {__APP_VERSION__}
+        <br />
+        {__APP_BUILD__} · {new Date(__APP_BUILT_AT__).toLocaleDateString('de-DE')}
+      </p>
     </>
   )
 }

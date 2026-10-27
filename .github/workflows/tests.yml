@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Versionsnummer erhöht?
+        run: node scripts/check-version.mjs origin/${{ github.base_ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
