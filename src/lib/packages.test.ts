@@ -2,7 +2,8 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { db, type Exam } from './db'
-import { exportPackage, importPackage, parsePackage, parseTextCards } from './packages'
+import { exportPackage, importPackage, movePackage, parsePackage, parseTextCards } from './packages'
+import { sortPackages } from './stats'
 import { deleteCard, deletedCards, restoreCard } from './cards'
 
 const sample = JSON.parse(readFileSync(new URL('../../public/beispiel-paket.json', import.meta.url), 'utf8'))
@@ -91,6 +92,25 @@ describe('importPackage', () => {
     const out = await exportPackage(exam, sample.id)
     expect(JSON.stringify(out)).not.toContain('stability')
     expect(parsePackage(JSON.parse(JSON.stringify(out))).cards.length).toBe(sample.cards.length)
+  })
+})
+
+describe('Reihenfolge der Pakete', () => {
+  it('hängt neue Pakete hinten an und lässt sich per Pfeil umsortieren', async () => {
+    const pkg = parsePackage(sample)
+    for (const [i, id] of ['a', 'b', 'c'].entries()) await importPackage(exam, { ...pkg, id, title: id }, 1000 + i)
+    const ids = async () => sortPackages(await db.packages.where('examId').equals('e1').toArray()).map((p) => p.packageId)
+    expect(await ids()).toEqual(['a', 'b', 'c'])
+
+    await movePackage('e1', 'c', -1)
+    expect(await ids()).toEqual(['a', 'c', 'b'])
+    await movePackage('e1', 'a', -1) // schon vorne: keine Änderung
+    expect(await ids()).toEqual(['a', 'c', 'b'])
+
+    // Update behält die Position, ein neues Paket kommt ans Ende
+    await importPackage(exam, { ...pkg, id: 'c', title: 'c', version: 2 }, 5000)
+    await importPackage(exam, { ...pkg, id: 'd', title: 'd' }, 6000)
+    expect(await ids()).toEqual(['a', 'c', 'b', 'd'])
   })
 })
 

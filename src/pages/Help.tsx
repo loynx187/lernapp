@@ -161,6 +161,12 @@ export function Help() {
           <p style={{ marginTop: 8 }}>
             Auf der Seite einer Prüfung kannst du jedes Kartenpaket über „Teilen“ an Kommilitonen schicken (ohne deinen Lernfortschritt). Bekommst du eine neue Version desselben Pakets, importierst du sie einfach erneut: Neue Karten kommen dazu, geänderte werden aktualisiert und dein Fortschritt bleibt erhalten.
           </p>
+          <p>
+            Karten aus ChatGPT, NotebookLM, Anki, Quizlet oder Excel lassen sich unter „Karten importieren“ → „Karten aus anderen Tools“ einlesen. Die Schaltfläche „Vorlage für ChatGPT &amp; Co. kopieren“ liefert eine Anweisung für andere KI-Tools, damit Kapitel und Reihenfolge erhalten bleiben.
+          </p>
+          <p>
+            Unter Prüfung → „Alle Karten ansehen“ findest du alle Karten in Lernreihenfolge – zum Nachlesen, Melden, Löschen und Wiederherstellen. Die Reihenfolge der Pakete änderst du auf der Prüfungsseite mit ↑/↓.
+          </p>
         </details>
       </div>
     </>

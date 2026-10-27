@@ -27,10 +27,16 @@ export interface ExamStats {
   chapters: ChapterStats[]
 }
 
-/** Position jedes Pakets innerhalb seiner Prüfung (`${examId}:${packageId}` → 0, 1, …) nach dem ersten Import. */
-export function packageBlocks(packages: PackageRecord[]): Map<string, number> {
+/** Pakete in Lernreihenfolge: festgelegte Position, sonst Reihenfolge des ersten Imports. */
+export function sortPackages(packages: PackageRecord[]): PackageRecord[] {
   const first = (p: PackageRecord) => p.firstImportedAt ?? p.importedAt
-  const sorted = [...packages].sort((a, b) => a.examId.localeCompare(b.examId) || first(a) - first(b) || a.packageId.localeCompare(b.packageId))
+  const pos = (p: PackageRecord) => p.position ?? Number.MAX_SAFE_INTEGER
+  return [...packages].sort((a, b) => a.examId.localeCompare(b.examId) || pos(a) - pos(b) || first(a) - first(b) || a.packageId.localeCompare(b.packageId))
+}
+
+/** Position jedes Pakets innerhalb seiner Prüfung (`${examId}:${packageId}` → 0, 1, …) in Lernreihenfolge. */
+export function packageBlocks(packages: PackageRecord[]): Map<string, number> {
+  const sorted = sortPackages(packages)
   const blocks = new Map<string, number>()
   const count = new Map<string, number>()
   for (const p of sorted) {

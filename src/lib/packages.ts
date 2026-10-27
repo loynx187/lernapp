@@ -1,9 +1,11 @@
 import { db, type CardContent, type Exam, type PackageRecord, type ProfileField, type StudyCard } from './db'
 import { mergeProfile } from './profile'
+import { sortPackages } from './stats'
 import { newMemoryState } from './scheduler'
 import { PACKAGE_FORMAT, type CardPackage } from './package-format'
 
 export { BACKUP_FORMAT, PACKAGE_FORMAT, parsePackage, type CardPackage } from './package-format'
+export { parseTextCards, textToPackage, type TextCard } from './textCards'
 
 export interface ImportResult {
   added: number
@@ -90,6 +92,8 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       version: pkg.version,
       importedAt: now,
       firstImportedAt: previous?.firstImportedAt ?? previous?.importedAt ?? now,
+      // Hat der Nutzer die Reihenfolge festgelegt, kommt ein neues Paket ans Ende.
+      position: previous ? previous.position : await nextPosition(exam.id),
       cardCount: pkg.cards.length,
     }
     await db.packages.put(record)
@@ -101,6 +105,23 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
     }
   })
   return result
+}
+
+async function nextPosition(examId: string): Promise<number | undefined> {
+  const positions = (await db.packages.where('examId').equals(examId).toArray()).map((p) => p.position).filter((p) => p !== undefined)
+  return positions.length ? Math.max(...positions) + 1 : undefined
+}
+
+/** Verschiebt ein Paket in der Lernreihenfolge seiner Prüfung um eine Stelle (-1 = früher, +1 = später). */
+export async function movePackage(examId: string, packageId: string, step: -1 | 1) {
+  await db.transaction('rw', db.packages, async () => {
+    const order = sortPackages(await db.packages.where('examId').equals(examId).toArray())
+    const i = order.findIndex((p) => p.packageId === packageId)
+    const j = i + step
+    if (i < 0 || j < 0 || j >= order.length) return
+    ;[order[i], order[j]] = [order[j], order[i]]
+    for (const [position, p] of order.entries()) if (p.position !== position) await db.packages.update(p.id, { position })
+  })
 }
 
 /** Entfernt optionale Inhaltsfelder, damit ein Update gelöschte Felder (z. B. ein Bild) nicht übernimmt. */
@@ -130,42 +151,6 @@ export async function exportPackage(exam: Exam, packageId: string): Promise<Card
       const { id: _1, profileId: _2, examId: _3, packageId: _4, chapterTitle: _5, order: _6, archived: _7, addedAt: _8, s: _9, ...content } = c
       return content
     }),
-  }
-}
-
-/**
- * Liest Frage/Antwort-Paare aus Text, z. B. aus NotebookLM oder Quizlet kopiert.
- * Je Zeile „Frage<TAB>Antwort“ oder „Frage ;; Antwort“, alternativ Blöcke mit
- * „F:“/„Frage:“ und „A:“/„Antwort:“, getrennt durch Leerzeilen.
- */
-export function parseTextCards(text: string): { front: string; back: string }[] {
-  const out: { front: string; back: string }[] = []
-  const blocks = text.replace(/\r\n?/g, '\n').split(/\n\s*\n/)
-  for (const block of blocks) {
-    const qa = block.match(/^\s*(?:F|Frage|Q)\s*[:.)]\s*([\s\S]*?)\n\s*(?:A|Antwort)\s*[:.)]\s*([\s\S]*)$/i)
-    if (qa) {
-      out.push({ front: qa[1].trim(), back: qa[2].trim() })
-      continue
-    }
-    for (const line of block.split('\n')) {
-      const parts = line.includes('\t') ? line.split('\t') : line.split(/\s;;\s/)
-      if (parts.length >= 2 && parts[0].trim() && parts.slice(1).join(' ').trim()) {
-        out.push({ front: parts[0].trim(), back: parts.slice(1).join(' ').trim() })
-      }
-    }
-  }
-  return out
-}
-
-export function textToPackage(title: string, pairs: { front: string; back: string }[]): CardPackage {
-  const id = `text-${Date.now().toString(36)}`
-  return {
-    format: PACKAGE_FORMAT,
-    formatVersion: 1,
-    id,
-    title,
-    version: 1,
-    cards: pairs.map((p, i) => ({ uid: `t${i + 1}`, type: 'basic', front: p.front, back: p.back })),
   }
 }
 

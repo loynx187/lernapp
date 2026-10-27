@@ -19,3 +19,19 @@ export async function deletedCards(examId: string) {
   const cards = await db.cards.where('[examId+archived]').equals([examId, 1]).filter((c) => !!c.deletedAt).toArray()
   return cards.sort((a, b) => b.deletedAt! - a.deletedAt!)
 }
+
+/** Kartentext ohne Markdown- und Formelzeichen für einzeilige Listen. */
+const GREEK: Record<string, string> = {
+  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', varepsilon: 'ε', epsilon: 'ε', eta: 'η', theta: 'θ', lambda: 'λ', mu: 'μ', nu: 'ν',
+  pi: 'π', rho: 'ρ', sigma: 'σ', tau: 'τ', varphi: 'φ', phi: 'φ', omega: 'ω', Delta: 'Δ', Sigma: 'Σ', Omega: 'Ω',
+  cdot: '·', times: '×', approx: '≈', le: '≤', leq: '≤', ge: '≥', geq: '≥', neq: '≠', infty: '∞', to: '→', rightarrow: '→',
+}
+
+/** Kartentext ohne Markdown- und Formelzeichen für einzeilige Listen (einfache LaTeX-Befehle werden zu Zeichen). */
+export const plainText = (text = '') =>
+  text
+    .replace(/\\([a-zA-Z]+)/g, (_, cmd: string) => GREEK[cmd] ?? '')
+    .replace(/\\[,;:! ]/g, ' ')
+    .replace(/[*_$#>{}^\\]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()

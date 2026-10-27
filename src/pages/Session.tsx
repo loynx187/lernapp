@@ -7,7 +7,8 @@ import { loadStudyData, recordReview, undoReview, type Undo } from '../lib/study
 import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
 import { toPlanCard } from '../lib/stats'
 import { formatInterval } from '../lib/dates'
-import { REPORT_CATEGORIES, reportCard } from '../lib/reports'
+import { reportCard } from '../lib/reports'
+import { ReportForm } from '../components/ReportForm'
 import { deleteCard } from '../lib/cards'
 import { checkAnswer, formatAnswer } from '../lib/answers'
 import { SlideViewer } from '../components/SlideViewer'
@@ -42,8 +43,6 @@ export function Session() {
   const [undo, setUndo] = useState<Undo | null>(null)
   const [busy, setBusy] = useState(false)
   const [reporting, setReporting] = useState(false)
-  const [reportCategory, setReportCategory] = useState<ReportCategory>('fehler')
-  const [reportNote, setReportNote] = useState('')
   const [reported, setReported] = useState<Set<string>>(new Set())
   const [answerInputs, setAnswerInputs] = useState<string[]>([])
   const [showSlide, setShowSlide] = useState(false)
@@ -123,12 +122,11 @@ export function Session() {
     }
   }
 
-  async function submitReport() {
+  async function submitReport(category: ReportCategory, note: string) {
     if (!card) return
-    await reportCard(card, reportCategory, reportNote)
+    await reportCard(card, category, note)
     setReported((s) => new Set(s).add(card.id))
     setReporting(false)
-    setReportNote('')
   }
 
   async function removeCard() {
@@ -352,34 +350,7 @@ export function Session() {
         />
       )}
 
-      {reporting && (
-        <div className="card stack">
-          <h3 style={{ margin: 0 }}>Karte melden</h3>
-          <p className="muted" style={{ margin: 0, fontSize: 15 }}>
-            Die Meldung wird gesammelt und bei der nächsten Paketerstellung von Claude bearbeitet (Prüfung → Meldungen → Exportieren).
-          </p>
-          <div className="row wrap" role="radiogroup" aria-label="Art des Problems">
-            {REPORT_CATEGORIES.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                role="radio"
-                aria-checked={reportCategory === c.value}
-                className={`chip${reportCategory === c.value ? ' accent' : ''}`}
-                style={{ border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 14 }}
-                onClick={() => setReportCategory(c.value)}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-          <textarea value={reportNote} onChange={(e) => setReportNote(e.target.value)} placeholder="Was stimmt nicht? (optional)" style={{ minHeight: 90 }} />
-          <div className="row">
-            <button className="btn grow" onClick={() => setReporting(false)}>Abbrechen</button>
-            <button className="btn primary grow" onClick={submitReport}>Melden</button>
-          </div>
-        </div>
-      )}
+      {reporting && <ReportForm onSubmit={submitReport} onCancel={() => setReporting(false)} />}
 
       <div className="actions">
         {!revealed ? (

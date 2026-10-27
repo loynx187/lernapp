@@ -155,6 +155,17 @@ describe('Reihenfolge neuer Karten über mehrere Pakete', () => {
     const mixed = orderNew(all, true, true)
     expect(mixed.slice(1, 5).map((c) => c.block)).toEqual([0, 1, 0, 1])
   })
+
+  it('bleibt auch bei Rückstand chronologisch, nur Zusatzstoff kommt nach hinten', () => {
+    const all = [0, 1]
+      .flatMap((block) => cards('a', 200).map((c) => ({ ...c, id: `${c.id}-p${block}`, block })))
+      .map((c) => ({ ...c, relevance: c.block === 1 && c.order === 199 ? 3 : c.block === 0 && c.order === 0 ? 1 : 2 }))
+    const plan = planDay(input({ exams: [{ id: 'a', date: examIn(40), weight: 2 }], cards: all, budgetMinutes: { mobile: 5, desk: 0 } }))
+    expect(plan.exams[0].behind).toBe(true)
+    const q = buildQueue(plan, all, { mode: 'mobile', now: NOW })
+    expect(q.length).toBeGreaterThan(2)
+    expect(q.map((c) => c.id)).toEqual(q.map((_, i) => `a-mobile-0-${i + 1}-p0`))
+  })
 })
 
 describe('Semesterarten und Kernstoff', () => {
