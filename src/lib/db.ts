@@ -128,12 +128,29 @@ export interface Snapshot extends Synced {
   secure: number
 }
 
+export type ReportCategory = 'fehler' | 'unklar' | 'aufteilen' | 'sonstiges'
+
+/** Meldung zu einer fehlerhaften oder unklaren Karte – wird exportiert und bei der nächsten Paketerstellung bearbeitet. */
+export interface CardReport extends Synced {
+  id: string
+  profileId: string
+  examId: string
+  cardId: string
+  packageId: string
+  uid: string
+  category: ReportCategory
+  note: string
+  createdAt: number
+  /** Gesetzt, sobald ein Paket-Update die Karte geändert hat oder der Nutzer die Meldung abhakt. */
+  resolvedAt?: number
+}
+
 /** Merkt sich Löschungen, damit sie bei der Synchronisation nicht wieder auftauchen. */
 export interface Tombstone {
   /** `${table}:${key}` */
   id: string
   profileId: string
-  table: 'profiles' | 'semesters' | 'exams' | 'reviews'
+  table: 'profiles' | 'semesters' | 'exams' | 'reviews' | 'reports'
   key: string
   deletedAt: number
 }
@@ -154,6 +171,7 @@ export const db = new Dexie('lernapp') as Dexie & {
   snapshots: EntityTable<Snapshot, 'id'>
   tombstones: EntityTable<Tombstone, 'id'>
   meta: EntityTable<Meta, 'key'>
+  reports: EntityTable<CardReport, 'id'>
 }
 
 export const uid = () =>
@@ -184,6 +202,8 @@ db.version(2)
 
 db.version(3).stores({ logs: null })
 
+db.version(4).stores({ reports: 'id, profileId, examId, cardId' })
+
 /** Solange aktiv, übernehmen Schreibzugriffe den mitgelieferten Änderungszeitpunkt (Sync). */
 let keepTimestamps = false
 
@@ -196,7 +216,7 @@ export async function withSyncedTimestamps<T>(fn: () => Promise<T>): Promise<T> 
   }
 }
 
-for (const table of [db.profiles, db.semesters, db.exams, db.cards, db.packages, db.snapshots] as Dexie.Table<Synced>[]) {
+for (const table of [db.profiles, db.semesters, db.exams, db.cards, db.packages, db.snapshots, db.reports] as Dexie.Table<Synced>[]) {
   table.hook('creating', (_key, obj) => {
     if (!keepTimestamps || !obj.updatedAt) obj.updatedAt = Date.now()
   })
@@ -218,7 +238,7 @@ export const MAX_EXAMS_PER_SEMESTER = 10
 
 export const EXAM_COLORS = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#5856d6', '#a2845e', '#8e8e93']
 
-const PROFILE_TABLES = () => [db.semesters, db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.tombstones] as Dexie.Table[]
+const PROFILE_TABLES = () => [db.semesters, db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.tombstones] as Dexie.Table[]
 
 /** Löscht ein Profil mit allen zugehörigen Daten auf diesem Gerät. */
 export async function deleteProfile(profileId: string) {
@@ -231,9 +251,9 @@ export async function deleteProfile(profileId: string) {
 
 /** Löscht eine Prüfung mit Karten, Verlauf und Paketen. */
 export async function deleteExam(examId: string) {
-  await db.transaction('rw', [db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.tombstones], async () => {
+  await db.transaction('rw', [db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.tombstones], async () => {
     const exam = await db.exams.get(examId)
-    for (const t of [db.cards, db.reviews, db.packages, db.snapshots] as Dexie.Table[]) {
+    for (const t of [db.cards, db.reviews, db.packages, db.snapshots, db.reports] as Dexie.Table[]) {
       await t.where('examId').equals(examId).delete()
     }
     await db.exams.delete(examId)

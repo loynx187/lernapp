@@ -98,7 +98,8 @@ export function Import() {
             <div className="notice">
               <b>Import abgeschlossen.</b> {result.added} neu, {result.updated} aktualisiert, {result.unchanged} unverändert
               {result.restored > 0 && `, ${result.restored} wiederhergestellt`}
-              {result.archived > 0 && `, ${result.archived} archiviert (nicht mehr im Paket)`}. Dein Lernplan wurde angepasst.{' '}
+              {result.archived > 0 && `, ${result.archived} archiviert (nicht mehr im Paket)`}
+              {result.resolvedReports > 0 && `, ${result.resolvedReports} ${result.resolvedReports === 1 ? 'Meldung' : 'Meldungen'} erledigt`}. Dein Lernplan wurde angepasst.{' '}
               <Link to={`/pruefung/${examId}`}>Zur Prüfung</Link>
             </div>
           )}

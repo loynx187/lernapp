@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useActive } from '../state'
-import { db, type Exam, type Mode, type StudyCard } from '../lib/db'
+import { db, type Exam, type Mode, type ReportCategory, type StudyCard } from '../lib/db'
 import { buildQueue } from '../lib/planner'
 import { loadStudyData, recordReview, undoReview, type Undo } from '../lib/study'
 import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
 import { toPlanCard } from '../lib/stats'
 import { formatInterval } from '../lib/dates'
+import { REPORT_CATEGORIES, reportCard } from '../lib/reports'
 import { Rich } from '../components/Rich'
 import { Icon, Progress } from '../components/ui'
 
@@ -37,6 +38,10 @@ export function Session() {
   const [stepsShown, setStepsShown] = useState(0)
   const [undo, setUndo] = useState<Undo | null>(null)
   const [busy, setBusy] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [reportCategory, setReportCategory] = useState<ReportCategory>('fehler')
+  const [reportNote, setReportNote] = useState('')
+  const [reported, setReported] = useState<Set<string>>(new Set())
   const started = useRef(Date.now())
   const sessionStart = useRef(Date.now())
 
@@ -60,6 +65,7 @@ export function Session() {
   const exam = card ? exams.get(card.examId) : undefined
 
   const resetCardUi = () => {
+    setReporting(false)
     setRevealed(false)
     setSelected([])
     setStepsShown(0)
@@ -108,6 +114,14 @@ export function Session() {
     }
   }
 
+  async function submitReport() {
+    if (!card) return
+    await reportCard(card, reportCategory, reportNote)
+    setReported((s) => new Set(s).add(card.id))
+    setReporting(false)
+    setReportNote('')
+  }
+
   const reveal = () => {
     if (!card) return
     if (card.type === 'task') setStepsShown(card.steps?.length ?? 0)
@@ -116,7 +130,8 @@ export function Session() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!card || (e.target as HTMLElement)?.tagName === 'INPUT') return
+      const tag = (e.target as HTMLElement)?.tagName
+      if (!card || reporting || tag === 'INPUT' || tag === 'TEXTAREA') return
       if (!revealed && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault()
         reveal()
@@ -138,6 +153,11 @@ export function Session() {
         <Icon name="close" />
       </button>
       <Progress value={total ? reviewed / total : 1} />
+      {card && (
+        <button className="btn ghost small" onClick={() => setReporting((r) => !r)} aria-label="Karte melden" aria-pressed={reporting}>
+          <Icon name="flag" />
+        </button>
+      )}
       <button className="btn ghost small" onClick={undoLast} disabled={!undo || busy} aria-label="Letzte Bewertung rückgängig">
         <Icon name="undo" />
       </button>
@@ -156,7 +176,7 @@ export function Session() {
               ? `${reviewed} ${reviewed === 1 ? 'Karte' : 'Karten'} in ca. ${minutes} min gelernt.`
               : 'Für diesen Modus ist gerade nichts geplant.'}
           </p>
-          <Link className="btn primary block" to="/">Zurück zu Heute</Link>
+          <Link className="btn primary block" to="/">Zur Übersicht</Link>
         </div>
       </>
     )
@@ -177,7 +197,8 @@ export function Session() {
             </span>
           )}
           {card.chapterTitle && <span className="chip">{card.chapterTitle}</span>}
-          {isNew && <span className="chip" style={{ color: 'var(--accent)' }}>neu</span>}
+          {isNew && <span className="chip accent">neu</span>}
+          {reported.has(card.id) && <span className="chip" style={{ color: 'var(--warn)' }}>gemeldet</span>}
         </div>
 
         <Rich text={card.front} cloze={card.type === 'cloze' ? (revealed ? 'back' : 'front') : 'none'} />
@@ -248,6 +269,35 @@ export function Session() {
           </div>
         )}
       </article>
+
+      {reporting && (
+        <div className="card stack">
+          <h3 style={{ margin: 0 }}>Karte melden</h3>
+          <p className="muted" style={{ margin: 0, fontSize: 15 }}>
+            Die Meldung wird gesammelt und bei der nächsten Paketerstellung von Claude bearbeitet (Prüfung → Meldungen → Exportieren).
+          </p>
+          <div className="row wrap" role="radiogroup" aria-label="Art des Problems">
+            {REPORT_CATEGORIES.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                role="radio"
+                aria-checked={reportCategory === c.value}
+                className={`chip${reportCategory === c.value ? ' accent' : ''}`}
+                style={{ border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 14 }}
+                onClick={() => setReportCategory(c.value)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <textarea value={reportNote} onChange={(e) => setReportNote(e.target.value)} placeholder="Was stimmt nicht? (optional)" style={{ minHeight: 90 }} />
+          <div className="row">
+            <button className="btn grow" onClick={() => setReporting(false)}>Abbrechen</button>
+            <button className="btn primary grow" onClick={submitReport}>Melden</button>
+          </div>
+        </div>
+      )}
 
       <div className="actions">
         {!revealed ? (

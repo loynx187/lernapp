@@ -59,3 +59,29 @@ Wird ein Paket mit gleicher `id` erneut importiert:
 - Karten mit bekannter `uid` werden inhaltlich aktualisiert, **der Lernfortschritt bleibt**.
 - Neue `uid`s kommen als neue Karten dazu und werden in den Lernplan eingeplant.
 - Fehlende `uid`s werden archiviert (nicht gelöscht) und tauchen wieder auf, falls sie zurückkommen.
+
+## Meldungen (`Meldungen_<Prüfung>_<Datum>.json`)
+
+In der App können fehlerhafte oder unklare Karten gemeldet werden (Lernsitzung → Fähnchen). Auf der Seite der Prüfung lassen sich alle offenen Meldungen exportieren:
+
+```json
+{
+  "format": "lernapp-meldungen",
+  "formatVersion": 1,
+  "exportedAt": "2026-11-03T18:12:00.000Z",
+  "exam": "Qualitätsmanagement",
+  "packages": [{ "id": "qm-grundlagen", "title": "…", "version": 1 }],
+  "reports": [
+    {
+      "packageId": "qm-grundlagen",
+      "uid": "k1-f006-3",
+      "category": "unklar",
+      "note": "Beispiel fehlt",
+      "reportedAt": "2026-11-02T07:40:00.000Z",
+      "front": "…", "back": "…", "source": { "file": "…", "slide": 6 }
+    }
+  ]
+}
+```
+
+`category`: `fehler` (fachlich falsch), `unklar`, `aufteilen` (zu lang), `sonstiges`. Über `packageId` + `uid` ist die Karte im Paket eindeutig. Ändert ein Paket-Update eine gemeldete Karte, gilt die Meldung in der App automatisch als erledigt.

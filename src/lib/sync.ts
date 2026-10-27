@@ -1,5 +1,5 @@
 import Dexie from 'dexie'
-import { db, withSyncedTimestamps, type Exam, type PackageRecord, type Profile, type ReviewLog, type Semester, type Snapshot, type StudyCard, type Tombstone } from './db'
+import { db, withSyncedTimestamps, type CardReport, type Exam, type PackageRecord, type Profile, type ReviewLog, type Semester, type Snapshot, type StudyCard, type Tombstone } from './db'
 
 /**
  * Synchronisationsstand eines Profils. Jedes Gerät speichert seinen Stand als ein Dokument;
@@ -17,10 +17,11 @@ export interface SyncDoc {
   reviews: ReviewLog[]
   packages: PackageRecord[]
   snapshots: Snapshot[]
+  reports: CardReport[]
   tombstones: Tombstone[]
 }
 
-const TABLES = ['semesters', 'exams', 'cards', 'reviews', 'packages', 'snapshots'] as const
+const TABLES = ['semesters', 'exams', 'cards', 'reviews', 'packages', 'snapshots', 'reports'] as const
 type TableName = (typeof TABLES)[number]
 type Rec = { id: string; updatedAt?: number }
 
@@ -65,7 +66,8 @@ export function mergeDocs(a: SyncDoc, b: SyncDoc): SyncDoc {
   }
   const deleted = (name: Tombstone['table'], r: Rec) => {
     const t = tombs.get(`${name}:${r.id}`)
-    return !!t && (name === 'reviews' || t.deletedAt >= (r.updatedAt ?? 0))
+    // Bewertungen und Meldungen werden nie bearbeitet, nur gelöscht – eine Löschmarke gilt immer.
+    return !!t && (name === 'reviews' || name === 'reports' || t.deletedAt >= (r.updatedAt ?? 0))
   }
 
   const semesters = [...byId(a.semesters, b.semesters).values()].filter((s) => !deleted('semesters', s))
@@ -90,6 +92,7 @@ export function mergeDocs(a: SyncDoc, b: SyncDoc): SyncDoc {
     reviews: ofExam([...byId(a.reviews, b.reviews).values()].filter((r) => !deleted('reviews', r))),
     packages: ofExam([...byId(a.packages, b.packages).values()]),
     snapshots: ofExam([...byId(a.snapshots, b.snapshots).values()]),
+    reports: ofExam([...byId(a.reports, b.reports).values()].filter((r) => !deleted('reports', r))),
     tombstones: [...tombs.values()],
   }
 }

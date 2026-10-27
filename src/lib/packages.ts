@@ -10,6 +10,7 @@ export interface ImportResult {
   unchanged: number
   archived: number
   restored: number
+  resolvedReports: number
 }
 
 const contentKey = (c: CardContent) =>
@@ -23,9 +24,10 @@ const contentKey = (c: CardContent) =>
 export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now()): Promise<ImportResult> {
   const chapterTitles = new Map((pkg.chapters ?? []).map((c) => [c.id, c.title]))
   const chapterOrder = new Map((pkg.chapters ?? []).map((c, i) => [c.id, i]))
-  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0 }
+  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, resolvedReports: 0 }
 
-  await db.transaction('rw', db.cards, db.packages, async () => {
+  await db.transaction('rw', db.cards, db.packages, db.reports, async () => {
+    const changed: string[] = []
     const existing = new Map(
       (await db.cards.where('packageId').equals(pkg.id).filter((c) => c.examId === exam.id).toArray()).map((c) => [c.uid, c]),
     )
@@ -37,8 +39,10 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       if (old) {
         existing.delete(content.uid)
         if (old.archived) result.restored++
-        else if (contentKey(old) !== contentKey(content)) result.updated++
-        else result.unchanged++
+        else if (contentKey(old) !== contentKey(content)) {
+          result.updated++
+          changed.push(old.id)
+        } else result.unchanged++
         return { ...stripContent(old), ...content, chapterTitle, order, archived: 0 as const }
       }
       result.added++
@@ -62,6 +66,10 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       }
     }
     await db.cards.bulkPut(next)
+    // Meldungen zu Karten, die das Update geändert hat, gelten als bearbeitet.
+    const open = (await db.reports.where('cardId').anyOf(changed).toArray()).filter((r) => !r.resolvedAt)
+    for (const r of open) await db.reports.update(r.id, { resolvedAt: now })
+    result.resolvedReports = open.length
     const record: PackageRecord = {
       id: `${exam.id}:${pkg.id}`,
       profileId: exam.profileId,

@@ -14,11 +14,10 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 - `npm test` – Unit-Tests (Vitest)
 - `npm run build` – Typprüfung + Build
 - `npm run dev` – Entwicklungsserver unter http://localhost:5173/lernapp/
-
 - `npm run validate -- <paket.json> [--alt <alt.json>] [--folien 1-25]` – Kartenpaket prüfen
 
 ## Kartenpakete aus Vorlesungsunterlagen erstellen
-**Immer nach dem Skill `.claude/skills/kartenpaket/SKILL.md` vorgehen** (auch ohne `/kartenpaket`-Aufruf, sobald PDFs für Karten hochgeladen werden). Fachspezifische Schwerpunkte stehen in `faecher/<fach>.md`.
+**Immer nach dem Skill `.claude/skills/kartenpaket/SKILL.md` vorgehen** (auch ohne `/kartenpaket`-Aufruf, sobald PDFs für Karten hochgeladen werden). Unterlagen, Pakete, Fachprofile und Meldungen liegen im privaten Repository `loynx187/lernapp-inhalte` (`faecher/<fach>/…`).
 Format: `docs/KARTENPAKET-FORMAT.md`. Beispiel: `public/beispiel-paket.json`.
 
-- **Unterlagen (PDFs) und daraus erzeugte Pakete nie committen** – das Repository ist öffentlich und die Inhalte sind urheberrechtlich geschützt. Pakete als Datei an den Nutzer übergeben.
+- **Unterlagen (PDFs), Pakete und Fachprofile nie in dieses Repository committen** – es ist öffentlich und die Inhalte sind urheberrechtlich geschützt. Sie gehören ins private Archiv; Pakete zusätzlich als Datei an den Nutzer übergeben.

@@ -78,3 +78,24 @@ describe('parseTextCards', () => {
     ])
   })
 })
+
+describe('Meldungen', () => {
+  it('werden erledigt, wenn ein Update die gemeldete Karte ändert', async () => {
+    const { reportCard, exportReports } = await import('./reports')
+    const v1 = parsePackage(sample)
+    await importPackage(exam, v1)
+    const card = (await db.cards.get(`e1:${v1.id}:k1-01`))!
+    const other = (await db.cards.get(`e1:${v1.id}:k1-02`))!
+    await reportCard(card, 'unklar', 'Einheit fehlt')
+    await reportCard(other, 'fehler', '')
+
+    const exported = await exportReports(exam)
+    expect(exported.reports.map((r) => r.uid).sort()).toEqual(['k1-01', 'k1-02'])
+    expect(exported.reports[0].front).toBeTruthy()
+
+    const v2 = parsePackage({ ...sample, version: 2, cards: [{ ...sample.cards[0], back: 'mit Einheit' }, ...sample.cards.slice(1)] })
+    const r = await importPackage(exam, v2)
+    expect(r.resolvedReports).toBe(1)
+    expect((await exportReports(exam)).reports.map((x) => x.uid)).toEqual(['k1-02'])
+  })
+})

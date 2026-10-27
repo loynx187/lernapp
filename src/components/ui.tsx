@@ -38,6 +38,7 @@ const paths = {
   help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-2.4-11.6a2.5 2.5 0 1 1 3.6 2.3c-.7.3-1.2 1-1.2 1.8v.5M12 17h.01',
   plus: 'M12 5v14M5 12h14',
   chevron: 'M9 5l7 7-7 7',
+  flag: 'M5 21V4.5m0 0h11.5l-2 4 2 4H5',
 }
 
 export type IconName = keyof typeof paths

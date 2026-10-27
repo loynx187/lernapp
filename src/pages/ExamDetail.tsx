@@ -6,6 +6,7 @@ import { loadStudyData } from '../lib/study'
 import { addDays, daysUntil, formatCountdown, formatDate, isoDate } from '../lib/dates'
 import { examStats } from '../lib/stats'
 import { exportPackage, safeFileName, saveFile } from '../lib/packages'
+import { deleteReport, exportReports, REPORT_CATEGORIES, setResolved } from '../lib/reports'
 import { HistoryChart } from '../components/HistoryChart'
 import { PageHeader, Progress, Stat, pct } from '../components/ui'
 
@@ -15,13 +16,14 @@ export function ExamDetail() {
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
     if (!exam) return { exam: undefined }
-    const [cards, snapshots, packages, study] = await Promise.all([
+    const [cards, snapshots, packages, reports, study] = await Promise.all([
       db.cards.where('[examId+archived]').equals([id, 0]).toArray(),
       db.snapshots.where('examId').equals(id).toArray(),
       db.packages.where('examId').equals(id).toArray(),
+      db.reports.where('examId').equals(id).toArray(),
       loadStudyData(profile),
     ])
-    return { exam, cards, snapshots, packages, plan: study.plan.exams.find((p) => p.examId === id) }
+    return { exam, cards, snapshots, packages, reports, plan: study.plan.exams.find((p) => p.examId === id) }
   }, [id, profile])
 
   if (!data) return null
@@ -34,7 +36,9 @@ export function ExamDetail() {
       </div>
     )
   }
-  const { cards, snapshots, packages, plan } = data
+  const { cards, snapshots, packages, reports, plan } = data
+  const openReports = reports.filter((r) => !r.resolvedAt).sort((a, b) => b.createdAt - a.createdAt)
+  const cardById = new Map(cards.map((c) => [c.id, c]))
   const stats = examStats(exam, cards, Date.now(), profile.retention)
   const days = daysUntil(exam.date)
   const hasDesk = cards.some((c) => cardMode(c) === 'desk')
@@ -43,6 +47,11 @@ export function ExamDetail() {
   async function share(packageId: string) {
     const pkg = await exportPackage(exam!, packageId)
     await saveFile(`${safeFileName(pkg.title)}.lernpaket.json`, JSON.stringify(pkg, null, 1))
+  }
+
+  async function exportOpenReports() {
+    const file = await exportReports(exam!)
+    await saveFile(`Meldungen_${safeFileName(exam!.name)}_${isoDate(Date.now())}.json`, JSON.stringify(file, null, 1))
   }
 
   return (
@@ -118,6 +127,35 @@ export function ExamDetail() {
             })}
             <small>Zahlen: begonnene Karten / alle · aktuelle Abrufwahrscheinlichkeit. Orange = Schwachstelle.</small>
           </div>
+        </>
+      )}
+
+      {openReports.length > 0 && (
+        <>
+          <div className="section-title">Meldungen</div>
+          <div className="list">
+            {openReports.map((r) => (
+              <div className="list-item" key={r.id} style={{ alignItems: 'flex-start' }}>
+                <div className="grow">
+                  <div className="truncate" style={{ fontWeight: 500 }}>{cardById.get(r.cardId)?.front.replace(/[*_$#>{}]/g, '') ?? r.uid}</div>
+                  <small>
+                    {REPORT_CATEGORIES.find((c) => c.value === r.category)?.label}
+                    {r.note && ` · ${r.note}`}
+                  </small>
+                </div>
+                <button className="btn small ghost" style={{ color: 'var(--accent)' }} onClick={() => setResolved(r, true)}>Erledigt</button>
+                <button className="btn small ghost danger" onClick={() => deleteReport(r)} aria-label="Meldung löschen">Löschen</button>
+              </div>
+            ))}
+            <div className="list-item">
+              <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: -8 }} onClick={exportOpenReports}>
+                {openReports.length === 1 ? 'Meldung' : `${openReports.length} Meldungen`} exportieren
+              </button>
+            </div>
+          </div>
+          <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>
+            Die Exportdatei bei der nächsten Paketerstellung zusammen mit <code>/kartenpaket</code> hochladen. Korrigierte Karten werden nach dem Import automatisch als erledigt markiert.
+          </p>
         </>
       )}
 
