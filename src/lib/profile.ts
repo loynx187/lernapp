@@ -73,6 +73,7 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
           slug: examSlug(e),
           date: e.date,
           weight: e.weight,
+          lecturesOngoing: e.ongoing || undefined,
           profile: Object.keys(profile).length ? profile : undefined,
           unconfirmed: suggested?.length ? suggested : undefined,
           packages: packages.map((p) => ({ id: p.packageId, title: p.title, version: p.version, cards: p.cardCount })),

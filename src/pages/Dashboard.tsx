@@ -167,7 +167,7 @@ export function Dashboard() {
                 <span><i style={{ background: 'var(--ok)' }} />{Math.round((forecast / total) * 100)} %</span>
               </div>
             </div>
-            <div className="w-foot">begonnen · Prognose</div>
+            <div className="w-foot">begonnen · Prognose{upcoming.some((e) => e.ongoing) && ' (vorläufig)'}</div>
           </Widget>
         )}
 

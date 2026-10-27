@@ -124,6 +124,7 @@ Text, den die App für Claude erzeugt („Auftrag für Claude kopieren“): eine
       "slug": "technische-mechanik-ii",
       "date": "2027-02-01",
       "weight": 2,
+      "lecturesOngoing": true,
       "profile": { "form": "schriftlich", "aids": "Taschenrechner" },
       "unconfirmed": ["aids"],
       "packages": [{ "id": "tm2-festigkeitslehre", "title": "…", "version": 2, "cards": 140 }],
@@ -133,7 +134,7 @@ Text, den die App für Claude erzeugt („Auftrag für Claude kopieren“): eine
 }
 ```
 
-`unconfirmed`: Felder, die Claude vorgeschlagen und der Nutzer noch nicht bestätigt hat. `reports`: offene Meldungen wie in der Meldungsdatei.
+`lecturesOngoing`: Die Vorlesung läuft noch, weitere Unterlagen folgen. `unconfirmed`: Felder, die Claude vorgeschlagen und der Nutzer noch nicht bestätigt hat. `reports`: offene Meldungen wie in der Meldungsdatei.
 
 ## Fachprofile (`Fachprofile_<Semester>.json`)
 

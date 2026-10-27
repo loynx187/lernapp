@@ -100,6 +100,7 @@ export function Help() {
             <li><b>Rückwärts vom Klausurtermin:</b> Neuer Stoff wird gleichmäßig verteilt, sodass er einige Tage vor der Klausur komplett begonnen ist. Danach wird nur noch gefestigt, und jede Karte kommt in den letzten Tagen vor der Klausur noch einmal dran.</li>
             <li><b>Gemischt üben:</b> Karten verschiedener Fächer und Kapitel werden abwechselnd abgefragt.</li>
             <li><b>Semesterart:</b> Im dualen Semester (alle Klausuren in einer Woche) muss neuer Stoff aller Fächer bis vor Beginn der Prüfungsphase sitzen – mit längerem Wiederholungspuffer. Im regulären Semester hat jedes Fach seinen eigenen Zeitplan bis zu seiner Klausur. Einstellbar pro Semester.</li>
+            <li><b>Laufende Vorlesung:</b> Kommen die Unterlagen nach und nach, schalte bei der Prüfung „Vorlesung läuft noch“ ein. Neuer Stoff wird dann innerhalb einer Woche nach dem Import begonnen (Dauer einstellbar), statt bis zur Klausur gestreckt zu werden – so lernst du im Takt der Vorlesung und hast am Ende Zeit für Wiederholung und Altklausuren. Die Prognose gilt so lange als vorläufig. Sind alle Unterlagen da, den Schalter wieder ausschalten.</li>
             <li><b>Kernstoff zuerst:</b> Karten mit geringer Klausurrelevanz (Zusatzstoff) kommen nur dran, wenn nach dem Kernstoff noch Zeit übrig ist.</li>
             <li><b>Zeitbudget:</b> Reicht deine eingestellte Zeit nicht, bekommen nahe und wichtige Prüfungen Vorrang und die App zeigt dir, wie viel Zeit nötig wäre.</li>
           </ul>

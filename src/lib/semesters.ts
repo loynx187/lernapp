@@ -35,5 +35,10 @@ export const semesterKind = (s?: Pick<Semester, 'kind'>): SemesterKind => s?.kin
 export function planExams(exams: Exam[], semester?: Pick<Semester, 'kind'>): PlanExam[] {
   const info = SEMESTER_KINDS[semesterKind(semester)]
   const phaseStart = exams.reduce<string | undefined>((min, e) => (!min || e.date < min ? e.date : min), undefined)
-  return exams.map((e) => ({ id: e.id, date: e.date, weight: e.weight, introBy: info.anchor === 'phase' ? phaseStart : undefined }))
+  return exams.map((e) => ({ id: e.id, date: e.date, weight: e.weight, introBy: info.anchor === 'phase' ? phaseStart : undefined, introWithin: lecturesOngoing(e) ? e.ongoingDays ?? DEFAULT_ONGOING_DAYS : undefined }))
 }
+
+/** Standard: Stoff einer laufenden Vorlesung innerhalb einer Woche beginnen. */
+export const DEFAULT_ONGOING_DAYS = 7
+
+export const lecturesOngoing = (e: Pick<Exam, 'ongoing'>) => !!e.ongoing

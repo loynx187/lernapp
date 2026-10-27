@@ -61,7 +61,7 @@ export function Exams() {
             <div className="row between" style={{ marginTop: 6 }}>
               <small>begonnen {pct(stats.introduced, stats.total)}</small>
               <small>
-                {forecast !== undefined ? `Prognose ${Math.round(forecast * profile.retention * 100)} %` : `sicher zur Klausur ${pct(stats.secure, stats.total)}`}
+                {forecast !== undefined ? `Prognose ${Math.round(forecast * profile.retention * 100)} %${e.ongoing ? ' (vorläufig)' : ''}` : `sicher zur Klausur ${pct(stats.secure, stats.total)}`}
               </small>
             </div>
           </Link>

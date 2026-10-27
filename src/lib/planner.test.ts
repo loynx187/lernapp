@@ -180,4 +180,19 @@ describe('Semesterarten und Kernstoff', () => {
     // 5 Karten/Tag × 24 Tage = 120 von 240
     expect(tight.exams[0].forecastShare).toBeCloseTo(0.5)
   })
+
+  it('beginnt bei laufender Vorlesung den vorhandenen Stoff innerhalb der eingestellten Tage', async () => {
+    const { planExams } = await import('./semesters')
+    const base = { id: 'a', date: examIn(84), weight: 2, profileId: 'p', semesterId: 's', name: 'a', color: '#000', createdAt: 0 }
+    const spread = planDay(input({ exams: planExams([base]), cards: cards('a', 40) }))
+    expect(spread.exams[0].modes.mobile.quota).toBe(1) // 40 Karten über ~74 Tage
+    const week = planDay(input({ exams: planExams([{ ...base, ongoing: true }]), cards: cards('a', 40) }))
+    expect(week.exams[0].introDeadline).toBe(7)
+    expect(week.exams[0].modes.mobile.quota).toBe(6)
+    const custom = planDay(input({ exams: planExams([{ ...base, ongoing: true, ongoingDays: 14 }]), cards: cards('a', 40) }))
+    expect(custom.exams[0].introDeadline).toBe(14)
+    // kurz vor der Klausur gilt weiterhin der normale, kürzere Stichtag
+    const late = planDay(input({ exams: planExams([{ ...base, date: examIn(6), ongoing: true }]), cards: cards('a', 40) }))
+    expect(late.exams[0].introDeadline).toBe(4)
+  })
 })

@@ -19,6 +19,8 @@ export interface PlanExam {
   weight: number
   /** Datum, bis zu dem (abzüglich Puffer) neuer Stoff eingeführt sein soll. Standard: Klausurtermin. */
   introBy?: string
+  /** Vorlesung läuft noch: vorhandener neuer Stoff soll innerhalb dieser Anzahl Tage begonnen werden. */
+  introWithin?: number
 }
 
 /** Wiederholungspuffer vor dem Stichtag: Anteil der verbleibenden Tage, begrenzt auf min/max Tage. */
@@ -153,7 +155,9 @@ export function planDay(input: PlanInput): DayPlan {
   const plans: ExamPlan[] = exams.map((e) => {
     // Stichtag für neuen Stoff: die Klausur selbst oder (duales Semester) der Beginn der Prüfungsphase.
     const anchorDays = Math.min(e.daysLeft, e.introBy ? daysUntil(e.introBy, now) : e.daysLeft)
-    const intro = e.daysLeft === 0 ? 0 : anchorDays <= 1 ? 1 : introductionDays(anchorDays, input.buffer)
+    let intro = e.daysLeft === 0 ? 0 : anchorDays <= 1 ? 1 : introductionDays(anchorDays, input.buffer)
+    // Läuft die Vorlesung noch, kommt weiterer Stoff nach – den vorhandenen also zeitnah beginnen statt bis zur Klausur zu strecken.
+    if (intro > 0 && e.introWithin) intro = Math.min(intro, Math.max(1, Math.round(e.introWithin)))
     const modes = {} as Record<Mode, ExamModePlan>
     for (const m of MODES) {
       const own = cards.filter((c) => c.examId === e.id && c.mode === m)

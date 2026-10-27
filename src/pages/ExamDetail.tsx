@@ -12,6 +12,9 @@ import { OrderButton, OrderSteps } from '../components/OrderButton'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { PageHeader, Progress, Stat, pct } from '../components/ui'
 
+/** Bei laufender Vorlesung: Hinweis, wenn so lange kein neues Paket kam. */
+const LECTURE_REMINDER_DAYS = 14
+
 export function ExamDetail() {
   const { id = '' } = useParams()
   const { profile, semester } = useActive()
@@ -46,6 +49,9 @@ export function ExamDetail() {
   const hasDesk = cards.some((c) => cardMode(c) === 'desk')
   const hasMobile = cards.some((c) => cardMode(c) === 'mobile')
   const suggested = exam.profile?.suggested ?? []
+  const lastImport = Math.max(0, ...packages.map((p) => p.importedAt))
+  const sinceImport = lastImport ? Math.floor((Date.now() - lastImport) / 864e5) : 0
+  const staleLecture = exam.ongoing && days > 0 && sinceImport >= LECTURE_REMINDER_DAYS ? sinceImport : 0
   const filled = PROFILE_FIELDS.filter((f) => exam.profile?.[f.key] !== undefined)
   const profileSummary = filled.length
     ? [exam.profile?.form, exam.profile?.duration && `${exam.profile.duration} min`, exam.profile?.taskShare && `Rechenaufgaben: ${exam.profile.taskShare}`]
@@ -78,6 +84,12 @@ export function ExamDetail() {
         subtitle={formatDate(exam.date)}
       />
 
+      {staleLecture && (
+        <div className="notice">
+          <b>Neue Unterlagen da?</b> Seit {staleLecture} Tagen kam kein neues Kartenpaket. Unten „Auftrag für Claude kopieren“ und die neuen Folien anhängen – oder unter <Link to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link> „Vorlesung läuft noch“ ausschalten, wenn alles da ist.
+        </div>
+      )}
+
       {stats.total === 0 ? (
         <div className="card empty stack">
           <p className="muted">Für diese Prüfung gibt es noch keine Karten.</p>
@@ -90,7 +102,7 @@ export function ExamDetail() {
               <Stat value={pct(stats.introduced, stats.total)} label="begonnen" />
               <Stat
                 value={plan ? `${Math.round(plan.forecastShare * profile.retention * 100)} %` : pct(stats.secure, stats.total)}
-                label={plan ? 'Prognose Klausurtag' : 'sicher zur Klausur'}
+                label={plan ? (exam.ongoing ? 'Prognose (vorläufig)' : 'Prognose Klausurtag') : 'sicher zur Klausur'}
               />
               <Stat value={stats.introduced ? `${Math.round(stats.recall * 100)} %` : '–'} label="aktuell abrufbar" />
             </div>
@@ -98,13 +110,19 @@ export function ExamDetail() {
               <p style={{ marginTop: 12, marginBottom: 0, fontSize: 14 }}>
                 {plan.modes.mobile.newRemaining + plan.modes.desk.newRemaining > 0 ? (
                   <>
-                    Neuer Stoff bis <b>{formatDate(isoDate(addDays(Date.now(), plan.introDeadline - 1)))}</b>, danach nur noch Wiederholung.{' '}
+                    {exam.ongoing ? (
+                      <>Vorhandener neuer Stoff wird bis <b>{formatDate(isoDate(addDays(Date.now(), plan.introDeadline - 1)))}</b> begonnen – die Vorlesung läuft noch.{' '}</>
+                    ) : (
+                      <>Neuer Stoff bis <b>{formatDate(isoDate(addDays(Date.now(), plan.introDeadline - 1)))}</b>, danach nur noch Wiederholung.{' '}</>
+                    )}
                     {plan.behind ? (
                       <span className="badge-warn">Das Zeitbudget reicht aktuell nicht für den ganzen Kernstoff.</span>
                     ) : (
                       <span className="badge-good">Im Plan.</span>
                     )}
                   </>
+                ) : exam.ongoing ? (
+                  <span className="badge-good">Aller bisherige Stoff ist begonnen – bis die nächsten Unterlagen kommen, wird gefestigt.</span>
                 ) : (
                   <span className="badge-good">Aller Stoff ist begonnen – jetzt wird bis zur Klausur gefestigt.</span>
                 )}
@@ -113,6 +131,7 @@ export function ExamDetail() {
             {plan && (
               <p className="muted" style={{ marginTop: 8, marginBottom: 0, fontSize: 13 }}>
                 Prognose: Anteil des Stoffs, den du am Klausurtag voraussichtlich abrufen kannst, wenn du täglich dein heutiges Pensum lernst. Zusatzstoff (Relevanz 1) kommt nur dran, wenn Zeit übrig ist.
+                {exam.ongoing && ' Vorläufig, weil noch Unterlagen fehlen – sie bezieht sich nur auf den bisherigen Stoff.'}
               </p>
             )}
           </div>

@@ -45,6 +45,10 @@ export interface Exam extends Synced {
   weight: number
   color: string
   createdAt: number
+  /** Vorlesung läuft noch, weitere Unterlagen folgen (siehe planner.ts, introWithin). */
+  ongoing?: boolean
+  /** Tage, innerhalb derer neuer Stoff einer laufenden Vorlesung begonnen wird (Standard 7). */
+  ongoingDays?: number
   /** Fachprofil: Vorgaben für Claude bei der Erstellung von Kartenpaketen (siehe profile.ts). */
   profile?: ExamProfile
 }
