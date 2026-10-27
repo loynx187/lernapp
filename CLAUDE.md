@@ -14,13 +14,10 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 - `npm run build` – Typprüfung + Build
 - `npm run dev` – Entwicklungsserver unter http://localhost:5173/lernapp/
 
+- `npm run validate -- <paket.json> [--alt <alt.json>] [--folien 1-25]` – Kartenpaket prüfen
+
 ## Kartenpakete aus Vorlesungsunterlagen erstellen
+**Immer nach dem Skill `.claude/skills/kartenpaket/SKILL.md` vorgehen** (auch ohne `/kartenpaket`-Aufruf, sobald PDFs für Karten hochgeladen werden). Fachspezifische Schwerpunkte stehen in `faecher/<fach>.md`.
 Format: `docs/KARTENPAKET-FORMAT.md`. Beispiel: `public/beispiel-paket.json`.
 
 - **Unterlagen (PDFs) und daraus erzeugte Pakete nie committen** – das Repository ist öffentlich und die Inhalte sind urheberrechtlich geschützt. Pakete als Datei an den Nutzer übergeben.
-- Folien sowohl als Text als auch als Bild auswerten (Diagramme, Formeln, Skizzen).
-- Etwa 60 % der Fächer sind rechenlastig: zu jedem Rechenverfahren `task`-Karten mit Zahlenwerten, Lösungsschritten und Ergebnis anlegen; Formeln/Definitionen als `basic`/`cloze`.
-- Übungsaufgaben und Altklausuren nutzen: daraus `task`-Karten ableiten und `relevance` (1–3) der zugehörigen Themen setzen.
-- Jede Karte mit `source` (Datei + Foliennummer) versehen.
-- `uid`s stabil halten (Schema z. B. `k3-f087-1` = Kapitel 3, Folie 87, Karte 1). Bei Updates bestehende uids beibehalten, nur neue hinzufügen, `version` erhöhen.
-- Karten atomar halten (eine Frage, eine Antwort), Formeln in LaTeX.
