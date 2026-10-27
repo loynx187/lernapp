@@ -137,6 +137,8 @@ export interface StudyCard extends CardContent, Synced {
   /** Position innerhalb des Pakets, bestimmt die Reihenfolge neuer Karten. */
   order: number
   archived: 0 | 1
+  /** Vom Nutzer gelöscht: bleibt archiviert, auch wenn ein Paket-Update die Karte wieder enthält (siehe cards.ts). */
+  deletedAt?: number
   addedAt: number
   s: MemoryState
 }

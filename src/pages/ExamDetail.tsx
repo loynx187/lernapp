@@ -6,6 +6,7 @@ import { loadStudyData } from '../lib/study'
 import { addDays, daysUntil, formatCountdown, formatDate, isoDate } from '../lib/dates'
 import { examStats } from '../lib/stats'
 import { exportPackage, safeFileName, saveFile } from '../lib/packages'
+import { deletedCards, restoreCard } from '../lib/cards'
 import { deleteReport, exportReports, REPORT_CATEGORIES, setResolved } from '../lib/reports'
 import { HistoryChart } from '../components/HistoryChart'
 import { OrderButton, OrderSteps } from '../components/OrderButton'
@@ -21,14 +22,15 @@ export function ExamDetail() {
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
     if (!exam) return { exam: undefined }
-    const [cards, snapshots, packages, reports, study] = await Promise.all([
+    const [cards, deleted, snapshots, packages, reports, study] = await Promise.all([
       db.cards.where('[examId+archived]').equals([id, 0]).toArray(),
+      deletedCards(id),
       db.snapshots.where('examId').equals(id).toArray(),
       db.packages.where('examId').equals(id).toArray(),
       db.reports.where('examId').equals(id).toArray(),
       loadStudyData(profile),
     ])
-    return { exam, cards, snapshots, packages, reports, plan: study.plan.exams.find((p) => p.examId === id) }
+    return { exam, cards, deleted, snapshots, packages, reports, plan: study.plan.exams.find((p) => p.examId === id) }
   }, [id, profile])
 
   if (!data) return null
@@ -41,7 +43,7 @@ export function ExamDetail() {
       </div>
     )
   }
-  const { cards, snapshots, packages, reports, plan } = data
+  const { cards, deleted, snapshots, packages, reports, plan } = data
   const openReports = reports.filter((r) => !r.resolvedAt).sort((a, b) => b.createdAt - a.createdAt)
   const cardById = new Map(cards.map((c) => [c.id, c]))
   const stats = examStats(exam, cards, Date.now(), profile.retention)
@@ -84,7 +86,7 @@ export function ExamDetail() {
         subtitle={formatDate(exam.date)}
       />
 
-      {staleLecture && (
+      {staleLecture > 0 && (
         <div className="notice">
           <b>Neue Unterlagen da?</b> Seit {staleLecture} Tagen kam kein neues Kartenpaket. Unten „Auftrag für Claude kopieren“ und die neuen Folien anhängen – oder unter <Link to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link> „Vorlesung läuft noch“ ausschalten, wenn alles da ist.
         </div>
@@ -174,7 +176,7 @@ export function ExamDetail() {
             {openReports.map((r) => (
               <div className="list-item" key={r.id} style={{ flexWrap: 'wrap', rowGap: 4 }}>
                 <div className="grow" style={{ flexBasis: '100%' }}>
-                  <div className="truncate" style={{ fontWeight: 500 }}>{cardById.get(r.cardId)?.front.replace(/[*_$#>{}]/g, '') ?? r.uid}</div>
+                  <div className="truncate" style={{ fontWeight: 500 }}>{plainText(cardById.get(r.cardId)?.front) || r.uid}</div>
                   <small>
                     {REPORT_CATEGORIES.find((c) => c.value === r.category)?.label}
                     {r.note && ` · ${r.note}`}
@@ -192,6 +194,26 @@ export function ExamDetail() {
           </div>
           <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>
             Offene Meldungen stehen automatisch im Auftrag für Claude (unten). Korrigierte Karten werden nach dem Import als erledigt markiert.
+          </p>
+        </>
+      )}
+
+      {deleted.length > 0 && (
+        <>
+          <div className="section-title">Gelöschte Karten</div>
+          <div className="list">
+            {deleted.map((c) => (
+              <div className="list-item" key={c.id} style={{ flexWrap: 'wrap', rowGap: 4 }}>
+                <div className="grow" style={{ flexBasis: '100%', minWidth: 0 }}>
+                  <div className="truncate" style={{ fontWeight: 500 }}>{plainText(c.front)}</div>
+                  <small>{[c.chapterTitle, `gelöscht am ${new Date(c.deletedAt!).toLocaleDateString('de-DE')}`].filter(Boolean).join(' · ')}</small>
+                </div>
+                <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: 'auto' }} onClick={() => restoreCard(c)}>Wiederherstellen</button>
+              </div>
+            ))}
+          </div>
+          <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>
+            Gelöschte Karten werden nicht mehr abgefragt, auch nicht nach einem Paket-Update. Der Lernfortschritt bleibt für eine Wiederherstellung erhalten.
           </p>
         </>
       )}
@@ -236,3 +258,6 @@ export function ExamDetail() {
     </>
   )
 }
+
+/** Kartentext ohne Markdown- und Formelzeichen für einzeilige Listen. */
+const plainText = (text = '') => text.replace(/[*_$#>{}]/g, '')

@@ -63,6 +63,7 @@ Wird ein Paket mit gleicher `id` erneut importiert:
 - Karten mit bekannter `uid` werden inhaltlich aktualisiert, **der Lernfortschritt bleibt**.
 - Neue `uid`s kommen als neue Karten dazu und werden in den Lernplan eingeplant.
 - Fehlende `uid`s werden archiviert (nicht gelöscht) und tauchen wieder auf, falls sie zurückkommen.
+- Vom Nutzer gelöschte Karten (Lernsitzung → Papierkorb) bleiben gelöscht, auch wenn das Paket ihre `uid` weiter enthält. Ihr Inhalt wird trotzdem aktualisiert, damit eine Wiederherstellung (Prüfungsseite → Gelöschte Karten) den neuen Stand zeigt.
 
 ## Meldungen (`Meldungen_<Prüfung>_<Datum>.json`)
 
@@ -127,14 +128,14 @@ Text, den die App für Claude erzeugt („Auftrag für Claude kopieren“): eine
       "lecturesOngoing": true,
       "profile": { "form": "schriftlich", "aids": "Taschenrechner" },
       "unconfirmed": ["aids"],
-      "packages": [{ "id": "tm2-festigkeitslehre", "title": "…", "version": 2, "cards": 140 }],
+      "packages": [{ "id": "tm2-festigkeitslehre", "title": "…", "version": 2, "cards": 140, "deleted": ["k2-f031-1"] }],
       "reports": [ { "packageId": "…", "uid": "…", "category": "fehler", "note": "…", "front": "…", "back": "…" } ]
     }
   ]
 }
 ```
 
-`lecturesOngoing`: Die Vorlesung läuft noch, weitere Unterlagen folgen. `unconfirmed`: Felder, die Claude vorgeschlagen und der Nutzer noch nicht bestätigt hat. `reports`: offene Meldungen wie in der Meldungsdatei.
+`lecturesOngoing`: Die Vorlesung läuft noch, weitere Unterlagen folgen. `unconfirmed`: Felder, die Claude vorgeschlagen und der Nutzer noch nicht bestätigt hat. `reports`: offene Meldungen wie in der Meldungsdatei. `deleted`: uids der Karten, die der Nutzer gelöscht hat – nicht durch inhaltsgleiche Karten mit neuer uid ersetzen.
 
 ## Fachprofile (`Fachprofile_<Semester>.json`)
 

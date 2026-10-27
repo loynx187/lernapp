@@ -33,5 +33,6 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.1.0** – Einzelne Karten in der Lernsitzung löschen (Papierkorb); gelöschte Karten bleiben auch nach Paket-Updates gelöscht, lassen sich auf der Prüfungsseite mit Lernfortschritt wiederherstellen und stehen im Auftrag für Claude. Behoben: eine verirrte „0“ auf der Prüfungsseite.
 - **1.0.1** – Einstellungen zeigen neben der Version die Build-Nummer und das Datum der Veröffentlichung; Pull Requests prüfen automatisch, ob die Versionsnummer erhöht wurde.
 - **1.0.0** – erster finaler Stand: Lernplan mit FSRS, Semesterarten und laufender Vorlesung, Dropbox-Sync mit Wochensicherungen, Probeklausur (übersteht App-Wechsel), Fachprofile und Aufträge für Claude, Widget, Lerntag ab 4:00 Uhr, Updates nie während einer Sitzung, Fehlerseite mit Sicherung.
