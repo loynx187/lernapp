@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Session } from './pages/Session'
 import { Exams } from './pages/Exams'
 import { ExamDetail } from './pages/ExamDetail'
+import { ExamCards } from './pages/ExamCards'
 import { ExamForm } from './pages/ExamForm'
 import { ExamProfilePage } from './pages/ExamProfile'
 import { Import } from './pages/Import'
@@ -54,6 +55,7 @@ function Shell() {
         <Route path="/pruefung/:id" element={<ExamDetail />} />
         <Route path="/pruefung/:id/bearbeiten" element={<ExamForm />} />
         <Route path="/pruefung/:id/profil" element={<ExamProfilePage />} />
+        <Route path="/pruefung/:id/karten" element={<ExamCards />} />
         <Route path="/import" element={<Import />} />
         <Route path="/einstellungen" element={<Settings />} />
         <Route path="/hilfe" element={<Help />} />

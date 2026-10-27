@@ -248,7 +248,7 @@ code { font-size: 0.9em; background: var(--fill); padding: 1px 6px; border-radiu
 .field { display: block; margin-bottom: 22px; }
 .field small { display: block; margin-top: 8px; line-height: 1.4; }
 label.field > span, .field-label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 8px; }
-input[type='text'], input[type='date'], input[type='number'], select, textarea {
+input[type='text'], input[type='search'], input[type='date'], input[type='number'], select, textarea {
   width: 100%;
   font: inherit;
   color: var(--text);
@@ -403,6 +403,9 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .list-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; min-height: 52px; }
 .list-item + .list-item { border-top: 0.5px solid var(--separator); margin-left: 20px; padding-left: 0; }
 .list-item .grow { min-width: 0; }
+a.list-item { color: var(--text); text-decoration: none; }
+a.list-item::after { content: '›'; color: var(--subtle); font-size: 22px; }
+.card-entry summary { gap: 12px; }
 
 details summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
 details summary::-webkit-details-marker { display: none; }

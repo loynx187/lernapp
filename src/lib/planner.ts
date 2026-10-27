@@ -127,8 +127,7 @@ export const MIX_WITHIN_DAYS = 14
 /**
  * Reihenfolge neuer Karten einer Prüfung: Kernstoff vor Zusatzstoff, sonst Paket für Paket
  * (Vorlesungsblöcke nacheinander) in Skript-Reihenfolge. `byRelevance` zieht klausurrelevante
- * Karten vor (bei Rückstand und kurz vor der Klausur), `mix` wechselt die Pakete reihum ab
- * (kurz vor der Klausur, siehe MIX_WITHIN_DAYS).
+ * Karten vor, `mix` wechselt die Pakete reihum ab – beides nur kurz vor der Klausur (MIX_WITHIN_DAYS).
  */
 export function orderNew(cards: PlanCard[], mix: boolean, byRelevance: boolean): PlanCard[] {
   const byScript = (a: PlanCard, b: PlanCard) => (a.block ?? 0) - (b.block ?? 0) || a.order - b.order
@@ -313,9 +312,10 @@ export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions)
     const mp = p.modes[mode]
     const count = mp.newLeft + (opts.extraNew ?? 0)
     const fresh = cards.filter((c) => c.examId === p.examId && c.mode === mode && c.state === 0)
-    // Bei Rückstand die klausurrelevantesten Karten zuerst; kurz vor der Klausur zusätzlich paketübergreifend mischen.
+    // Bis kurz vor der Klausur chronologisch (Konzepte bauen aufeinander auf) – auch bei Rückstand;
+    // Zusatzstoff steht dabei immer hinten. Erst am Ende relevante Karten zuerst und Pakete gemischt.
     const mix = p.daysLeft <= MIX_WITHIN_DAYS
-    return orderNew(fresh, mix, mix || p.behind).slice(0, count)
+    return orderNew(fresh, mix, mix).slice(0, count)
   })
 
   const reviews = interleave(reviewGroups)

@@ -166,8 +166,10 @@ export interface PackageRecord extends Synced {
   title: string
   version: number
   importedAt: number
-  /** Zeitpunkt des ersten Imports; bestimmt die Reihenfolge der Pakete beim Einführen neuer Karten. */
+  /** Zeitpunkt des ersten Imports; bestimmt die Reihenfolge der Pakete, solange keine Position gesetzt ist. */
   firstImportedAt?: number
+  /** Vom Nutzer festgelegte Lernreihenfolge der Pakete einer Prüfung (0, 1, …), siehe movePackage. */
+  position?: number
   cardCount: number
 }
 

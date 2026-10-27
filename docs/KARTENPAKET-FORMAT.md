@@ -22,7 +22,7 @@ Ein Kartenpaket enthält die Karten zu einer Prüfung bzw. einem Skript. Es enth
 |---|---|
 | `id` | Stabile Paket-ID. Gleiche ID = Update desselben Pakets. |
 | `version` | Bei jedem Update erhöhen. |
-| `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. Mehrere Pakete einer Prüfung kommen nacheinander in der Reihenfolge ihres ersten Imports; in den letzten 14 Tagen vor der Klausur werden sie gemischt. |
+| `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. Mehrere Pakete einer Prüfung kommen nacheinander in der Reihenfolge ihres ersten Imports (auf der Prüfungsseite mit ↑/↓ änderbar); in den letzten 14 Tagen vor der Klausur werden sie gemischt. Zusammenhängende Themen deshalb im selben Kapitel bzw. in aufeinanderfolgenden Kapiteln anordnen. |
 | `profile` | Optional: Vorschläge für das Fachprofil der Prüfung (siehe unten). Die App übernimmt sie nur in leere oder noch unbestätigte Felder. |
 
 ## Karten
@@ -63,11 +63,11 @@ Wird ein Paket mit gleicher `id` erneut importiert:
 - Karten mit bekannter `uid` werden inhaltlich aktualisiert, **der Lernfortschritt bleibt**.
 - Neue `uid`s kommen als neue Karten dazu und werden in den Lernplan eingeplant.
 - Fehlende `uid`s werden archiviert (nicht gelöscht) und tauchen wieder auf, falls sie zurückkommen.
-- Vom Nutzer gelöschte Karten (Lernsitzung → Papierkorb) bleiben gelöscht, auch wenn das Paket ihre `uid` weiter enthält. Ihr Inhalt wird trotzdem aktualisiert, damit eine Wiederherstellung (Prüfungsseite → Gelöschte Karten) den neuen Stand zeigt.
+- Vom Nutzer gelöschte Karten (Lernsitzung → Papierkorb) bleiben gelöscht, auch wenn das Paket ihre `uid` weiter enthält. Ihr Inhalt wird trotzdem aktualisiert, damit eine Wiederherstellung (Prüfungsseite → Karten → Gelöscht) den neuen Stand zeigt.
 
 ## Meldungen (`Meldungen_<Prüfung>_<Datum>.json`)
 
-In der App können fehlerhafte oder unklare Karten gemeldet werden (Lernsitzung → Fähnchen). Auf der Seite der Prüfung lassen sich alle offenen Meldungen exportieren:
+In der App können fehlerhafte oder unklare Karten gemeldet werden (Lernsitzung → Fähnchen). Unter Prüfung → Karten → Gemeldet lassen sich Meldungen abhaken und alle offenen Meldungen exportieren:
 
 ```json
 {
@@ -150,3 +150,13 @@ Antwort von Claude, wenn mehrere Fächer ohne Kartenpaket eingerichtet werden. I
   ]
 }
 ```
+
+## Karten aus anderen Tools (Text-Import)
+
+Wer kein Claude nutzt, importiert Karten unter „Karten importieren“ → „Karten aus anderen Tools“ (Datei oder eingefügter Text). Erkannt werden:
+
+- Blöcke mit `F:`/`A:` (auch `Frage:`/`Antwort:`, `Q:`/`A:`, fett oder nummeriert; Antworten dürfen mehrzeilig sein)
+- je Zeile Frage und Antwort, getrennt durch Tab, `;`, ` ;; ` oder als CSV (Exporte aus Anki, Quizlet, Excel)
+- Markdown-Tabellen mit zwei Spalten und JSON-Listen (`question`/`answer`, `front`/`back`, `frage`/`antwort`, …)
+
+Überschriften (`## Thema` oder `Kapitel: …`) werden zu Kapiteln in Reihenfolge des Auftretens. Daraus entsteht ein Paket mit der ID `text-<titel>`; die uids leiten sich aus dem Fragetext ab. Ein erneuter Import mit gleichem Titel ist deshalb ein Update: unveränderte Karten behalten ihren Fortschritt, neue kommen dazu, Karten mit geänderter Frage gelten als neu. Die Schaltfläche „Vorlage für ChatGPT & Co. kopieren“ liefert eine Anweisung, die genau dieses Format erzeugt.

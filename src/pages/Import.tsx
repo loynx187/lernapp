@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { db } from '../lib/db'
-import { importPackage, parsePackage, parseTextCards, readJsonFile, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
+import { importPackage, parsePackage, parseTextCards, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
+import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
 import { applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
 
@@ -20,6 +21,7 @@ export function Import() {
   const [textTitle, setTextTitle] = useState('')
   const [profiles, setProfiles] = useState<ProfileEntry[] | null>(null)
   const [profilesDone, setProfilesDone] = useState<string[] | null>(null)
+  const [promptCopied, setPromptCopied] = useState(false)
 
   useEffect(() => {
     if (!examId && exams?.length) setExamId(exams[0].id)
@@ -50,12 +52,34 @@ export function Import() {
     }
   }
 
+  /** Kartenpakete und Fachprofile direkt laden; alles andere (Anki, Quizlet, CSV, Markdown, fremdes JSON) als Text. */
   async function onFile(file?: File) {
     if (!file) return
+    setError('')
+    const content = await file.text()
+    let raw: unknown
     try {
-      load(await readJsonFile(file))
-    } catch (e) {
-      setError((e as Error).message)
+      raw = JSON.parse(content)
+    } catch {
+      raw = undefined
+    }
+    const format = (raw as { format?: unknown } | undefined)?.format
+    if (format) return load(raw)
+    setPkg(null)
+    setProfiles(null)
+    setResult(null)
+    setText(content)
+    setTextTitle(file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim())
+    if (!parseTextCards(content).length) setError('In der Datei wurden keine Karten erkannt. Unterstützt: Kartenpakete, F:/A:-Text, Tab-/Semikolon-/CSV-Listen, Markdown-Tabellen, JSON-Listen mit Frage und Antwort.')
+    else setTimeout(() => document.getElementById('text-import')?.scrollIntoView({ behavior: 'smooth' }), 50)
+  }
+
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(OTHER_AI_PROMPT)
+      setPromptCopied(true)
+    } catch {
+      setError('Kopieren nicht möglich – die Vorlage steht unten zum Markieren.')
     }
   }
 
@@ -69,6 +93,8 @@ export function Import() {
   }
 
   const textPairs = text.trim() ? parseTextCards(text) : []
+  const textPkg = textPairs.length ? textToPackage(textTitle.trim() || 'Eingefügte Karten', textPairs) : null
+  const textChapters = textPkg?.chapters?.length ?? 0
 
   async function importProfiles(entries: ProfileEntry[]) {
     const done: string[] = []
@@ -180,10 +206,10 @@ export function Import() {
             <>
               <div className="section-title">Kartenpaket</div>
               <div className="card stack">
-                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt – oder eine Datei mit Fachprofilen von Claude.</p>
+                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt, eine Datei mit Fachprofilen von Claude – oder Karten aus ChatGPT, Anki, Quizlet &amp; Co. (.txt, .csv, .md, siehe unten).</p>
                 <label className="btn primary block">
                   Datei auswählen
-                  <input type="file" accept=".json,application/json" hidden onChange={(e) => onFile(e.target.files?.[0])} />
+                  <input type="file" accept=".json,.txt,.csv,.tsv,.md,application/json,text/plain,text/csv,text/markdown" hidden onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
                 </label>
                 <button className="btn block" onClick={loadExample}>Beispielpaket ausprobieren</button>
               </div>
@@ -202,25 +228,36 @@ export function Import() {
                 </details>
               </div>
 
-              <div className="section-title">Text einfügen</div>
-              <div className="card">
-                <p className="muted">
-                  Für Frage-Antwort-Paare aus NotebookLM, Quizlet o. Ä.: pro Zeile <code>Frage ;; Antwort</code> oder durch Tab getrennt – oder Blöcke mit <code>F:</code> und <code>A:</code>.
+              <div className="section-title" id="text-import">Karten aus anderen Tools</div>
+              <div className="card stack">
+                <p className="muted" style={{ margin: 0 }}>
+                  Für Karten aus ChatGPT, NotebookLM, Quizlet, Anki, Excel o. Ä. – als Datei über „Datei auswählen“ oben oder hier eingefügt. Erkannt werden:
                 </p>
-                <label className="field">
+                <ul className="help" style={{ margin: 0 }}>
+                  <li>Blöcke mit <code>F:</code> / <code>A:</code> (auch <code>Frage:</code>/<code>Antwort:</code>, <code>Q:</code>/<code>A:</code>)</li>
+                  <li>je Zeile Frage und Antwort, getrennt durch Tab, <code>;</code> oder <code>;;</code> – z. B. Export aus Anki, Quizlet oder Excel (CSV)</li>
+                  <li>Tabellen mit zwei Spalten (Markdown) und JSON-Listen mit Frage und Antwort</li>
+                  <li>Überschriften wie <code>## Kapitel</code> gruppieren die folgenden Karten – so werden zusammenhängende Themen gemeinsam und in dieser Reihenfolge gelernt</li>
+                </ul>
+                <button className="btn block" onClick={copyPrompt}>
+                  {promptCopied ? 'Vorlage kopiert ✓' : 'Vorlage für ChatGPT & Co. kopieren'}
+                </button>
+                <small className="muted">Die Vorlage bittet ein anderes KI-Tool, die Karten genau in diesem Format mit Kapiteln auszugeben – einfach mit den Unterlagen dort einfügen.</small>
+                <label className="field" style={{ marginBottom: 0 }}>
                   <span>Titel</span>
-                  <input type="text" value={textTitle} onChange={(e) => setTextTitle(e.target.value)} placeholder="z. B. Kapitel 3 Definitionen" />
+                  <input type="text" value={textTitle} onChange={(e) => setTextTitle(e.target.value)} placeholder="z. B. QM Zusammenfassung Lisa" />
                 </label>
-                <label className="field">
+                <label className="field" style={{ marginBottom: 0 }}>
                   <span>Text</span>
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'Was ist die Streckgrenze? ;; Spannung, ab der plastische Verformung beginnt.'} />
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={'## Grundlagen\nF: Was ist Qualität?\nA: Grad, in dem inhärente Merkmale Anforderungen erfüllen.'} />
                 </label>
-                <button
-                  className="btn primary block"
-                  disabled={!textPairs.length}
-                  onClick={() => doImport(textToPackage(textTitle.trim() || 'Eingefügte Karten', textPairs))}
-                >
-                  {textPairs.length ? `${textPairs.length} Karten importieren` : 'Keine Karten erkannt'}
+                {textPkg && (
+                  <small className="muted">
+                    {textPairs.length} Karten{textChapters > 0 && ` in ${textChapters} ${textChapters === 1 ? 'Kapitel' : 'Kapiteln'}`}. Gleicher Titel bei einem späteren Import = Update: Neue Karten kommen dazu, der Lernfortschritt bleibt.
+                  </small>
+                )}
+                <button className="btn primary block" disabled={!textPkg} onClick={() => textPkg && doImport(textPkg)}>
+                  {textPkg ? `${textPairs.length} Karten importieren` : 'Keine Karten erkannt'}
                 </button>
               </div>
             </>

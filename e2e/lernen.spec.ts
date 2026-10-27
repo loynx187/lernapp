@@ -38,9 +38,10 @@ test('Einrichten, Lernen, Rechenaufgabe prüfen und Karte melden', async ({ page
   await rate(page, 'Nochmal')
   expect(await countRows(page, 'reviews')).toBe(2)
 
-  // Meldung erscheint auf der Prüfungsseite und lässt sich exportieren
+  // Meldung ist von der Prüfungsseite aus erreichbar und lässt sich exportieren
   await page.goto('./#/pruefungen')
   await page.locator('a.card.link').first().click()
+  await page.getByRole('link', { name: /1 offene Meldung/ }).click()
   await expect(page.getByText('Unklar formuliert · Einheit fehlt')).toBeVisible()
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: /Meldung exportieren/ }).click()

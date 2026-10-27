@@ -4,10 +4,9 @@ import { useActive } from '../state'
 import { cardMode, db } from '../lib/db'
 import { loadStudyData } from '../lib/study'
 import { addDays, daysUntil, formatCountdown, formatDate, isoDate } from '../lib/dates'
-import { examStats, packageBlocks } from '../lib/stats'
-import { exportPackage, safeFileName, saveFile } from '../lib/packages'
-import { deletedCards, restoreCard } from '../lib/cards'
-import { deleteReport, exportReports, REPORT_CATEGORIES, setResolved } from '../lib/reports'
+import { examStats, packageBlocks, sortPackages } from '../lib/stats'
+import { exportPackage, movePackage, safeFileName, saveFile } from '../lib/packages'
+import { deletedCards } from '../lib/cards'
 import { HistoryChart } from '../components/HistoryChart'
 import { OrderButton, OrderSteps } from '../components/OrderButton'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
@@ -26,7 +25,7 @@ export function ExamDetail() {
       db.cards.where('[examId+archived]').equals([id, 0]).toArray(),
       deletedCards(id),
       db.snapshots.where('examId').equals(id).toArray(),
-      db.packages.where('examId').equals(id).toArray(),
+      db.packages.where('examId').equals(id).toArray().then(sortPackages),
       db.reports.where('examId').equals(id).toArray(),
       loadStudyData(profile),
     ])
@@ -44,8 +43,7 @@ export function ExamDetail() {
     )
   }
   const { cards, deleted, snapshots, packages, reports, plan } = data
-  const openReports = reports.filter((r) => !r.resolvedAt).sort((a, b) => b.createdAt - a.createdAt)
-  const cardById = new Map(cards.map((c) => [c.id, c]))
+  const openReports = reports.filter((r) => !r.resolvedAt && !deleted.some((c) => c.id === r.cardId))
   const stats = examStats(exam, cards, Date.now(), profile.retention, packageBlocks(packages))
   const days = daysUntil(exam.date)
   const hasDesk = cards.some((c) => cardMode(c) === 'desk')
@@ -64,11 +62,6 @@ export function ExamDetail() {
   async function share(packageId: string) {
     const pkg = await exportPackage(exam!, packageId)
     await saveFile(`${safeFileName(pkg.title)}.lernpaket.json`, JSON.stringify(pkg, null, 1))
-  }
-
-  async function exportOpenReports() {
-    const file = await exportReports(exam!)
-    await saveFile(`Meldungen_${safeFileName(exam!.name)}_${isoDate(Date.now())}.json`, JSON.stringify(file, null, 1))
   }
 
   return (
@@ -169,51 +162,29 @@ export function ExamDetail() {
         </>
       )}
 
-      {openReports.length > 0 && (
+      {(cards.length > 0 || deleted.length > 0) && (
         <>
-          <div className="section-title">Meldungen</div>
+          <div className="section-title">Karten</div>
           <div className="list">
-            {openReports.map((r) => (
-              <div className="list-item" key={r.id} style={{ flexWrap: 'wrap', rowGap: 4 }}>
-                <div className="grow" style={{ flexBasis: '100%' }}>
-                  <div className="truncate" style={{ fontWeight: 500 }}>{plainText(cardById.get(r.cardId)?.front) || r.uid}</div>
-                  <small>
-                    {REPORT_CATEGORIES.find((c) => c.value === r.category)?.label}
-                    {r.note && ` · ${r.note}`}
-                  </small>
-                </div>
-                <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: 'auto' }} onClick={() => setResolved(r, true)}>Erledigt</button>
-                <button className="btn small ghost danger" onClick={() => deleteReport(r)} aria-label="Meldung löschen">Löschen</button>
-              </div>
-            ))}
-            <div className="list-item">
-              <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: -8 }} onClick={exportOpenReports}>
-                {openReports.length === 1 ? 'Meldung' : `${openReports.length} Meldungen`} exportieren
-              </button>
-            </div>
+            <Link className="list-item" to={`/pruefung/${exam.id}/karten`}>
+              <span className="grow">Alle Karten ansehen</span>
+              <small>{cards.length}</small>
+            </Link>
+            {openReports.length > 0 && (
+              <Link className="list-item" to={`/pruefung/${exam.id}/karten?filter=gemeldet`}>
+                <span className="grow">{openReports.length === 1 ? '1 offene Meldung' : `${openReports.length} offene Meldungen`}</span>
+                <small>prüfen, exportieren</small>
+              </Link>
+            )}
+            {deleted.length > 0 && (
+              <Link className="list-item" to={`/pruefung/${exam.id}/karten?filter=geloescht`}>
+                <span className="grow">{deleted.length === 1 ? '1 gelöschte Karte' : `${deleted.length} gelöschte Karten`}</span>
+                <small>wiederherstellen</small>
+              </Link>
+            )}
           </div>
           <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>
-            Offene Meldungen stehen automatisch im Auftrag für Claude (unten). Korrigierte Karten werden nach dem Import als erledigt markiert.
-          </p>
-        </>
-      )}
-
-      {deleted.length > 0 && (
-        <>
-          <div className="section-title">Gelöschte Karten</div>
-          <div className="list">
-            {deleted.map((c) => (
-              <div className="list-item" key={c.id} style={{ flexWrap: 'wrap', rowGap: 4 }}>
-                <div className="grow" style={{ flexBasis: '100%', minWidth: 0 }}>
-                  <div className="truncate" style={{ fontWeight: 500 }}>{plainText(c.front)}</div>
-                  <small>{[c.chapterTitle, `gelöscht am ${new Date(c.deletedAt!).toLocaleDateString('de-DE')}`].filter(Boolean).join(' · ')}</small>
-                </div>
-                <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: 'auto' }} onClick={() => restoreCard(c)}>Wiederherstellen</button>
-              </div>
-            ))}
-          </div>
-          <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>
-            Gelöschte Karten werden nicht mehr abgefragt, auch nicht nach einem Paket-Update. Der Lernfortschritt bleibt für eine Wiederherstellung erhalten.
+            Karten nachlesen, melden oder löschen. Offene Meldungen stehen automatisch im Auftrag für Claude (unten).
           </p>
         </>
       )}
@@ -221,18 +192,32 @@ export function ExamDetail() {
       <div className="section-title">Kartenpakete</div>
       <div className="card stack">
         {packages.length === 0 && <p className="muted">Noch keine Pakete importiert.</p>}
-        {packages.map((p) => (
+        {packages.map((p, i) => (
           <div className="row between" key={p.id}>
-            <div className="grow">
-              <b>{p.title}</b>
+            <div className="grow" style={{ minWidth: 0 }}>
+              <b>
+                {packages.length > 1 && `${i + 1}. `}
+                {p.title}
+              </b>
               <br />
               <small>
                 Version {p.version} · {p.cardCount} Karten · importiert {new Date(p.importedAt).toLocaleDateString('de-DE')}
               </small>
             </div>
+            {packages.length > 1 && (
+              <>
+                <button className="btn small" aria-label={`${p.title} früher lernen`} disabled={i === 0} onClick={() => movePackage(exam.id, p.packageId, -1)}>↑</button>
+                <button className="btn small" aria-label={`${p.title} später lernen`} disabled={i === packages.length - 1} onClick={() => movePackage(exam.id, p.packageId, 1)}>↓</button>
+              </>
+            )}
             <button className="btn small" onClick={() => share(p.packageId)}>Teilen</button>
           </div>
         ))}
+        {packages.length > 1 && (
+          <small className="muted">
+            Neue Karten kommen Paket für Paket in dieser Reihenfolge dran, innerhalb eines Pakets wie im Skript. Erst in den letzten 14 Tagen vor der Klausur wird gemischt.
+          </small>
+        )}
         <Link className="btn block" to={`/import?exam=${exam.id}`}>Paket importieren oder aktualisieren</Link>
         <Link className="btn block" to="/unterlagen">Skripte für „Folie ansehen“</Link>
       </div>
@@ -258,6 +243,3 @@ export function ExamDetail() {
     </>
   )
 }
-
-/** Kartentext ohne Markdown- und Formelzeichen für einzeilige Listen. */
-const plainText = (text = '') => text.replace(/[*_$#>{}]/g, '')
