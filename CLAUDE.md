@@ -10,6 +10,10 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 - Tagesplan über alle Prüfungen: `src/lib/planner.ts` (reine Funktionen, getestet). Zwei Modi: `mobile` (Karten) und `desk` (Rechenaufgaben), je eigenes Zeitbudget.
 - Datenmodell: Profil → Semester → Prüfung (max. 10/Semester) → Karten. Karten-ID: `${examId}:${packageId}:${uid}`.
 
+## Versionen und Änderungen
+- `main` ist geschützt und entspricht der veröffentlichten App. **Nie direkt auf `main` pushen.** Änderungen auf einem eigenen Branch entwickeln und als Pull Request einreichen; der Nutzer übernimmt ihn selbst (Workflow `Tests` muss grün sein). Erst danach wird veröffentlicht.
+- Jede Veröffentlichung bekommt eine neue Versionsnummer in `package.json` (`package-lock.json` mitziehen) und einen Eintrag unter „Versionen“ in `README.md`: Fehlerbehebung → 1.0.1, neue Funktion → 1.1.0, grundlegende Umbauten → 2.0.0. Release/Tag `v<Version>` legt der Nutzer auf GitHub an.
+
 ## Befehle
 - `npm test` – Unit-Tests (Vitest, `src/**/*.test.ts`)
 - `npm run test:e2e` – Browser-Tests (Playwright, `e2e/`) gegen den Produktions-Build; laufen auch in GitHub Actions vor jeder Veröffentlichung. Dropbox wird darin simuliert (`e2e/helpers.ts`). Neue Funktionen bekommen einen Browser-Test. Testdateien nur unter Pfaden ohne Umlaute anlegen (Chromium wählt sie sonst nicht aus).
