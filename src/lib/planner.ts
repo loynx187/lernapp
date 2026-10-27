@@ -17,7 +17,18 @@ export interface PlanExam {
   id: string
   date: string
   weight: number
+  /** Datum, bis zu dem (abzüglich Puffer) neuer Stoff eingeführt sein soll. Standard: Klausurtermin. */
+  introBy?: string
 }
+
+/** Wiederholungspuffer vor dem Stichtag: Anteil der verbleibenden Tage, begrenzt auf min/max Tage. */
+export interface BufferParams {
+  share: number
+  min: number
+  max: number
+}
+
+export const DEFAULT_BUFFER: BufferParams = { share: 0.2, min: 2, max: 10 }
 
 /** Was heute bereits gelernt wurde (je Karte nur der erste Durchgang des Tages). */
 export interface DoneToday {
@@ -40,14 +51,19 @@ export interface PlanInput {
   done: DoneToday[]
   budgetMinutes: Record<Mode, number>
   costs: Record<Mode, Costs>
+  buffer?: BufferParams
 }
 
 export interface ExamModePlan {
   /** Neue Karten, die noch gar nicht begonnen wurden. */
   newRemaining: number
-  /** Neue Karten pro Tag, damit der Stoff rechtzeitig vor der Klausur eingeführt ist. */
+  /** davon Kernstoff (Relevanz 2–3) */
+  coreRemaining: number
+  /** Neue Kernstoff-Karten pro Tag, damit er rechtzeitig vor der Klausur eingeführt ist. */
   quota: number
-  /** Neue Karten, die das Zeitbudget heute zulässt. */
+  /** Neue Zusatzstoff-Karten (Relevanz 1) pro Tag – nur, wenn das Budget nach dem Kernstoff reicht. */
+  optionalQuota: number
+  /** Neue Karten (Kern- und Zusatzstoff), die das Zeitbudget heute zulässt. */
   allowed: number
   newDoneToday: number
   /** Heute noch zu lernende neue Karten. */
@@ -62,8 +78,10 @@ export interface ExamPlan {
   /** Letzter Tag, an dem neuer Stoff eingeführt werden soll. */
   introDeadline: number
   modes: Record<Mode, ExamModePlan>
-  /** Das Budget reicht nicht, um den Stoff rechtzeitig zu schaffen. */
+  /** Das Budget reicht nicht, um den Kernstoff rechtzeitig zu schaffen. */
   behind: boolean
+  /** Erwarteter Anteil begonnener Karten zum Stichtag, wenn täglich das heutige Pensum gelernt wird. */
+  forecastShare: number
 }
 
 export interface ModeTotals {
@@ -87,14 +105,17 @@ export const DEFAULT_COSTS: Record<Mode, Costs> = {
 }
 
 /**
- * Anzahl Tage, an denen neuer Stoff eingeführt wird. Vor der Klausur bleibt ein
- * Puffer, in dem nur noch wiederholt wird (ca. 20 % der Zeit, 2–10 Tage).
+ * Anzahl Tage, an denen neuer Stoff eingeführt wird. Vor dem Stichtag bleibt ein Puffer,
+ * in dem nur noch wiederholt wird (Standard: ca. 20 % der Zeit, 2–10 Tage), höchstens
+ * aber die Hälfte der verbleibenden Zeit.
  */
-export function introductionDays(daysLeft: number): number {
+export function introductionDays(daysLeft: number, buffer: BufferParams = DEFAULT_BUFFER): number {
   if (daysLeft <= 3) return Math.max(1, daysLeft - 1)
-  const buffer = Math.min(10, Math.max(2, Math.round(daysLeft * 0.2)))
-  return daysLeft - buffer
+  const days = Math.min(buffer.max, Math.max(buffer.min, Math.round(daysLeft * buffer.share)))
+  return daysLeft - Math.min(days, Math.floor(daysLeft / 2))
 }
+
+const isCore = (c: PlanCard) => (c.relevance ?? 2) >= 2
 
 /**
  * Verteilt `budget` Sekunden auf Bedarfe nach Gewicht, ohne einen Bedarf zu überschreiten
@@ -130,19 +151,27 @@ export function planDay(input: PlanInput): DayPlan {
     .filter((e) => e.daysLeft >= 0)
 
   const plans: ExamPlan[] = exams.map((e) => {
-    const intro = e.daysLeft === 0 ? 0 : introductionDays(e.daysLeft)
+    // Stichtag für neuen Stoff: die Klausur selbst oder (duales Semester) der Beginn der Prüfungsphase.
+    const anchorDays = Math.min(e.daysLeft, e.introBy ? daysUntil(e.introBy, now) : e.daysLeft)
+    const intro = e.daysLeft === 0 ? 0 : anchorDays <= 1 ? 1 : introductionDays(anchorDays, input.buffer)
     const modes = {} as Record<Mode, ExamModePlan>
     for (const m of MODES) {
       const own = cards.filter((c) => c.examId === e.id && c.mode === m)
-      const newRemaining = own.filter((c) => c.state === 0).length
+      const fresh = own.filter((c) => c.state === 0)
+      const newRemaining = fresh.length
+      const coreRemaining = fresh.filter(isCore).length
       const newDoneToday = done.filter((d) => d.examId === e.id && d.mode === m && d.wasNew).length
       const reviewsDoneToday = done.filter((d) => d.examId === e.id && d.mode === m && !d.wasNew).length
       // Quote auf Basis des Stands zu Tagesbeginn, damit sie sich beim Lernen nicht verschiebt.
-      const pool = newRemaining + newDoneToday
-      const quota = intro === 0 ? 0 : Math.ceil(pool / intro)
+      // Heute begonnene Karten zählen zuerst zum Kernstoff.
+      const corePool = coreRemaining + newDoneToday
+      const quota = intro === 0 ? 0 : Math.ceil(corePool / intro)
+      const optionalQuota = intro === 0 ? 0 : Math.ceil((newRemaining - coreRemaining) / intro)
       modes[m] = {
         newRemaining,
+        coreRemaining,
         quota,
+        optionalQuota,
         allowed: 0,
         newDoneToday,
         newLeft: 0,
@@ -150,7 +179,7 @@ export function planDay(input: PlanInput): DayPlan {
         reviewsDoneToday,
       }
     }
-    return { examId: e.id, daysLeft: e.daysLeft, introDeadline: intro, modes, behind: false }
+    return { examId: e.id, daysLeft: e.daysLeft, introDeadline: intro, modes, behind: false, forecastShare: 0 }
   })
 
   const totals = {} as Record<Mode, ModeTotals>
@@ -158,20 +187,28 @@ export function planDay(input: PlanInput): DayPlan {
     const cost = costs[m]
     const budget = budgetMinutes[m] * 60
     const reviewCost = plans.reduce((s, p) => s + (p.modes[m].reviewsDue + p.modes[m].reviewsDoneToday) * cost.review, 0)
-    const demands = plans.map((p, i) => ({
-      cost: p.modes[m].quota * cost.newCard,
-      // Wichtigere und nähere Prüfungen bekommen bei Knappheit mehr Zeit.
-      weight: exams[i].weight * (1 + 10 / Math.max(1, p.daysLeft)),
-    }))
-    const alloc = distribute(Math.max(0, budget - reviewCost), demands)
+    // Wichtigere und nähere Prüfungen bekommen bei Knappheit mehr Zeit.
+    const weight = (i: number) => exams[i].weight * (1 + 10 / Math.max(1, plans[i].daysLeft))
+    const free = Math.max(0, budget - reviewCost)
+    // Erst der Kernstoff, vom Rest dann der Zusatzstoff (Relevanz 1).
+    const coreAlloc = distribute(
+      free,
+      plans.map((p, i) => ({ cost: p.modes[m].quota * cost.newCard, weight: weight(i) })),
+    )
+    const optAlloc = distribute(
+      Math.max(0, free - coreAlloc.reduce((a, b) => a + b, 0)),
+      plans.map((p, i) => ({ cost: p.modes[m].optionalQuota * cost.newCard, weight: weight(i) })),
+    )
 
     let newLeft = 0
     let reviewsLeft = 0
     plans.forEach((p, i) => {
       const mp = p.modes[m]
-      mp.allowed = Math.min(mp.quota, Math.floor(alloc[i] / cost.newCard + 1e-9))
+      const core = Math.min(mp.quota, Math.floor(coreAlloc[i] / cost.newCard + 1e-9))
+      const optional = Math.min(mp.optionalQuota, Math.floor(optAlloc[i] / cost.newCard + 1e-9))
+      mp.allowed = core + optional
       mp.newLeft = Math.min(mp.newRemaining, Math.max(0, mp.allowed - mp.newDoneToday))
-      if (mp.allowed < mp.quota) p.behind = true
+      if (core < mp.quota) p.behind = true
       newLeft += mp.newLeft
       reviewsLeft += mp.reviewsDue
     })
@@ -182,6 +219,20 @@ export function planDay(input: PlanInput): DayPlan {
       minutesLeft: Math.ceil((reviewsLeft * cost.review + newLeft * cost.newCard) / 60),
       minutesNeeded: Math.ceil(neededSeconds / 60),
     }
+  }
+  for (const p of plans) {
+    const own = cards.filter((c) => c.examId === p.examId)
+    if (!own.length) continue
+    let expected = 0
+    for (const m of MODES) {
+      const mp = p.modes[m]
+      const perDay = Math.max(mp.allowed, 0)
+      // heute noch offen + an den weiteren Einführungstagen im heutigen Tempo
+      const reachable = mp.newLeft + perDay * Math.max(0, p.introDeadline - 1)
+      expected += Math.min(mp.newRemaining, reachable)
+    }
+    const remaining = MODES.reduce((s, m) => s + p.modes[m].newRemaining, 0)
+    p.forecastShare = (own.length - remaining + expected) / own.length
   }
   return { exams: plans, modes: totals }
 }
@@ -227,9 +278,12 @@ export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions)
     const count = mp.newLeft + (opts.extraNew ?? 0)
     return cards
       .filter((c) => c.examId === p.examId && c.mode === mode && c.state === 0)
-      .sort((a, b) =>
-        // Bei Rückstand zuerst klausurrelevante Karten, sonst in Skript-Reihenfolge.
-        p.behind ? (b.relevance ?? 2) - (a.relevance ?? 2) || a.order - b.order : a.order - b.order,
+      .sort(
+        (a, b) =>
+          // Kernstoff vor Zusatzstoff; bei Rückstand die klausurrelevantesten Karten zuerst, sonst Skript-Reihenfolge.
+          Number(isCore(b)) - Number(isCore(a)) ||
+          (p.behind ? (b.relevance ?? 2) - (a.relevance ?? 2) : 0) ||
+          a.order - b.order,
       )
       .slice(0, count)
   })

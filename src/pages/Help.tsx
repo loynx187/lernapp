@@ -50,6 +50,8 @@ export function Help() {
             <li><b>Verteilte Wiederholung (FSRS):</b> Für jede Karte wird geschätzt, wann du sie vergessen würdest. Sie kommt kurz vorher wieder dran.</li>
             <li><b>Rückwärts vom Klausurtermin:</b> Neuer Stoff wird gleichmäßig verteilt, sodass er einige Tage vor der Klausur komplett begonnen ist. Danach wird nur noch gefestigt, und jede Karte kommt in den letzten Tagen vor der Klausur noch einmal dran.</li>
             <li><b>Gemischt üben:</b> Karten verschiedener Fächer und Kapitel werden abwechselnd abgefragt.</li>
+            <li><b>Semesterart:</b> Im dualen Semester (alle Klausuren in einer Woche) muss neuer Stoff aller Fächer bis vor Beginn der Prüfungsphase sitzen – mit längerem Wiederholungspuffer. Im regulären Semester hat jedes Fach seinen eigenen Zeitplan bis zu seiner Klausur. Einstellbar pro Semester.</li>
+            <li><b>Kernstoff zuerst:</b> Karten mit geringer Klausurrelevanz (Zusatzstoff) kommen nur dran, wenn nach dem Kernstoff noch Zeit übrig ist.</li>
             <li><b>Zeitbudget:</b> Reicht deine eingestellte Zeit nicht, bekommen nahe und wichtige Prüfungen Vorrang und die App zeigt dir, wie viel Zeit nötig wäre.</li>
           </ul>
         </details>

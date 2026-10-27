@@ -36,13 +36,14 @@ export function Dashboard() {
   // Gesamtfortschritt über alle anstehenden Prüfungen
   let total = 0
   let introduced = 0
-  let secure = 0
+  let forecast = 0
   const perExam = new Map(
     upcoming.map((e) => {
       const st = examStats(e, cards.filter((c) => c.examId === e.id), now, profile.retention)
       total += st.total
       introduced += st.introduced
-      secure += st.secure
+      // Prognose: erwartet abrufbarer Anteil am Klausurtag, wenn dem Plan gefolgt wird
+      forecast += (plan.exams.find((p) => p.examId === e.id)?.forecastShare ?? 0) * profile.retention * st.total
       return [e.id, st]
     }),
   )
@@ -61,6 +62,7 @@ export function Dashboard() {
         subtitle={
           <>
             {semester.name}
+            {semester.kind && ` · ${semester.kind === 'dual' ? 'dual' : 'regulär'}`}
             {sync.connected && <span className={sync.error ? 'badge-warn' : ''}>{sync.error ? ' · Abgleich fehlgeschlagen' : sync.syncing ? ' · gleicht ab …' : ' · synchronisiert'}</span>}
           </>
         }
@@ -68,6 +70,12 @@ export function Dashboard() {
 
       <div className="widgets-wrap">
       <div className="widgets">
+        {!semester.kind && (
+          <Widget size="medium" to={`/semester/${semester.id}`} title="Semester einrichten" icon="settings" tint="var(--warn)">
+            <div className="w-headline">Wie sieht deine Prüfungsphase aus?</div>
+            <p className="w-caption">Dual mit allen Klausuren in einer Woche oder regulär über mehrere Wochen – danach richtet sich dein Lernplan.</p>
+          </Widget>
+        )}
         {exams.length === 0 ? (
           <Widget size="medium" to="/pruefung/neu" title="Loslegen" icon="plus">
             <div className="w-headline">Erste Prüfung anlegen</div>
@@ -136,13 +144,13 @@ export function Dashboard() {
         {total > 0 && (
           <Widget size="small" to="/pruefungen" title="Fortschritt" icon="chart">
             <div className="w-rings">
-              <Rings outer={introduced / total} inner={secure / total} size={76} />
+              <Rings outer={introduced / total} inner={forecast / total} size={76} />
               <div className="w-legend">
                 <span><i style={{ background: 'var(--accent)' }} />{Math.round((introduced / total) * 100)} %</span>
-                <span><i style={{ background: 'var(--ok)' }} />{Math.round((secure / total) * 100)} %</span>
+                <span><i style={{ background: 'var(--ok)' }} />{Math.round((forecast / total) * 100)} %</span>
               </div>
             </div>
-            <div className="w-foot">begonnen · sicher</div>
+            <div className="w-foot">begonnen · Prognose</div>
           </Widget>
         )}
 

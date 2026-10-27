@@ -26,6 +26,8 @@ export interface Semester extends Synced {
   profileId: string
   name: string
   createdAt: number
+  /** Art des Studiums bzw. der Prüfungsphase, bestimmt die Lernplanung (siehe semesters.ts). */
+  kind?: 'dual' | 'regulaer'
 }
 
 export interface Exam extends Synced {

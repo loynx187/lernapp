@@ -1,6 +1,7 @@
 import { db, tombstone, uid, type Exam, type Mode, type Profile, type ReviewLog, type StudyCard } from './db'
 import { DAY, isoDate } from './dates'
 import { planDay, type DayPlan } from './planner'
+import { planExams, semesterKind, SEMESTER_KINDS } from './semesters'
 import { review, type Grade } from './scheduler'
 import { doneToday, estimateCosts, examStats, toPlanCard } from './stats'
 
@@ -22,9 +23,11 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
     .above(now - 60 * DAY)
     .filter((l) => l.profileId === profile.id)
     .toArray()
+  const semester = profile.activeSemesterId ? await db.semesters.get(profile.activeSemesterId) : undefined
   const plan = planDay({
     now,
-    exams,
+    exams: planExams(exams, semester),
+    buffer: SEMESTER_KINDS[semesterKind(semester)].buffer,
     cards: cards.map(toPlanCard),
     done: doneToday(
       logs.filter((l) => examIds.has(l.examId)),

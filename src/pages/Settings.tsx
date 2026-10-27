@@ -7,6 +7,7 @@ import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
 import { useSync } from '../sync-state'
+import { SEMESTER_KINDS } from '../lib/semesters'
 import { listBackups, restoreBackup as restoreDropboxBackup, type BackupEntry } from '../lib/syncService'
 
 export function Settings() {
@@ -42,19 +43,6 @@ export function Settings() {
   }, [])
 
   const update = (patch: Partial<Profile>) => db.profiles.update(profile.id, patch)
-
-  async function addSemester() {
-    const name = prompt('Name des neuen Semesters', '')
-    if (!name?.trim()) return
-    const id = uid()
-    await db.semesters.add({ id, profileId: profile.id, name: name.trim(), createdAt: Date.now() })
-    await update({ activeSemesterId: id })
-  }
-
-  async function renameSemester(id: string, current: string) {
-    const name = prompt('Neuer Name', current)
-    if (name?.trim()) await db.semesters.update(id, { name: name.trim() })
-  }
 
   async function removeSemester(id: string, name: string) {
     if (!confirm(`Semester „${name}“ mit allen Prüfungen, Karten und dem Lernfortschritt löschen?`)) return
@@ -138,13 +126,14 @@ export function Settings() {
             >
               <span style={{ display: 'inline-block', width: 22, color: 'var(--accent)', fontWeight: 600 }}>{s.id === semester.id ? '✓' : ''}</span>
               {s.name}
+              <small style={{ display: 'block', marginLeft: 22 }}>{s.kind ? SEMESTER_KINDS[s.kind].label : 'Art der Prüfungsphase noch nicht festgelegt'}</small>
             </button>
-            <button className="btn small ghost" style={{ color: 'var(--accent)' }} onClick={() => renameSemester(s.id, s.name)}>Ändern</button>
+            <Link className="btn small ghost" style={{ color: 'var(--accent)' }} to={`/semester/${s.id}`}>Ändern</Link>
             <button className="btn small ghost danger" onClick={() => removeSemester(s.id, s.name)} aria-label={`${s.name} löschen`}>Löschen</button>
           </div>
         ))}
         <div className="list-item">
-          <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: -8 }} onClick={addSemester}>Neues Semester hinzufügen</button>
+          <Link className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: -8 }} to="/semester/neu">Neues Semester hinzufügen</Link>
         </div>
       </div>
 

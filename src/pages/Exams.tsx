@@ -4,6 +4,7 @@ import { useActive } from '../state'
 import { db, MAX_EXAMS_PER_SEMESTER } from '../lib/db'
 import { daysUntil, formatCountdown, formatDate } from '../lib/dates'
 import { examStats } from '../lib/stats'
+import { loadStudyData } from '../lib/study'
 import { PageHeader, Progress, pct } from '../components/ui'
 
 export function Exams() {
@@ -11,10 +12,15 @@ export function Exams() {
   const rows = useLiveQuery(async () => {
     const exams = (await db.exams.where('semesterId').equals(semester.id).toArray()).sort((a, b) => a.date.localeCompare(b.date))
     const now = Date.now()
+    const { plan } = await loadStudyData(profile, now)
     return Promise.all(
-      exams.map(async (e) => ({ exam: e, stats: examStats(e, await db.cards.where('[examId+archived]').equals([e.id, 0]).toArray(), now, profile.retention) })),
+      exams.map(async (e) => ({
+        exam: e,
+        stats: examStats(e, await db.cards.where('[examId+archived]').equals([e.id, 0]).toArray(), now, profile.retention),
+        forecast: plan.exams.find((p) => p.examId === e.id)?.forecastShare,
+      })),
     )
-  }, [semester.id, profile.retention])
+  }, [semester.id, profile])
   if (!rows) return null
   const full = rows.length >= MAX_EXAMS_PER_SEMESTER
 
@@ -36,7 +42,7 @@ export function Exams() {
           <p className="muted">Noch keine Prüfungen in diesem Semester.</p>
         </div>
       )}
-      {rows.map(({ exam: e, stats }) => {
+      {rows.map(({ exam: e, stats, forecast }) => {
         const d = daysUntil(e.date)
         return (
           <Link key={e.id} to={`/pruefung/${e.id}`} className="card link" style={d < 0 ? { opacity: 0.6 } : undefined}>
@@ -53,7 +59,9 @@ export function Exams() {
             </div>
             <div className="row between" style={{ marginTop: 6 }}>
               <small>begonnen {pct(stats.introduced, stats.total)}</small>
-              <small>sicher bis Klausur {pct(stats.secure, stats.total)}</small>
+              <small>
+                {forecast !== undefined ? `Prognose ${Math.round(forecast * profile.retention * 100)} %` : `sicher zur Klausur ${pct(stats.secure, stats.total)}`}
+              </small>
             </div>
           </Link>
         )

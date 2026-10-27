@@ -79,7 +79,10 @@ export function ExamDetail() {
           <div className="card">
             <div className="stats">
               <Stat value={pct(stats.introduced, stats.total)} label="begonnen" />
-              <Stat value={pct(stats.secure, stats.total)} label="sicher bis Klausur" />
+              <Stat
+                value={plan ? `${Math.round(plan.forecastShare * profile.retention * 100)} %` : pct(stats.secure, stats.total)}
+                label={plan ? 'Prognose Klausurtag' : 'sicher zur Klausur'}
+              />
               <Stat value={stats.introduced ? `${Math.round(stats.recall * 100)} %` : '–'} label="aktuell abrufbar" />
             </div>
             {plan && days > 0 && (
@@ -88,7 +91,7 @@ export function ExamDetail() {
                   <>
                     Neuer Stoff bis <b>{formatDate(isoDate(addDays(Date.now(), plan.introDeadline - 1)))}</b>, danach nur noch Wiederholung.{' '}
                     {plan.behind ? (
-                      <span className="badge-warn">Das Zeitbudget reicht aktuell nicht ganz.</span>
+                      <span className="badge-warn">Das Zeitbudget reicht aktuell nicht für den ganzen Kernstoff.</span>
                     ) : (
                       <span className="badge-good">Im Plan.</span>
                     )}
@@ -96,6 +99,11 @@ export function ExamDetail() {
                 ) : (
                   <span className="badge-good">Aller Stoff ist begonnen – jetzt wird bis zur Klausur gefestigt.</span>
                 )}
+              </p>
+            )}
+            {plan && (
+              <p className="muted" style={{ marginTop: 8, marginBottom: 0, fontSize: 13 }}>
+                Prognose: Anteil des Stoffs, den du am Klausurtag voraussichtlich abrufen kannst, wenn du täglich dein heutiges Pensum lernst. Zusatzstoff (Relevanz 1) kommt nur dran, wenn Zeit übrig ist.
               </p>
             )}
           </div>

@@ -131,3 +131,53 @@ describe('buildQueue', () => {
     expect(q.map((c) => c.order)).toEqual([...q.map((c) => c.order)].sort((x, y) => x - y))
   })
 })
+
+describe('Semesterarten und Kernstoff', () => {
+  it('führt im dualen Semester neuen Stoff aller Fächer bis vor Beginn der Prüfungsphase ein', async () => {
+    const { planExams, SEMESTER_KINDS } = await import('./semesters')
+    const exams = [
+      { id: 'a', date: examIn(40), weight: 2 },
+      { id: 'b', date: examIn(44), weight: 2 },
+    ].map((e) => ({ ...e, profileId: 'p', semesterId: 's', name: e.id, color: '#000', createdAt: 0 }))
+    const dual = planDay(
+      input({ exams: planExams(exams, { kind: 'dual' }), buffer: SEMESTER_KINDS.dual.buffer, cards: [...cards('a', 100), ...cards('b', 100)] }),
+    )
+    const regular = planDay(
+      input({ exams: planExams(exams, { kind: 'regulaer' }), buffer: SEMESTER_KINDS.regulaer.buffer, cards: [...cards('a', 100), ...cards('b', 100)] }),
+    )
+    // dual: beide Fächer gleicher Stichtag (40 Tage − 10 Puffer = 30)
+    expect(dual.exams.map((e) => e.introDeadline)).toEqual([30, 30])
+    // regulär: jedes Fach bis zu seiner Klausur (40 − 8 = 32, 44 − 9 = 35)
+    expect(regular.exams.map((e) => e.introDeadline)).toEqual([32, 35])
+  })
+
+  it('führt in der laufenden Prüfungsphase den Reststoff so schnell wie möglich ein', () => {
+    const plan = planDay(input({ exams: [{ id: 'b', date: examIn(3), weight: 2, introBy: examIn(-1) }], cards: cards('b', 20) }))
+    expect(plan.exams[0].introDeadline).toBe(1)
+    expect(plan.exams[0].modes.mobile.quota).toBe(20)
+  })
+
+  it('plant Zusatzstoff (Relevanz 1) erst ein, wenn das Budget nach dem Kernstoff reicht', () => {
+    const mixed = cards('a', 60).map((c, i) => ({ ...c, relevance: i < 30 ? 1 : 3 }))
+    const tight = planDay(input({ exams: [{ id: 'a', date: examIn(5), weight: 2 }], cards: mixed, budgetMinutes: { mobile: 10, desk: 0 } }))
+    const m = tight.exams[0].modes.mobile
+    expect(m.coreRemaining).toBe(30)
+    expect(m.quota).toBe(10) // 30 Kernkarten / 3 Einführungstage
+    expect(m.allowed).toBe(10) // Budget reicht genau für den Kernstoff
+    expect(tight.exams[0].behind).toBe(false)
+
+    const q = buildQueue(tight, mixed, { mode: 'mobile', now: NOW })
+    expect(q.every((c) => c.relevance === 3)).toBe(true)
+
+    const roomy = planDay(input({ exams: [{ id: 'a', date: examIn(5), weight: 2 }], cards: mixed, budgetMinutes: { mobile: 60, desk: 0 } }))
+    expect(roomy.exams[0].modes.mobile.allowed).toBe(20)
+  })
+
+  it('prognostiziert, wie viel Stoff bis zum Stichtag geschafft wird', () => {
+    const ok = planDay(input({ exams: [{ id: 'a', date: examIn(30), weight: 2 }], cards: cards('a', 240) }))
+    expect(ok.exams[0].forecastShare).toBeCloseTo(1)
+    const tight = planDay(input({ exams: [{ id: 'a', date: examIn(30), weight: 2 }], cards: cards('a', 240), budgetMinutes: { mobile: 5, desk: 0 } }))
+    // 5 Karten/Tag × 24 Tage = 120 von 240
+    expect(tight.exams[0].forecastShare).toBeCloseTo(0.5)
+  })
+})
