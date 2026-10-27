@@ -214,3 +214,19 @@ describe('syncProfile mit simulierter Dropbox', () => {
     expect(backups[0]).toBe(`/backups/${P}/2026-KW03.lernsync`)
   })
 })
+
+describe('Fortschritt für das Widget', () => {
+  it('fasst Pensum, Prüfungen und Prognose zusammen', async () => {
+    const { progressSummary } = await import('./syncService')
+    const { loadStudyData } = await import('./study')
+    await seed()
+    const profile = (await db.profiles.get(P))!
+    const p = progressSummary(profile, await loadStudyData(profile), Date.now(), 'S5')
+    expect(p.format).toBe('lernapp-fortschritt')
+    expect(p.semester).toBe('S5')
+    expect(p.heute.karten).toBeGreaterThan(0)
+    expect(p.pruefungen).toHaveLength(1)
+    expect(p.pruefungen[0]).toMatchObject({ name: 'TM', begonnen: 0 })
+    expect(p.gesamt.prognose).toBeGreaterThan(0)
+  })
+})

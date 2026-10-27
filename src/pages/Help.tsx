@@ -1,4 +1,31 @@
+import { useState } from 'react'
 import { PageHeader } from '../components/ui'
+
+/** Kopiert das Scriptable-Skript in die Zwischenablage (Datei liegt unter public/scriptable). */
+function CopyWidgetScript() {
+  const [state, setState] = useState<'idle' | 'ok' | 'error'>('idle')
+  async function copy() {
+    try {
+      const code = await (await fetch('scriptable/lernapp-widget.js')).text()
+      await navigator.clipboard.writeText(code)
+      setState('ok')
+    } catch {
+      setState('error')
+    }
+  }
+  return (
+    <div className="stack">
+      <button className="btn primary block" onClick={copy}>
+        {state === 'ok' ? 'Skript kopiert ✓' : 'Widget-Skript kopieren'}
+      </button>
+      {state === 'error' && (
+        <small>
+          Kopieren nicht möglich – Skript stattdessen <a href="scriptable/lernapp-widget.js" target="_blank" rel="noreferrer">hier öffnen</a> und markieren.
+        </small>
+      )}
+    </div>
+  )
+}
 
 export function Help() {
   return (
@@ -22,6 +49,25 @@ export function Help() {
             <li>Auf dem zweiten Gerät die App öffnen und beim ersten Start „Profil von einem anderen Gerät laden (Dropbox)“ wählen.</li>
           </ol>
           <p className="muted">Danach gleicht die App automatisch ab: beim Öffnen, nach dem Lernen und alle paar Minuten. Lernst du auf beiden Geräten offline, werden die Stände beim nächsten Abgleich zusammengeführt. Die App sieht nur ihren eigenen Ordner in deiner Dropbox.</p>
+        </details>
+      </div>
+
+      <div className="card stack">
+        <details>
+          <summary>Widget für den Homescreen</summary>
+          <p style={{ marginTop: 8 }}>
+            Mit der kostenlosen App <b>Scriptable</b> zeigt ein Widget deinen Fortschritt: Ringe (begonnen/Prognose), heutiges Pensum, Lernserie und deine Prüfungen mit Countdown – klein, mittel, groß oder auf dem Sperrbildschirm. Voraussetzung: Dropbox-Sync ist verbunden und die Dropbox-App ist in der Dateien-App aktiviert.
+          </p>
+          <ol className="help">
+            <li>Scriptable aus dem App Store installieren.</li>
+            <li>In Scriptable: Einstellungen (Zahnrad) → „File Bookmarks“ → „+“ → „Pick File“ → Dropbox → Apps → (App-Ordner) → <code>Fortschritt.json</code>. Als Namen genau <code>Lernapp-Fortschritt</code> eingeben.</li>
+            <li>Unten auf „Widget-Skript kopieren“ tippen. In Scriptable „+“ → Code einfügen → oben als Namen „Lernapp“ eintragen → Fertig.</li>
+            <li>Lange auf den Homescreen drücken → „+“ → Scriptable → Größe wählen → Widget hinzufügen. Dann lange auf das Widget drücken → „Widget bearbeiten“ → Script: „Lernapp“.</li>
+          </ol>
+          <CopyWidgetScript />
+          <p className="muted" style={{ marginTop: 10 }}>
+            Das Widget zeigt den Stand des letzten Abgleichs; iOS aktualisiert Widgets etwa alle 15–60 Minuten. Ein ⚠︎ erscheint, wenn der Stand älter als 36 Stunden ist. Ein Tipp aufs Widget öffnet die Lernapp.
+          </p>
         </details>
       </div>
 

@@ -2,11 +2,13 @@ import { db, type Profile } from './db'
 import { addDays, daysUntil, isoWeek, startOfDay } from './dates'
 import { adoptPendingTokens, deleteFile, download, DropboxError, getRev, listFolder, upload } from './dropbox'
 import { loadStudyData, type StudyData } from './study'
+import { examStats, streak } from './stats'
 import { applyDoc, docSignature, exportDoc, mergeDocs, parseSyncDoc, replaceProfile, type SyncDoc } from './sync'
 
 const syncPath = (profileId: string) => `/sync/${profileId}.lernsync`
 const backupFolder = (profileId: string) => `/backups/${profileId}`
 export const REMINDER_PATH = '/Erinnerung.txt'
+export const PROGRESS_PATH = '/Fortschritt.json'
 /** So viele Wochensicherungen bleiben in Dropbox erhalten. */
 const KEEP_BACKUPS = 8
 
@@ -35,6 +37,7 @@ export interface SyncStatus {
   /** Fingerabdruck des lokalen Stands nach dem letzten Abgleich */
   localSig?: string
   reminder?: string
+  progress?: string
   backupWeek?: string
 }
 
@@ -89,7 +92,9 @@ export async function syncProfile(profileId: string, now = Date.now()) {
       }
 
       const next: SyncStatus = { ...status, rev, localSig: docSignature(await exportDoc(profileId)), lastSync: Date.now(), error: undefined }
-      next.reminder = await writeReminder(profileId, now, status.reminder).catch(() => status.reminder)
+      const written = await writeReminder(profileId, now, status).catch(() => ({ reminder: status.reminder, progress: status.progress }))
+      next.reminder = written.reminder
+      next.progress = written.progress
       next.backupWeek = await weeklyBackup(profileId, doc, now, status.backupWeek).catch(() => status.backupWeek)
       await setSyncStatus(profileId, next)
       return
@@ -160,14 +165,63 @@ export function reminderText(profile: Profile, today: StudyData, tomorrow: Study
 }
 
 /** Schreibt die Erinnerungsdatei, aber nur, wenn sich der Text geändert hat. */
-async function writeReminder(profileId: string, now: number, last?: string): Promise<string | undefined> {
+/** Daten für das Scriptable-Widget (public/scriptable/lernapp-widget.js). */
+export interface ProgressFile {
+  format: 'lernapp-fortschritt'
+  version: 1
+  stand: string
+  profil: string
+  semester?: string
+  heute: { karten: number; aufgaben: number; minuten: number }
+  serie: number
+  gesamt: { begonnen: number; prognose: number }
+  pruefungen: { name: string; farbe: string; tage: number; begonnen: number; prognose: number; rueckstand: boolean }[]
+}
+
+export function progressSummary(profile: Profile, d: StudyData, now: number, semesterName?: string): ProgressFile {
+  const m = d.plan.modes.mobile
+  const k = d.plan.modes.desk
+  let total = 0
+  let introduced = 0
+  let forecast = 0
+  const pruefungen = d.plan.exams.flatMap((p) => {
+    const exam = d.exams.find((e) => e.id === p.examId)
+    if (!exam) return []
+    const st = examStats(exam, d.cards.filter((c) => c.examId === exam.id), now, profile.retention)
+    const prognose = p.forecastShare * profile.retention
+    total += st.total
+    introduced += st.introduced
+    forecast += prognose * st.total
+    const share = (x: number) => Math.round(x * 100) / 100
+    return [{ name: exam.name, farbe: exam.color, tage: p.daysLeft, begonnen: share(st.total ? st.introduced / st.total : 0), prognose: share(prognose), rueckstand: p.behind && st.total > 0 }]
+  })
+  return {
+    format: 'lernapp-fortschritt',
+    version: 1,
+    stand: new Date(now).toISOString(),
+    profil: profile.name,
+    semester: semesterName,
+    heute: { karten: m.reviewsLeft + m.newLeft, aufgaben: k.reviewsLeft + k.newLeft, minuten: m.minutesLeft + k.minutesLeft },
+    serie: streak(d.logs, now),
+    gesamt: { begonnen: total ? Math.round((introduced / total) * 100) / 100 : 0, prognose: total ? Math.round((forecast / total) * 100) / 100 : 0 },
+    pruefungen,
+  }
+}
+
+/** Schreibt Erinnerung.txt und Fortschritt.json, jeweils nur, wenn sich der Inhalt geändert hat. */
+async function writeReminder(profileId: string, now: number, last: SyncStatus): Promise<{ reminder?: string; progress?: string }> {
   const profile = await db.profiles.get(profileId)
   if (!profile) return last
   const today = await loadStudyData(profile, now)
   const tomorrow = await loadStudyData(profile, addDays(startOfDay(now), 1) + 7 * 3600_000)
   const text = reminderText(profile, today, tomorrow, now)
-  if (text !== last) await upload(profileId, REMINDER_PATH, text)
-  return text
+  if (text !== last.reminder) await upload(profileId, REMINDER_PATH, text)
+  const semester = profile.activeSemesterId ? await db.semesters.get(profile.activeSemesterId) : undefined
+  const { stand: _stand, ...summary } = progressSummary(profile, today, now, semester?.name)
+  const key = JSON.stringify(summary)
+  // Der Zeitstempel allein ist kein Grund für einen Upload
+  if (key !== last.progress) await upload(profileId, PROGRESS_PATH, JSON.stringify({ stand: new Date(now).toISOString(), ...summary }, null, 1))
+  return { reminder: text, progress: key }
 }
 
 export interface RemoteProfile {

@@ -23,6 +23,8 @@ test('Zwei Geräte über Dropbox: verbinden, übernehmen, abgleichen, sichern', 
   expect(files).toContain('/erinnerung.txt')
   expect(files.some((f) => f.startsWith('/backups/'))).toBe(true)
   expect(box.files.get('/erinnerung.txt')!.body.toString()).toMatch(/^Lernplan/)
+  const progress = JSON.parse(box.files.get('/fortschritt.json')!.body.toString())
+  expect(progress).toMatchObject({ format: 'lernapp-fortschritt', pruefungen: [{ name: 'Technische Mechanik' }] })
 
   // Gerät B: Profil aus Dropbox übernehmen
   const ctxB = await browser.newContext()
