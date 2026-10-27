@@ -1,8 +1,7 @@
-import { HashRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { HashRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AppStateProvider, useAppState } from './state'
-import { Icon } from './components/ui'
 import { Onboarding } from './pages/Onboarding'
-import { Today } from './pages/Today'
+import { Dashboard } from './pages/Dashboard'
 import { Session } from './pages/Session'
 import { Exams } from './pages/Exams'
 import { ExamDetail } from './pages/ExamDetail'
@@ -23,45 +22,27 @@ function Shell() {
   if (loading) return null
   if (!profile || !semester) {
     return (
-      <main className="main full">
+      <main className="main">
         <Onboarding />
       </main>
     )
   }
-  const inSession = pathname.startsWith('/lernen')
+  // Die Übersicht nutzt auf dem iPad die volle Breite, Unterseiten bleiben schmal und gut lesbar.
   return (
-    <>
-      <main className={inSession ? 'main full' : 'main'}>
-        <Routes>
-          <Route path="/" element={<Today />} />
-          <Route path="/lernen/:mode" element={<SessionRoute />} />
-          <Route path="/pruefungen" element={<Exams />} />
-          <Route path="/pruefung/neu" element={<ExamForm />} />
-          <Route path="/pruefung/:id" element={<ExamDetail />} />
-          <Route path="/pruefung/:id/bearbeiten" element={<ExamForm />} />
-          <Route path="/import" element={<Import />} />
-          <Route path="/einstellungen" element={<Settings />} />
-          <Route path="/hilfe" element={<Help />} />
-          <Route path="*" element={<Today />} />
-        </Routes>
-      </main>
-      {!inSession && (
-        <nav className="nav" aria-label="Hauptnavigation">
-          <NavLink to="/" end>
-            <Icon name="today" />
-            Heute
-          </NavLink>
-          <NavLink to="/pruefungen" className={({ isActive }) => (isActive || pathname.startsWith('/pruefung') ? 'active' : '')}>
-            <Icon name="exams" />
-            Prüfungen
-          </NavLink>
-          <NavLink to="/einstellungen">
-            <Icon name="settings" />
-            Einstellungen
-          </NavLink>
-        </nav>
-      )}
-    </>
+    <main className={pathname === '/' ? 'main wide' : 'main'}>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/lernen/:mode" element={<SessionRoute />} />
+        <Route path="/pruefungen" element={<Exams />} />
+        <Route path="/pruefung/neu" element={<ExamForm />} />
+        <Route path="/pruefung/:id" element={<ExamDetail />} />
+        <Route path="/pruefung/:id/bearbeiten" element={<ExamForm />} />
+        <Route path="/import" element={<Import />} />
+        <Route path="/einstellungen" element={<Settings />} />
+        <Route path="/hilfe" element={<Help />} />
+        <Route path="*" element={<Dashboard />} />
+      </Routes>
+    </main>
   )
 }
 

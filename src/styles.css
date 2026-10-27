@@ -1,12 +1,12 @@
 /*
- * Gestaltung angelehnt an Apple: viel Weißraum, große kräftige Überschriften,
- * flache Flächen ohne Rahmen, Pillen-Buttons und ein einzelner Akzentton.
+ * Gestaltung angelehnt an iPadOS: Übersicht aus Widgets auf einem dezenten Hintergrundbild,
+ * Flächen aus mattem Glas, große kräftige Überschriften, Pillen-Buttons, ein Akzentton.
  */
 :root {
   --bg: #f5f5f7;
   --surface: #ffffff;
   --surface-2: #f5f5f7;
-  --fill: #e8e8ed;
+  --fill: rgba(118, 118, 128, 0.12);
   --text: #1d1d1f;
   --muted: #6e6e73;
   --subtle: #86868b;
@@ -24,7 +24,16 @@
   --easy: #007aff;
   --radius: 20px;
   --radius-sm: 12px;
-  --nav-bg: rgba(255, 255, 255, 0.72);
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.84);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-shadow: 0 10px 30px rgba(30, 45, 80, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --wallpaper:
+    radial-gradient(60% 45% at 12% 8%, #c6dafc 0%, transparent 70%),
+    radial-gradient(50% 40% at 92% 18%, #ecd7fb 0%, transparent 70%),
+    radial-gradient(60% 45% at 30% 95%, #cfeee6 0%, transparent 70%),
+    radial-gradient(45% 35% at 95% 85%, #fde2cf 0%, transparent 70%),
+    #eef1f6;
   color-scheme: light;
 }
 
@@ -33,7 +42,7 @@
     --bg: #000000;
     --surface: #1c1c1e;
     --surface-2: #2c2c2e;
-    --fill: #2c2c2e;
+    --fill: rgba(118, 118, 128, 0.24);
     --text: #f5f5f7;
     --muted: #a1a1a6;
     --subtle: #8e8e93;
@@ -49,7 +58,16 @@
     --hard: #ff9f0a;
     --ok: #30d158;
     --easy: #0a84ff;
-    --nav-bg: rgba(28, 28, 30, 0.72);
+    --glass: rgba(36, 36, 40, 0.55);
+    --glass-strong: rgba(36, 36, 40, 0.82);
+    --glass-border: rgba(255, 255, 255, 0.09);
+    --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --wallpaper:
+      radial-gradient(60% 45% at 12% 8%, #18284a 0%, transparent 70%),
+      radial-gradient(50% 40% at 92% 18%, #34193f 0%, transparent 70%),
+      radial-gradient(60% 45% at 30% 95%, #0d302e 0%, transparent 70%),
+      radial-gradient(45% 35% at 95% 85%, #3a2210 0%, transparent 70%),
+      #050608;
     color-scheme: dark;
   }
 }
@@ -82,54 +100,102 @@ code { font-size: 0.9em; background: var(--fill); padding: 1px 6px; border-radiu
 ::selection { background: var(--accent-soft); }
 
 .app { min-height: 100dvh; display: flex; flex-direction: column; }
+/* Hintergrundbild fest hinter allem (background-attachment: fixed geht auf iOS nicht). */
+.app::before { content: ''; position: fixed; inset: 0; z-index: -1; background: var(--wallpaper); }
 .main {
   flex: 1;
   width: 100%;
   max-width: 680px;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 96px);
+  padding: calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 32px);
 }
-.main.full { padding-bottom: calc(env(safe-area-inset-bottom) + 20px); }
+.main.wide { max-width: 1180px; }
 
-/* Tab-Leiste */
-.nav {
-  position: fixed;
-  inset: auto 0 0 0;
-  display: flex;
-  justify-content: space-around;
-  background: var(--nav-bg);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-top: 0.5px solid var(--separator);
-  padding: 6px 8px calc(env(safe-area-inset-bottom) + 4px);
-  z-index: 10;
+/* Mattes Glas */
+.glass, .card, .list, .widget {
+  background: var(--glass);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
-.nav a {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--subtle);
-  padding: 4px 0;
-}
-.nav a:hover { text-decoration: none; }
-.nav a.active { color: var(--accent); }
-.nav svg { width: 26px; height: 26px; }
 
 .page-header { margin: 4px 0 28px; }
-.page-header h1 { margin: 0; overflow-wrap: anywhere; }
+.page-header h1 { margin: 0; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
 .page-header .subtitle { color: var(--muted); font-size: 17px; margin: 6px 0 0; }
 .page-bar { display: flex; justify-content: space-between; align-items: center; min-height: 36px; margin-bottom: 10px; }
-.back-link { border: none; background: none; color: var(--accent); font: inherit; display: inline-flex; align-items: center; gap: 2px; padding: 0; margin-left: -6px; cursor: pointer; }
+.back-link {
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: var(--glass-shadow);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 14px 6px 8px;
+  border-radius: 980px;
+  cursor: pointer;
+}
+.back-link svg { color: var(--accent); }
+
+/* Widgets wie auf dem iPad-Homescreen: 2 Spalten auf dem iPhone, 4 auf dem iPad */
+.widgets-wrap { container-type: inline-size; }
+.widgets {
+  --cols: 2;
+  --gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: calc((100cqw - var(--gap) * (var(--cols) - 1)) / var(--cols));
+  grid-auto-flow: dense;
+  gap: var(--gap);
+}
+@container (min-width: 620px) { .widgets { --cols: 4; --gap: 20px; } }
+@container (min-width: 960px) { .widgets { --cols: 6; } }
+.widget {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 26px;
+  color: var(--text);
+  overflow: hidden;
+  transition: transform 0.15s ease;
+}
+.widget:hover { text-decoration: none; }
+.widget:active { transform: scale(0.97); }
+.widget-medium { grid-column: span 2; }
+.widget-large { grid-column: span 2; grid-row: span 2; }
+.widget-title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.widget-body { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 8px; }
+.w-number { font-size: 42px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.w-number.done { color: var(--ok); }
+.w-caption { font-size: 14px; color: var(--muted); margin: 3px 0 0; line-height: 1.3; }
+.w-headline { font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; -webkit-hyphens: auto; hyphens: auto; }
+.w-foot { margin-top: auto; font-size: 13px; color: var(--muted); line-height: 1.3; }
+.w-split { display: flex; justify-content: space-between; gap: 12px; flex: 1; }
+.w-split > div:first-child { display: flex; flex-direction: column; justify-content: flex-end; }
+.w-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 3px; font-size: 14px; color: var(--muted); text-align: right; }
+.w-pill { margin-top: 8px; background: var(--accent); color: var(--on-accent); border-radius: 980px; padding: 7px 14px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.w-warn { color: var(--warn); font-weight: 600; font-size: 13px; }
+.w-rings { display: flex; align-items: center; gap: 10px; flex: 1; }
+.w-legend { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 16px; }
+.w-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.w-list { display: flex; flex-direction: column; gap: 14px; }
+.w-list-item { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 500; }
+.daybars { display: flex; gap: 4px; margin-top: auto; height: 38px; }
+.daybar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.daybar-track { flex: 1; width: 100%; max-width: 12px; border-radius: 4px; position: relative; overflow: hidden; background: color-mix(in srgb, var(--hard) 18%, transparent); }
+.daybar-fill { position: absolute; inset: auto 0 0 0; border-radius: 4px; background: var(--hard); }
+.daybar span { font-size: 9px; line-height: 1; color: var(--muted); }
 .eyebrow { display: block; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 4px; }
 
 /* Flächen */
 .card {
-  background: var(--surface);
   border-radius: var(--radius);
   padding: 20px;
   margin-bottom: 14px;
@@ -164,6 +230,7 @@ code { font-size: 0.9em; background: var(--fill); padding: 1px 6px; border-radiu
   justify-content: center;
   gap: 6px;
   min-height: 48px;
+  text-align: center;
   transition: background-color 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
 }
 .btn:hover { text-decoration: none; filter: brightness(0.97); }
@@ -254,7 +321,7 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 /* Lernsitzung */
 .session-top { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 .session-top .progress { flex: 1; }
-.flashcard { min-height: 46vh; display: flex; flex-direction: column; padding: 24px; }
+.flashcard { min-height: 46vh; display: flex; flex-direction: column; padding: 24px; background: var(--glass-strong); }
 .flashcard .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
 .flashcard .content { font-size: 19px; line-height: 1.45; overflow-wrap: anywhere; }
 .flashcard .content img, .card-image { max-width: 100%; border-radius: var(--radius-sm); }
@@ -331,7 +398,7 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .error { color: var(--bad); font-size: 15px; }
 
 /* Listen wie in den iOS-Einstellungen */
-.list { background: var(--surface); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+.list { border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
 .list-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; min-height: 52px; }
 .list-item + .list-item { border-top: 0.5px solid var(--separator); margin-left: 20px; padding-left: 0; }
 .list-item .grow { min-width: 0; }

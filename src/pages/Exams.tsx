@@ -21,6 +21,7 @@ export function Exams() {
   return (
     <>
       <PageHeader
+        back
         title="Prüfungen"
         subtitle={semester.name}
         action={

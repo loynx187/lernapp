@@ -83,7 +83,7 @@ export function Settings() {
 
   return (
     <>
-      <PageHeader title="Einstellungen" />
+      <PageHeader back title="Einstellungen" />
       {message && <div className="notice">{message}</div>}
 
       <div className="section-title">Lernplan</div>
@@ -142,7 +142,7 @@ export function Settings() {
           </label>
         )}
         <div className="row">
-          <button className="btn grow" onClick={addProfile}>+ Neues Profil</button>
+          <button className="btn grow" onClick={addProfile}>Neues Profil</button>
           <button className="btn danger grow" onClick={removeProfile}>Profil löschen</button>
         </div>
       </div>
