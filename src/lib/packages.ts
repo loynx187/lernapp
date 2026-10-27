@@ -11,6 +11,8 @@ export interface ImportResult {
   unchanged: number
   archived: number
   restored: number
+  /** Vom Nutzer gelöschte Karten, die das Paket weiterhin enthält – sie bleiben gelöscht. */
+  deleted: number
   resolvedReports: number
   /** Vom Paket vorgeschlagene und ins Fachprofil übernommene Felder. */
   profileFields: ProfileField[]
@@ -22,12 +24,13 @@ const contentKey = (c: CardContent) =>
 /**
  * Importiert ein Paket in eine Prüfung. Bei einem Update desselben Pakets bleibt der
  * Lernfortschritt aller Karten mit gleicher uid erhalten; neue Karten kommen hinzu,
- * entfernte Karten werden archiviert (nicht gelöscht, Fortschritt bleibt).
+ * entfernte Karten werden archiviert (nicht gelöscht, Fortschritt bleibt). Vom Nutzer gelöschte
+ * Karten bleiben gelöscht, erhalten aber den neuen Inhalt (für eine spätere Wiederherstellung).
  */
 export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now()): Promise<ImportResult> {
   const chapterTitles = new Map((pkg.chapters ?? []).map((c) => [c.id, c.title]))
   const chapterOrder = new Map((pkg.chapters ?? []).map((c, i) => [c.id, i]))
-  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, resolvedReports: 0, profileFields: [] }
+  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, deleted: 0, resolvedReports: 0, profileFields: [] }
 
   await db.transaction('rw', db.cards, db.packages, db.reports, db.exams, async () => {
     const changed: string[] = []
@@ -41,6 +44,10 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       const old = existing.get(content.uid)
       if (old) {
         existing.delete(content.uid)
+        if (old.deletedAt) {
+          result.deleted++
+          return { ...stripContent(old), ...content, chapterTitle, order, archived: 1 as const }
+        }
         if (old.archived) result.restored++
         else if (contentKey(old) !== contentKey(content)) {
           result.updated++

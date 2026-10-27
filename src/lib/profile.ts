@@ -1,6 +1,7 @@
 import { db, type Exam, type ExamProfile, type ProfileField, type Semester } from './db'
 import { isoDate } from './dates'
 import { parseProfile, slugify } from './package-format'
+import { deletedCards } from './cards'
 import { openReportEntries } from './reports'
 import { semesterKind } from './semesters'
 
@@ -68,6 +69,7 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
         const { slug: _slug, suggested, ...profile } = e.profile ?? {}
         const packages = await db.packages.where('examId').equals(e.id).toArray()
         const reports = await openReportEntries(e.id)
+        const deleted = await deletedCards(e.id)
         return {
           name: e.name,
           slug: examSlug(e),
@@ -76,7 +78,11 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
           lecturesOngoing: e.ongoing || undefined,
           profile: Object.keys(profile).length ? profile : undefined,
           unconfirmed: suggested?.length ? suggested : undefined,
-          packages: packages.map((p) => ({ id: p.packageId, title: p.title, version: p.version, cards: p.cardCount })),
+          packages: packages.map((p) => {
+            // Vom Nutzer gelöschte Karten: Claude soll sie bei Updates nicht durch ähnliche ersetzen.
+            const del = deleted.filter((c) => c.packageId === p.packageId).map((c) => c.uid)
+            return { id: p.packageId, title: p.title, version: p.version, cards: p.cardCount, deleted: del.length ? del : undefined }
+          }),
           reports: reports.length ? reports : undefined,
         }
       }),

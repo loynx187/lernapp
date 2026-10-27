@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { db, type Exam } from './db'
 import { exportPackage, importPackage, parsePackage, parseTextCards } from './packages'
+import { deleteCard, deletedCards, restoreCard } from './cards'
 
 const sample = JSON.parse(readFileSync(new URL('../../public/beispiel-paket.json', import.meta.url), 'utf8'))
 const exam: Exam = { id: 'e1', profileId: 'p1', semesterId: 's1', name: 'TM', date: '2027-02-01', weight: 2, color: '#000', createdAt: 0 }
@@ -58,6 +59,29 @@ describe('importPackage', () => {
 
     const r3 = await importPackage(exam, v1, 3000)
     expect(r3.restored).toBe(1)
+  })
+
+  it('lässt gelöschte Karten auch nach einem Update gelöscht und stellt sie mit Fortschritt wieder her', async () => {
+    const v1 = parsePackage(sample)
+    await importPackage(exam, v1, 1000)
+    const id = `e1:${v1.id}:k1-01`
+    await db.cards.update(id, { s: { ...(await db.cards.get(id))!.s, reps: 3 } })
+    await deleteCard({ id }, 1500)
+    expect((await db.cards.where('[examId+archived]').equals(['e1', 0]).primaryKeys())).not.toContain(id)
+
+    const v2 = parsePackage({ ...sample, version: 2, cards: [{ ...sample.cards[0], back: 'Neu' }, ...sample.cards.slice(1)] })
+    const r = await importPackage(exam, v2, 2000)
+    expect(r).toMatchObject({ deleted: 1, restored: 0, updated: 0 })
+    const after = (await db.cards.get(id))!
+    expect(after).toMatchObject({ archived: 1, deletedAt: 1500, back: 'Neu' })
+    expect((await deletedCards('e1')).map((c) => c.id)).toEqual([id])
+
+    await restoreCard({ id })
+    const back = (await db.cards.get(id))!
+    expect(back.archived).toBe(0)
+    expect(back.deletedAt).toBeUndefined()
+    expect(back.s.reps).toBe(3)
+    expect(await deletedCards('e1')).toEqual([])
   })
 
   it('exportiert ein Paket ohne Lernfortschritt, das sich wieder importieren lässt', async () => {

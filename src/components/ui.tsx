@@ -39,6 +39,7 @@ const paths = {
   plus: 'M12 5v14M5 12h14',
   chevron: 'M9 5l7 7-7 7',
   flag: 'M5 21V4.5m0 0h11.5l-2 4 2 4H5',
+  trash: 'M4 6.5h16M9.5 6.5V4.5h5v2M6 6.5l1 13a1.5 1.5 0 0 0 1.5 1.4h7a1.5 1.5 0 0 0 1.5-1.4l1-13M10 10.5v6M14 10.5v6',
 }
 
 export type IconName = keyof typeof paths

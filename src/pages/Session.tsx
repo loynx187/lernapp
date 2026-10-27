@@ -8,6 +8,7 @@ import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
 import { toPlanCard } from '../lib/stats'
 import { formatInterval } from '../lib/dates'
 import { REPORT_CATEGORIES, reportCard } from '../lib/reports'
+import { deleteCard } from '../lib/cards'
 import { checkAnswer, formatAnswer } from '../lib/answers'
 import { SlideViewer } from '../components/SlideViewer'
 import { Rich } from '../components/Rich'
@@ -130,6 +131,21 @@ export function Session() {
     setReportNote('')
   }
 
+  async function removeCard() {
+    if (!card || !queue || busy) return
+    if (!confirm('Karte löschen? Sie wird nicht mehr abgefragt – auch nicht nach einem Paket-Update. Wiederherstellen kannst du sie auf der Seite der Prüfung.')) return
+    setBusy(true)
+    try {
+      await deleteCard(card)
+      setQueue(queue.filter((c) => c.id !== card.id))
+      // Eine rückgängig gemachte Bewertung würde die gelöschte Karte wieder in die Sitzung holen.
+      if (undo?.card.id === card.id) setUndo(null)
+      resetCardUi()
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const reveal = () => {
     if (!card) return
     if (card.type === 'task') setStepsShown(card.steps?.length ?? 0)
@@ -164,6 +180,11 @@ export function Session() {
       {card && (
         <button className="btn ghost small" onClick={() => setReporting((r) => !r)} aria-label="Karte melden" aria-pressed={reporting}>
           <Icon name="flag" />
+        </button>
+      )}
+      {card && (
+        <button className="btn ghost small" onClick={removeCard} disabled={busy} aria-label="Karte löschen">
+          <Icon name="trash" />
         </button>
       )}
       <button className="btn ghost small" onClick={undoLast} disabled={!undo || busy} aria-label="Letzte Bewertung rückgängig">

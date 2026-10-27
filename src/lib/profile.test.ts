@@ -5,6 +5,7 @@ import { db, type Exam, type Semester } from './db'
 import { importPackage, parsePackage } from './packages'
 import { buildOrder, matchExam, mergeProfile, orderText, parseProfilesFile, slugify } from './profile'
 import { reportCard } from './reports'
+import { deleteCard } from './cards'
 
 const sample = JSON.parse(readFileSync(new URL('../../public/beispiel-paket.json', import.meta.url), 'utf8'))
 const semester: Semester = { id: 's1', profileId: 'p1', name: '5. Semester', createdAt: 0, kind: 'dual' }
@@ -73,5 +74,14 @@ describe('Auftrag für Claude', () => {
     const text = orderText(order)
     expect(text.startsWith('/kartenpaket Technische Mechanik II')).toBe(true)
     expect(JSON.parse(text.split('```json\n')[1].split('\n```')[0])).toEqual(JSON.parse(JSON.stringify(order)))
+  })
+
+  it('nennt vom Nutzer gelöschte Karten je Paket', async () => {
+    const pkg = parsePackage(sample)
+    await importPackage(exam, pkg)
+    const card = (await db.cards.toArray())[1]
+    await deleteCard(card)
+    const order = await buildOrder([(await db.exams.get('e1'))!], semester)
+    expect(order.exams[0].packages[0].deleted).toEqual([card.uid])
   })
 })
