@@ -56,6 +56,8 @@ describe('importPackage', () => {
     expect(after!.s.reps).toBe(5)
     expect((await db.cards.get(`e1:${v1.id}:k1-02`))!.archived).toBe(1)
     expect((await db.packages.get(`e1:${v1.id}`))!.version).toBe(2)
+    // Der erste Import bestimmt die Reihenfolge der Pakete, auch nach einem Update.
+    expect((await db.packages.get(`e1:${v1.id}`))!).toMatchObject({ importedAt: 2000, firstImportedAt: 1000 })
 
     const r3 = await importPackage(exam, v1, 3000)
     expect(r3.restored).toBe(1)

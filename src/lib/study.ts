@@ -3,13 +3,15 @@ import { DAY, studyDate } from './dates'
 import { planDay, type DayPlan } from './planner'
 import { planExams, semesterKind, SEMESTER_KINDS } from './semesters'
 import { review, type Grade } from './scheduler'
-import { doneToday, estimateCosts, examStats, toPlanCard } from './stats'
+import { doneToday, estimateCosts, examStats, packageBlocks, toPlanCard } from './stats'
 
 export interface StudyData {
   exams: Exam[]
   cards: StudyCard[]
   logs: ReviewLog[]
   plan: DayPlan
+  /** Reihenfolge der Pakete je Prüfung, für toPlanCard und examStats. */
+  blocks: Map<string, number>
 }
 
 /** Lädt alles, was für Tagesplan und Lernsitzung des aktiven Semesters nötig ist. */
@@ -18,6 +20,7 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
   exams.sort((a, b) => a.date.localeCompare(b.date))
   const cards = (await Promise.all(exams.map((e) => db.cards.where('[examId+archived]').equals([e.id, 0]).toArray()))).flat()
   const examIds = new Set(exams.map((e) => e.id))
+  const blocks = packageBlocks((await Promise.all(exams.map((e) => db.packages.where('examId').equals(e.id).toArray()))).flat())
   const logs = await db.reviews
     .where('reviewedAt')
     .above(now - 60 * DAY)
@@ -28,7 +31,7 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
     now,
     exams: planExams(exams, semester),
     buffer: SEMESTER_KINDS[semesterKind(semester)].buffer,
-    cards: cards.map(toPlanCard),
+    cards: cards.map((c) => toPlanCard(c, blocks)),
     done: doneToday(
       logs.filter((l) => examIds.has(l.examId)),
       now,
@@ -36,7 +39,7 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
     budgetMinutes: { mobile: profile.minutesMobile, desk: profile.minutesDesk },
     costs: estimateCosts(logs),
   })
-  return { exams, cards, logs, plan }
+  return { exams, cards, logs, plan, blocks }
 }
 
 export interface Undo {

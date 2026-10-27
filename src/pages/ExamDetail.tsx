@@ -4,7 +4,7 @@ import { useActive } from '../state'
 import { cardMode, db } from '../lib/db'
 import { loadStudyData } from '../lib/study'
 import { addDays, daysUntil, formatCountdown, formatDate, isoDate } from '../lib/dates'
-import { examStats } from '../lib/stats'
+import { examStats, packageBlocks } from '../lib/stats'
 import { exportPackage, safeFileName, saveFile } from '../lib/packages'
 import { deletedCards, restoreCard } from '../lib/cards'
 import { deleteReport, exportReports, REPORT_CATEGORIES, setResolved } from '../lib/reports'
@@ -46,7 +46,7 @@ export function ExamDetail() {
   const { cards, deleted, snapshots, packages, reports, plan } = data
   const openReports = reports.filter((r) => !r.resolvedAt).sort((a, b) => b.createdAt - a.createdAt)
   const cardById = new Map(cards.map((c) => [c.id, c]))
-  const stats = examStats(exam, cards, Date.now(), profile.retention)
+  const stats = examStats(exam, cards, Date.now(), profile.retention, packageBlocks(packages))
   const days = daysUntil(exam.date)
   const hasDesk = cards.some((c) => cardMode(c) === 'desk')
   const hasMobile = cards.some((c) => cardMode(c) === 'mobile')
