@@ -7,11 +7,32 @@ import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
 import { useSync } from '../sync-state'
+import { listBackups, restoreBackup as restoreDropboxBackup, type BackupEntry } from '../lib/syncService'
 
 export function Settings() {
   const { profile, semester, semesters } = useActive()
   const { profiles, selectProfile } = useAppState()
   const sync = useSync()
+  const [backups, setBackups] = useState<BackupEntry[] | null>(null)
+
+  async function showBackups() {
+    try {
+      setBackups(await listBackups(profile.id))
+    } catch (e) {
+      setMessage((e as Error).message)
+    }
+  }
+
+  async function restoreWeek(b: BackupEntry) {
+    if (!confirm(`Profil auf die Sicherung aus ${b.week.replace('-KW', ', KW ')} zurücksetzen? Was du seitdem auf diesem Gerät gelernt hast, geht verloren.`)) return
+    try {
+      await restoreDropboxBackup(profile.id, b)
+      setMessage('Sicherung wiederhergestellt.')
+      setBackups(null)
+    } catch (e) {
+      setMessage((e as Error).message)
+    }
+  }
   const [message, setMessage] = useState('')
   const [storage, setStorage] = useState<{ persisted?: boolean; usage?: number }>({})
 
@@ -175,6 +196,23 @@ export function Settings() {
                 Trennen
               </button>
             </div>
+            {backups === null ? (
+              <button className="btn small ghost" style={{ color: 'var(--accent)', alignSelf: 'flex-start', marginLeft: -8 }} onClick={showBackups}>
+                Wochensicherungen anzeigen
+              </button>
+            ) : backups.length === 0 ? (
+              <small>Noch keine Wochensicherung vorhanden – sie entsteht beim ersten Abgleich jeder Woche.</small>
+            ) : (
+              <div className="stack">
+                <small>Einmal pro Woche legt die App eine Sicherung in deiner Dropbox ab (die letzten 8 bleiben erhalten).</small>
+                {backups.map((b) => (
+                  <div className="row between" key={b.path}>
+                    <span>{b.week.replace('-KW', ' · KW ')}</span>
+                    <button className="btn small" onClick={() => restoreWeek(b)}>Wiederherstellen</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <>

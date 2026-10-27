@@ -135,15 +135,15 @@ export function ExamDetail() {
           <div className="section-title">Meldungen</div>
           <div className="list">
             {openReports.map((r) => (
-              <div className="list-item" key={r.id} style={{ alignItems: 'flex-start' }}>
-                <div className="grow">
+              <div className="list-item" key={r.id} style={{ flexWrap: 'wrap', rowGap: 4 }}>
+                <div className="grow" style={{ flexBasis: '100%' }}>
                   <div className="truncate" style={{ fontWeight: 500 }}>{cardById.get(r.cardId)?.front.replace(/[*_$#>{}]/g, '') ?? r.uid}</div>
                   <small>
                     {REPORT_CATEGORIES.find((c) => c.value === r.category)?.label}
                     {r.note && ` · ${r.note}`}
                   </small>
                 </div>
-                <button className="btn small ghost" style={{ color: 'var(--accent)' }} onClick={() => setResolved(r, true)}>Erledigt</button>
+                <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: 'auto' }} onClick={() => setResolved(r, true)}>Erledigt</button>
                 <button className="btn small ghost danger" onClick={() => deleteReport(r)} aria-label="Meldung löschen">Löschen</button>
               </div>
             ))}

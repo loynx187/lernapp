@@ -114,12 +114,28 @@ describe('applyDoc', () => {
 describe('syncProfile mit simulierter Dropbox', () => {
   const files = new Map<string, { data: Uint8Array; rev: number }>()
   let conflictsLeft = 0
+  let calls: string[] = []
 
   beforeEach(() => {
     files.clear()
     conflictsLeft = 0
+    calls = []
     vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
-      const arg = JSON.parse(String((init.headers as Record<string, string>)['Dropbox-API-Arg'] ?? '{}'))
+      const headerArg = (init.headers as Record<string, string>)['Dropbox-API-Arg']
+      const arg = JSON.parse(String(headerArg ?? (typeof init.body === 'string' ? init.body : '{}')))
+      calls.push(`${url.split('/2/')[1]} ${arg.path}`)
+      if (url.endsWith('/files/get_metadata')) {
+        const f = files.get(arg.path)
+        return f ? Response.json({ rev: String(f.rev) }) : new Response('{}', { status: 409 })
+      }
+      if (url.endsWith('/files/list_folder')) {
+        const entries = [...files.keys()].filter((p) => p.startsWith(arg.path + '/')).map((p) => ({ '.tag': 'file', name: p.split('/').pop(), path_lower: p }))
+        return Response.json({ entries })
+      }
+      if (url.endsWith('/files/delete_v2')) {
+        files.delete(arg.path)
+        return Response.json({})
+      }
       if (url.endsWith('/files/download')) {
         const f = files.get(arg.path)
         if (!f) return new Response('{}', { status: 409 })
@@ -166,5 +182,35 @@ describe('syncProfile mit simulierter Dropbox', () => {
     await syncProfile(P)
     expect((await db.exams.get('e1'))!.name).toBe('Technische Mechanik')
     expect(await db.reviews.get('x')).toBeTruthy()
+  })
+
+  it('überträgt nichts, wenn sich nichts geändert hat, und lädt nur lokale Änderungen hoch', async () => {
+    const { syncProfile } = await import('./syncService')
+    const exam = await seed()
+    await db.meta.put({ key: `dropbox:${P}`, value: { accessToken: 't', refreshToken: 'r', expiresAt: Date.now() + 3600_000, connectedAt: 0 } })
+    await syncProfile(P)
+    expect([...files.keys()].some((k) => k.startsWith(`/backups/${P}/`))).toBe(true)
+
+    calls = []
+    await syncProfile(P)
+    expect(calls).toEqual([`files/get_metadata /sync/${P}.lernsync`])
+
+    const profile = (await db.profiles.get(P))!
+    await recordReview(profile, exam, (await db.cards.get('e1:pk:c1'))!, Rating.Good, 'mobile', 1000)
+    calls = []
+    await syncProfile(P)
+    expect(calls.some((c) => c.startsWith('files/download'))).toBe(false)
+    expect(calls.filter((c) => c.startsWith('files/upload /sync'))).toHaveLength(1)
+  })
+
+  it('behält nur die letzten acht Wochensicherungen', async () => {
+    const { syncProfile } = await import('./syncService')
+    await seed()
+    await db.meta.put({ key: `dropbox:${P}`, value: { accessToken: 't', refreshToken: 'r', expiresAt: Date.now() + 3600_000, connectedAt: 0 } })
+    for (let w = 1; w <= 9; w++) files.set(`/backups/${P}/2026-KW${String(w).padStart(2, '0')}.lernsync`, { data: new Uint8Array(), rev: 1 })
+    await syncProfile(P)
+    const backups = [...files.keys()].filter((k) => k.startsWith(`/backups/${P}/`)).sort()
+    expect(backups).toHaveLength(8)
+    expect(backups[0]).toBe(`/backups/${P}/2026-KW03.lernsync`)
   })
 })

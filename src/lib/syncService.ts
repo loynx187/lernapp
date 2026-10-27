@@ -1,11 +1,14 @@
 import { db, type Profile } from './db'
-import { addDays, daysUntil, startOfDay } from './dates'
-import { adoptPendingTokens, download, DropboxError, listFolder, upload } from './dropbox'
+import { addDays, daysUntil, isoWeek, startOfDay } from './dates'
+import { adoptPendingTokens, deleteFile, download, DropboxError, getRev, listFolder, upload } from './dropbox'
 import { loadStudyData, type StudyData } from './study'
 import { applyDoc, docSignature, exportDoc, mergeDocs, parseSyncDoc, replaceProfile, type SyncDoc } from './sync'
 
 const syncPath = (profileId: string) => `/sync/${profileId}.lernsync`
+const backupFolder = (profileId: string) => `/backups/${profileId}`
 export const REMINDER_PATH = '/Erinnerung.txt'
+/** So viele Wochensicherungen bleiben in Dropbox erhalten. */
+const KEEP_BACKUPS = 8
 
 async function encode(doc: SyncDoc): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = new TextEncoder().encode(JSON.stringify(doc))
@@ -27,6 +30,12 @@ async function decode(data: Uint8Array<ArrayBuffer>): Promise<SyncDoc> {
 export interface SyncStatus {
   lastSync?: number
   error?: string
+  /** Dropbox-Version der Sync-Datei beim letzten Abgleich */
+  rev?: string
+  /** Fingerabdruck des lokalen Stands nach dem letzten Abgleich */
+  localSig?: string
+  reminder?: string
+  backupWeek?: string
 }
 
 const statusKey = (profileId: string) => `syncstatus:${profileId}`
@@ -40,36 +49,94 @@ async function setSyncStatus(profileId: string, s: SyncStatus) {
 }
 
 /**
- * Gleicht ein Profil mit Dropbox ab: herunterladen, zusammenführen, lokal übernehmen,
- * hochladen. Hat ein anderes Gerät zwischenzeitlich hochgeladen, wird neu begonnen.
+ * Gleicht ein Profil mit Dropbox ab. Zuerst wird nur die Dateiversion abgefragt:
+ * - nichts geändert (weder hier noch anderswo) → fertig, kein Datentransfer
+ * - nur hier geändert → hochladen
+ * - anderswo geändert → herunterladen, zusammenführen, lokal übernehmen, hochladen
+ * Hat ein anderes Gerät zwischenzeitlich hochgeladen, wird neu begonnen.
  */
 export async function syncProfile(profileId: string, now = Date.now()) {
+  const status = await getSyncStatus(profileId)
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const remote = await download(profileId, syncPath(profileId))
+      const path = syncPath(profileId)
       const base = await exportDoc(profileId)
-      const remoteDoc = remote ? await decode(remote.data) : undefined
-      if (remoteDoc && remoteDoc.profile.id !== profileId) throw new DropboxError('Die Daten in Dropbox gehören zu einem anderen Profil.')
-      const merged = remoteDoc ? mergeDocs(base, remoteDoc) : base
-      if (docSignature(merged) !== docSignature(base)) await applyDoc(merged, base)
-      if (!remoteDoc || docSignature(merged) !== docSignature(remoteDoc)) {
-        try {
-          await upload(profileId, syncPath(profileId), await encode({ ...merged, savedAt: now }), remote ? remote.rev : null)
-        } catch (e) {
-          if (e instanceof DropboxError && e.conflict) continue
-          throw e
+      const baseSig = docSignature(base)
+      const remoteRev = await getRev(profileId, path)
+      let rev: string
+      let doc: SyncDoc
+
+      try {
+        if (remoteRev && remoteRev === status.rev) {
+          // Seit dem letzten Abgleich hat kein anderes Gerät hochgeladen.
+          rev = baseSig === status.localSig ? remoteRev : await upload(profileId, path, await encode({ ...base, savedAt: now }), remoteRev)
+          doc = base
+        } else {
+          const remote = remoteRev ? await download(profileId, path) : null
+          const remoteDoc = remote ? await decode(remote.data) : undefined
+          if (remoteDoc && remoteDoc.profile.id !== profileId) throw new DropboxError('Die Daten in Dropbox gehören zu einem anderen Profil.')
+          const merged = remoteDoc ? mergeDocs(base, remoteDoc) : base
+          if (docSignature(merged) !== baseSig) await applyDoc(merged, base)
+          rev =
+            remote && remoteDoc && docSignature(merged) === docSignature(remoteDoc)
+              ? remote.rev
+              : await upload(profileId, path, await encode({ ...merged, savedAt: now }), remote ? remote.rev : null)
+          doc = merged
         }
+      } catch (e) {
+        if (e instanceof DropboxError && e.conflict) continue
+        throw e
       }
-      await writeReminder(profileId, now).catch(() => {})
-      await setSyncStatus(profileId, { lastSync: Date.now() })
+
+      const next: SyncStatus = { ...status, rev, localSig: docSignature(await exportDoc(profileId)), lastSync: Date.now(), error: undefined }
+      next.reminder = await writeReminder(profileId, now, status.reminder).catch(() => status.reminder)
+      next.backupWeek = await weeklyBackup(profileId, doc, now, status.backupWeek).catch(() => status.backupWeek)
+      await setSyncStatus(profileId, next)
       return
     }
     throw new DropboxError('Ein anderes Gerät synchronisiert gerade. Bitte gleich noch einmal versuchen.')
   } catch (e) {
-    const prev = await getSyncStatus(profileId)
-    await setSyncStatus(profileId, { ...prev, error: (e as Error).message })
+    await setSyncStatus(profileId, { ...(await getSyncStatus(profileId)), error: (e as Error).message })
     throw e
   }
+}
+
+/** Legt einmal pro Kalenderwoche eine Sicherung in Dropbox ab und behält die letzten acht. */
+async function weeklyBackup(profileId: string, doc: SyncDoc, now: number, lastWeek?: string): Promise<string> {
+  const week = isoWeek(now)
+  if (week === lastWeek) return week
+  await upload(profileId, `${backupFolder(profileId)}/${week}.lernsync`, await encode({ ...doc, savedAt: now }))
+  const old = (await listBackups(profileId)).slice(KEEP_BACKUPS)
+  for (const b of old) await deleteFile(profileId, b.path)
+  return week
+}
+
+export interface BackupEntry {
+  week: string
+  path: string
+}
+
+/** Wochensicherungen in Dropbox, neueste zuerst. */
+export async function listBackups(profileId: string): Promise<BackupEntry[]> {
+  return (await listFolder(profileId, backupFolder(profileId)))
+    .filter((f) => f.name.endsWith('.lernsync'))
+    .map((f) => ({ week: f.name.replace(/\.lernsync$/, ''), path: f.path }))
+    .sort((a, b) => b.week.localeCompare(a.week))
+}
+
+/**
+ * Setzt das Profil auf eine Wochensicherung zurück und überschreibt den Stand in Dropbox.
+ * Was andere Geräte seitdem gelernt haben, kommt beim nächsten Abgleich dieser Geräte wieder dazu.
+ */
+export async function restoreBackup(profileId: string, entry: BackupEntry) {
+  const d = await download(profileId, entry.path)
+  if (!d) throw new DropboxError('Die Sicherung wurde nicht gefunden.')
+  const doc = await decode(d.data)
+  if (doc.profile.id !== profileId) throw new DropboxError('Die Sicherung gehört zu einem anderen Profil.')
+  await replaceProfile(doc, false)
+  const local = await exportDoc(profileId)
+  const rev = await upload(profileId, syncPath(profileId), await encode({ ...local, savedAt: Date.now() }))
+  await setSyncStatus(profileId, { ...(await getSyncStatus(profileId)), rev, localSig: docSignature(local), lastSync: Date.now(), error: undefined })
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
@@ -92,12 +159,15 @@ export function reminderText(profile: Profile, today: StudyData, tomorrow: Study
   return lines.join('\n')
 }
 
-async function writeReminder(profileId: string, now: number) {
+/** Schreibt die Erinnerungsdatei, aber nur, wenn sich der Text geändert hat. */
+async function writeReminder(profileId: string, now: number, last?: string): Promise<string | undefined> {
   const profile = await db.profiles.get(profileId)
-  if (!profile) return
+  if (!profile) return last
   const today = await loadStudyData(profile, now)
   const tomorrow = await loadStudyData(profile, addDays(startOfDay(now), 1) + 7 * 3600_000)
-  await upload(profileId, REMINDER_PATH, reminderText(profile, today, tomorrow, now))
+  const text = reminderText(profile, today, tomorrow, now)
+  if (text !== last) await upload(profileId, REMINDER_PATH, text)
+  return text
 }
 
 export interface RemoteProfile {
@@ -120,7 +190,6 @@ export async function listRemoteProfiles(tokenOwner: string): Promise<RemoteProf
 export async function importRemoteProfile(r: RemoteProfile) {
   const exists = await db.profiles.get(r.doc.profile.id)
   await adoptPendingTokens(r.doc.profile.id)
-  if (exists) await syncProfile(r.doc.profile.id)
-  else await replaceProfile(r.doc, true)
-  await setSyncStatus(r.doc.profile.id, { lastSync: Date.now() })
+  if (!exists) await replaceProfile(r.doc, true)
+  await syncProfile(r.doc.profile.id)
 }

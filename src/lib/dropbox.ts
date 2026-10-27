@@ -176,6 +176,27 @@ export async function upload(profileId: string, path: string, data: Uint8Array<A
   return ((await res.json()) as { rev: string }).rev
 }
 
+/** Aktuelle Version (rev) einer Datei oder null, wenn es sie nicht gibt – ohne den Inhalt zu laden. */
+export async function getRev(profileId: string, path: string): Promise<string | null> {
+  const res = await call(profileId, 'https://api.dropboxapi.com/2/files/get_metadata', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+  if (res.status === 409) return null
+  if (!res.ok) throw new DropboxError('Dropbox ist gerade nicht erreichbar.', res.status)
+  return ((await res.json()) as { rev?: string }).rev ?? null
+}
+
+export async function deleteFile(profileId: string, path: string) {
+  const res = await call(profileId, 'https://api.dropboxapi.com/2/files/delete_v2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+  if (!res.ok && res.status !== 409) throw new DropboxError('Löschen in Dropbox fehlgeschlagen.', res.status)
+}
+
 export async function listFolder(profileId: string, path: string): Promise<{ name: string; path: string }[]> {
   const res = await call(profileId, 'https://api.dropboxapi.com/2/files/list_folder', {
     method: 'POST',

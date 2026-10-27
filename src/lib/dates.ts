@@ -54,3 +54,13 @@ export function formatInterval(ms: number): string {
   if (mo < 12) return `${mo} Mon`
   return `${(d / 365).toFixed(1)} J`
 }
+
+/** Kalenderwoche nach ISO 8601, z. B. „2026-KW44“. */
+export function isoWeek(t: number | Date): string {
+  const d = new Date(t)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7))
+  const firstThursday = new Date(d.getFullYear(), 0, 4)
+  const week = 1 + Math.round(((d.getTime() - firstThursday.getTime()) / DAY - 3 + ((firstThursday.getDay() + 6) % 7)) / 7)
+  return `${d.getFullYear()}-KW${String(week).padStart(2, '0')}`
+}
