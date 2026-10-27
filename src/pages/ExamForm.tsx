@@ -1,0 +1,113 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useActive } from '../state'
+import { db, deleteExam, EXAM_COLORS, MAX_EXAMS_PER_SEMESTER, uid } from '../lib/db'
+import { addDays, isoDate } from '../lib/dates'
+import { Icon } from '../components/ui'
+
+const WEIGHTS = [
+  { v: 1, label: 'Niedrig' },
+  { v: 2, label: 'Normal' },
+  { v: 3, label: 'Hoch' },
+]
+
+export function ExamForm() {
+  const { id } = useParams()
+  const { profile, semester } = useActive()
+  const navigate = useNavigate()
+  const [name, setName] = useState('')
+  const [date, setDate] = useState(isoDate(addDays(Date.now(), 60)))
+  const [weight, setWeight] = useState(2)
+  const [color, setColor] = useState(EXAM_COLORS[0])
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (id) {
+      db.exams.get(id).then((e) => {
+        if (!e) return
+        setName(e.name)
+        setDate(e.date)
+        setWeight(e.weight)
+        setColor(e.color)
+      })
+    } else {
+      db.exams.where('semesterId').equals(semester.id).toArray().then((list) => {
+        const used = new Set(list.map((e) => e.color))
+        setColor(EXAM_COLORS.find((c) => !used.has(c)) ?? EXAM_COLORS[list.length % EXAM_COLORS.length])
+      })
+    }
+  }, [id, semester.id])
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) return setError('Bitte gib einen Namen ein.')
+    if (!date) return setError('Bitte wähle einen Termin.')
+    if (id) {
+      await db.exams.update(id, { name: name.trim(), date, weight, color })
+      navigate(`/pruefung/${id}`, { replace: true })
+    } else {
+      const count = await db.exams.where('semesterId').equals(semester.id).count()
+      if (count >= MAX_EXAMS_PER_SEMESTER) return setError(`Maximal ${MAX_EXAMS_PER_SEMESTER} Prüfungen pro Semester.`)
+      const newId = uid()
+      await db.exams.add({ id: newId, profileId: profile.id, semesterId: semester.id, name: name.trim(), date, weight, color, createdAt: Date.now() })
+      navigate(`/pruefung/${newId}`, { replace: true })
+    }
+  }
+
+  async function remove() {
+    if (!id || !confirm('Prüfung mit allen Karten und dem Lernfortschritt löschen?')) return
+    await deleteExam(id)
+    navigate('/pruefungen', { replace: true })
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <div className="header">
+        <button type="button" className="btn ghost small" onClick={() => navigate(-1)} aria-label="Zurück">
+          <Icon name="back" />
+        </button>
+        <h1 className="grow">{id ? 'Prüfung bearbeiten' : 'Neue Prüfung'}</h1>
+      </div>
+      <div className="card">
+        <label className="field">
+          <span>Name</span>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Thermodynamik II" />
+        </label>
+        <label className="field">
+          <span>Klausurtermin</span>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <div className="field">
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Wichtigkeit</span>
+          <div className="row">
+            {WEIGHTS.map((w) => (
+              <button type="button" key={w.v} className={`btn small grow ${weight === w.v ? 'primary' : ''}`} onClick={() => setWeight(w.v)}>
+                {w.label}
+              </button>
+            ))}
+          </div>
+          <small>Bei knapper Zeit bekommen wichtigere Prüfungen mehr vom Tagesbudget (z. B. nach ECTS oder Schwierigkeit).</small>
+        </div>
+        <div className="field">
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Farbe</span>
+          <div className="row wrap">
+            {EXAM_COLORS.map((c) => (
+              <button
+                type="button"
+                key={c}
+                onClick={() => setColor(c)}
+                aria-label={`Farbe ${c}`}
+                style={{ width: 32, height: 32, borderRadius: '50%', background: c, border: color === c ? '3px solid var(--text)' : '3px solid transparent', cursor: 'pointer' }}
+              />
+            ))}
+          </div>
+        </div>
+        {error && <p className="error">{error}</p>}
+        <button className="btn primary block" type="submit">Speichern</button>
+      </div>
+      {id && (
+        <button type="button" className="btn danger block" onClick={remove}>Prüfung löschen</button>
+      )}
+    </form>
+  )
+}
