@@ -141,6 +141,13 @@ export function Dashboard() {
           </Widget>
         )}
 
+        {next && nextPlan && nextPlan.daysLeft <= 21 && cards.some((c) => c.examId === next.id) && (
+          <Widget size="small" to={`/probeklausur/${next.id}`} title="Probeklausur" icon="pencil" tint={next.color}>
+            <div className="w-headline">Unter Zeitdruck üben</div>
+            <div className="w-foot truncate">{next.name}</div>
+          </Widget>
+        )}
+
         {total > 0 && (
           <Widget size="small" to="/pruefungen" title="Fortschritt" icon="chart">
             <div className="w-rings">

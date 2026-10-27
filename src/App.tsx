@@ -11,6 +11,7 @@ import { Settings } from './pages/Settings'
 import { Help } from './pages/Help'
 import { DropboxImport } from './pages/DropboxImport'
 import { SemesterForm } from './pages/SemesterForm'
+import { MockExam } from './pages/MockExam'
 import { SyncProvider } from './sync-state'
 
 /** Jede Sitzung neu aufbauen, auch beim direkten Wechsel zwischen zwei Sitzungen. */
@@ -51,6 +52,7 @@ function Shell() {
         <Route path="/einstellungen" element={<Settings />} />
         <Route path="/hilfe" element={<Help />} />
         <Route path="/semester/neu" element={<SemesterForm />} />
+        <Route path="/probeklausur/:id" element={<MockExam />} />
         <Route path="/semester/:id" element={<SemesterForm />} />
         <Route path="*" element={<Dashboard />} />
       </Routes>
