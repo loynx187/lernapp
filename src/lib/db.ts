@@ -56,13 +56,25 @@ export interface CardContent {
   /** Rechenaufgabe: Lösungsschritte und Endergebnis. */
   steps?: string[]
   result?: string
-  source?: { file?: string; slide?: number | string }
+  /** Rechenaufgabe: Zahlenergebnisse für die automatische Prüfung der Eingabe. */
+  answers?: NumericAnswer[]
+  /** slide = gedruckte Foliennummer, page = Seite im PDF (für „Folie ansehen“) */
+  source?: { file?: string; slide?: number | string; page?: number }
   image?: string
   tags?: string[]
   /** Klausurrelevanz 1–3 (z. B. aus Altklausuren abgeleitet). */
   relevance?: number
   /** Überschreibt den Modus; Standard: Aufgaben am Schreibtisch, alles andere unterwegs. */
   mode?: Mode
+}
+
+export interface NumericAnswer {
+  /** Bezeichnung bei mehreren gesuchten Größen, z. B. „σ“ */
+  label?: string
+  value: number
+  unit?: string
+  /** Erlaubte relative Abweichung (Standard 0,02 = 2 %) */
+  tolerance?: number
 }
 
 /** FSRS-Zustand mit Zeitstempeln als Zahlen, damit Backups reines JSON bleiben. */

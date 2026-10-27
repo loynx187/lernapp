@@ -8,6 +8,7 @@ import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
 import { toPlanCard } from '../lib/stats'
 import { formatInterval } from '../lib/dates'
 import { REPORT_CATEGORIES, reportCard } from '../lib/reports'
+import { checkAnswer, formatAnswer } from '../lib/answers'
 import { Rich } from '../components/Rich'
 import { Icon, Progress } from '../components/ui'
 
@@ -42,6 +43,7 @@ export function Session() {
   const [reportCategory, setReportCategory] = useState<ReportCategory>('fehler')
   const [reportNote, setReportNote] = useState('')
   const [reported, setReported] = useState<Set<string>>(new Set())
+  const [answerInputs, setAnswerInputs] = useState<string[]>([])
   const started = useRef(Date.now())
   const sessionStart = useRef(Date.now())
 
@@ -66,6 +68,7 @@ export function Session() {
 
   const resetCardUi = () => {
     setReporting(false)
+    setAnswerInputs([])
     setRevealed(false)
     setSelected([])
     setStepsShown(0)
@@ -78,6 +81,9 @@ export function Session() {
   )
 
   const mcCorrect = card?.type === 'mc' && revealed ? sameSet(selected, card.correct ?? []) : null
+  const answers = card?.answers ?? []
+  const answerResults = answers.map((a, i) => checkAnswer(answerInputs[i] ?? '', a))
+  const answersTried = answerInputs.some((x) => x?.trim())
 
   const rate = useCallback(
     async (r: Grade) => {
@@ -240,8 +246,45 @@ export function Session() {
           </div>
         )}
 
+        {answers.length > 0 && (
+          <div className="steps">
+            <div className="step">
+              <b>{revealed ? 'Dein Ergebnis' : 'Dein Ergebnis (optional)'}</b>
+              <div className="stack" style={{ marginTop: 6 }}>
+                {answers.map((a, i) => (
+                  <div className="row" key={i}>
+                    {a.label && <span style={{ minWidth: 28 }}><Rich text={a.label.includes('$') ? a.label : `$${a.label}$`} /></span>}
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="grow"
+                      value={answerInputs[i] ?? ''}
+                      disabled={revealed}
+                      placeholder="Zahl"
+                      onChange={(e) => setAnswerInputs((xs) => Object.assign([...xs], { [i]: e.target.value }))}
+                      onKeyDown={(e) => e.key === 'Enter' && reveal()}
+                      style={{ minHeight: 40, padding: '6px 10px' }}
+                    />
+                    {a.unit && <span className="muted">{a.unit}</span>}
+                    {revealed && (
+                      <span className={answerResults[i] ? 'badge-good' : 'badge-warn'} style={{ whiteSpace: 'nowrap' }}>
+                        {answerResults[i] ? '✓' : `✗ ${formatAnswer(a)}`}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {revealed && (
           <>
+            {answers.length > 0 && answersTried && (
+              <p className={answerResults.every(Boolean) ? 'badge-good' : 'badge-warn'} style={{ marginTop: 12 }}>
+                {answerResults.every(Boolean) ? 'Ergebnis richtig!' : 'Ergebnis weicht ab – „Nochmal“ oder „Schwer“ empfohlen.'}
+              </p>
+            )}
             {card.type === 'mc' && (
               <p className={mcCorrect ? 'badge-good' : 'badge-warn'} style={{ marginTop: 12 }}>
                 {mcCorrect ? 'Richtig!' : 'Leider nicht ganz – „Nochmal“ empfohlen.'}

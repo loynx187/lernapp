@@ -4,7 +4,7 @@
  "id": "beispiel-festigkeitslehre",
  "title": "Beispiel: Festigkeitslehre",
  "module": "Technische Mechanik",
- "version": 1,
+ "version": 2,
  "created": "2026-10-27",
  "sources": [
   {
@@ -110,7 +110,19 @@
     "file": "Beispielskript.pdf",
     "slide": 24
    },
-   "relevance": 3
+   "relevance": 3,
+   "answers": [
+    {
+     "label": "\\sigma",
+     "value": 159.2,
+     "unit": "MPa"
+    },
+    {
+     "label": "\\Delta l",
+     "value": 1.137,
+     "unit": "mm"
+    }
+   ]
   },
   {
    "uid": "k2-01",
@@ -184,7 +196,14 @@
     "file": "Beispielskript.pdf",
     "slide": 52
    },
-   "relevance": 3
+   "relevance": 3,
+   "answers": [
+    {
+     "label": "\\sigma_{b,\\max}",
+     "value": 93.75,
+     "unit": "MPa"
+    }
+   ]
   },
   {
    "uid": "k3-01",
@@ -247,7 +266,14 @@
     "file": "Beispielskript.pdf",
     "slide": 70
    },
-   "relevance": 3
+   "relevance": 3,
+   "answers": [
+    {
+     "label": "d_{\\min}",
+     "value": 34.9,
+     "unit": "mm"
+    }
+   ]
   }
  ]
 }

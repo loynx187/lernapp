@@ -1,6 +1,6 @@
 // Kartenpaket-Format und Validierung. Bewusst ohne Laufzeit-Imports, damit
 // scripts/validate-paket.ts die Prüfung auch außerhalb der App nutzen kann.
-import type { CardContent, CardType, Mode } from './db'
+import type { CardContent, CardType, Mode, NumericAnswer } from './db'
 
 export const PACKAGE_FORMAT = 'lernapp-paket'
 export const BACKUP_FORMAT = 'lernapp-backup'
@@ -56,11 +56,19 @@ export function parsePackage(raw: unknown): CardPackage {
     const steps = strArray(c.steps)
     if (steps) card.steps = steps
     if (isStr(c.result)) card.result = c.result
+    if (Array.isArray(c.answers)) {
+      card.answers = c.answers.map((a: Record<string, unknown>, j: number): NumericAnswer => {
+        if (!a || typeof a.value !== 'number' || !Number.isFinite(a.value)) throw new Error(`${where}: Ergebnis ${j + 1} braucht einen Zahlenwert (value).`)
+        const tol = typeof a.tolerance === 'number' && a.tolerance > 0 && a.tolerance < 1 ? a.tolerance : undefined
+        return { value: a.value, label: isStr(a.label) ? a.label : undefined, unit: isStr(a.unit) ? a.unit : undefined, tolerance: tol }
+      })
+    }
     if (c.source && typeof c.source === 'object') {
       const s = c.source as Record<string, unknown>
       card.source = {
         file: isStr(s.file) ? s.file : undefined,
         slide: isStr(s.slide) || typeof s.slide === 'number' ? s.slide : undefined,
+        page: typeof s.page === 'number' && Number.isInteger(s.page) && s.page > 0 ? s.page : undefined,
       }
     }
     if (isStr(c.image) && /^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,/.test(c.image)) card.image = c.image

@@ -38,6 +38,7 @@ for (const c of pkg.cards) {
   if (!c.chapter && chapters.size) warnings.push(`${where}: keinem Kapitel zugeordnet.`)
   if (c.type === 'cloze' && !/\{\{[\s\S]+?\}\}/.test(c.front)) errors.push(`${where}: Lückentext ohne {{…}}.`)
   if (c.type === 'task' && (!c.steps?.length || !c.result)) errors.push(`${where}: Rechenaufgabe ohne Lösungsschritte oder Ergebnis.`)
+  if (c.type === 'task' && !c.answers?.length) warnings.push(`${where}: Rechenaufgabe ohne answers – keine automatische Ergebnisprüfung.`)
   if (c.type === 'basic' && !c.back.trim()) errors.push(`${where}: Antwort fehlt.`)
   const answer = c.back.replace(/!\[[^\]]*\]\([^)]*\)/g, '')
   if (answer.length > 700) warnings.push(`${where}: Antwort sehr lang (${answer.length} Zeichen) – aufteilen?`)
@@ -49,6 +50,8 @@ for (const c of pkg.cards) {
   else fronts.set(key, c.uid)
   if (!/^k\d+-f\d{3}-\d+$/.test(c.uid)) warnings.push(`${where}: uid folgt nicht dem Schema k<Kapitel>-f<Folie>-<n>.`)
 }
+const noPage = pkg.cards.filter((c) => c.source && c.source.page === undefined).length
+if (noPage) warnings.push(`${noPage} Karten ohne source.page – „Folie ansehen“ nutzt dann die Foliennummer als PDF-Seite.`)
 const used = count(pkg.cards.map((c) => c.chapter ?? ''))
 for (const [id, title] of chapters) if (!used.has(id)) warnings.push(`Kapitel „${title}“ hat keine Karten.`)
 
