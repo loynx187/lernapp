@@ -50,10 +50,12 @@ Gemeinsame Felder:
 - **`task`** – Rechenaufgabe: `front` = Aufgabenstellung mit Zahlenwerten, `steps` = Lösungsschritte (Liste), `result` = Endergebnis, `back` = Hinweise/typische Fehler.
   Zusätzlich `answers` für die automatische Prüfung der Eingabe in der App:
   `[{ "label": "\\sigma", "value": 159.2, "unit": "MPa", "tolerance": 0.02 }]` – `label` (LaTeX, optional, bei mehreren gesuchten Größen), `value` (Zahl in der angegebenen Einheit), `unit` (optional), `tolerance` (relative Abweichung, Standard 0,02 = 2 %).
+  Statt `value` geht auch `text` für Antworten, die keine Zahl sind: `{ "label": "Y", "text": ["01101001"] }` oder `{ "text": ["3E8", "16#3E8"] }` (Liste = alle akzeptierten Schreibweisen). Verglichen wird ohne Groß-/Kleinschreibung und Leerzeichen – nur für eindeutige Kurzantworten verwenden (Zahlencode, Wahrheitstabellen-Spalte, Schlüsselwort), nicht für Funktionsgleichungen, die mehrere richtige Formen haben.
 
 ### Textformat
 
-Alle Textfelder unterstützen **Markdown** und Formeln in **LaTeX** (KaTeX):
+Alle Textfelder unterstützen **Markdown** und Formeln in **LaTeX** (KaTeX). Programmcode (z. B. SCL) als Code-Block mit drei Backticks – er erscheint in fester Schrift, Einrückungen bleiben erhalten; Lücken `{{…}}` funktionieren auch im Code-Block.
+
 `$…$` bzw. `\(…\)` im Fließtext, `$$…$$` bzw. `\[…\]` abgesetzt. In JSON müssen Backslashes verdoppelt werden (`"$\\sigma$"`).
 
 ## Update-Verhalten

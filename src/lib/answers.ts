@@ -30,7 +30,12 @@ export function parseNumber(input: string): number {
   return Number.isFinite(value) ? value * 10 ** exp : NaN
 }
 
+/** Textantworten vergleichen: Groß-/Kleinschreibung und Leerzeichen zählen nicht. */
+const normText = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+
 export function checkAnswer(input: string, a: NumericAnswer): boolean {
+  if (a.text?.length) return !!input.trim() && a.text.some((t) => normText(t) === normText(input))
+  if (a.value === undefined) return false
   const x = parseNumber(input)
   if (Number.isNaN(x)) return false
   const tol = a.tolerance ?? DEFAULT_TOLERANCE
@@ -39,4 +44,4 @@ export function checkAnswer(input: string, a: NumericAnswer): boolean {
 }
 
 export const formatAnswer = (a: NumericAnswer) =>
-  `${a.value.toLocaleString('de-DE', { maximumSignificantDigits: 6 })}${a.unit ? ` ${a.unit}` : ''}`
+  `${a.text?.length ? a.text[0] : (a.value ?? 0).toLocaleString('de-DE', { maximumSignificantDigits: 6 })}${a.unit ? ` ${a.unit}` : ''}`

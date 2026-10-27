@@ -24,3 +24,15 @@ describe('checkAnswer', () => {
     expect(checkAnswer('', { value: 1 })).toBe(false)
   })
 })
+
+describe('Textantworten', () => {
+  it('vergleicht ohne Groß-/Kleinschreibung und Leerzeichen', () => {
+    const hex = { text: ['3E8', '16#3E8'] }
+    expect(checkAnswer('3e8', hex)).toBe(true)
+    expect(checkAnswer(' 16#3E8 ', hex)).toBe(true)
+    expect(checkAnswer('3E9', hex)).toBe(false)
+    expect(checkAnswer('', hex)).toBe(false)
+    expect(checkAnswer('0110 1001', { text: ['01101001'] })).toBe(true)
+    expect(checkAnswer('1101001', { text: ['01101001'] })).toBe(false)
+  })
+})
