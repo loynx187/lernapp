@@ -8,7 +8,14 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 // GitHub Pages liefert die App unter /lernapp/ aus.
 export default defineConfig({
   base: '/lernapp/',
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    // Build-Kennung: wird bei jeder Veröffentlichung automatisch gesetzt (GitHub Actions), lokal „lokal“.
+    __APP_BUILD__: JSON.stringify(
+      process.env.GITHUB_RUN_NUMBER ? `Build ${process.env.GITHUB_RUN_NUMBER} · ${(process.env.GITHUB_SHA ?? '').slice(0, 7)}` : 'lokal',
+    ),
+    __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     VitePWA({

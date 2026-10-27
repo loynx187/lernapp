@@ -12,7 +12,7 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 
 ## Versionen und Änderungen
 - `main` ist geschützt und entspricht der veröffentlichten App. **Nie direkt auf `main` pushen.** Änderungen auf einem eigenen Branch entwickeln und als Pull Request einreichen; der Nutzer übernimmt ihn selbst (Workflow `Tests` muss grün sein). Erst danach wird veröffentlicht.
-- Jede Veröffentlichung bekommt eine neue Versionsnummer in `package.json` (`package-lock.json` mitziehen) und einen Eintrag unter „Versionen“ in `README.md`: Fehlerbehebung → 1.0.1, neue Funktion → 1.1.0, grundlegende Umbauten → 2.0.0. Release/Tag `v<Version>` legt der Nutzer auf GitHub an.
+- Jede Veröffentlichung bekommt eine neue Versionsnummer in `package.json` (`package-lock.json` mitziehen) und einen Eintrag unter „Versionen“ in `README.md`: Fehlerbehebung → 1.0.1, neue Funktion → 1.1.0, grundlegende Umbauten → 2.0.0. Der Workflow `Tests` prüft das (`scripts/check-version.mjs`): Ändert ein Pull Request die App (`src/`, `public/`, `index.html`, `vite.config.ts`, Abhängigkeiten), muss die Version steigen. Build-Nummer und Datum setzt die Veröffentlichung automatisch. Release/Tag `v<Version>` legt der Nutzer auf GitHub an.
 
 ## Befehle
 - `npm test` – Unit-Tests (Vitest, `src/**/*.test.ts`)
