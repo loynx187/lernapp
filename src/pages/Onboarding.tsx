@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { db, uid } from '../lib/db'
+import { db, requestPersistentStorage, uid } from '../lib/db'
 import { useAppState } from '../state'
 import { DROPBOX_APP_KEY, startAuth } from '../lib/dropbox'
 import type { SemesterKind } from '../lib/semesters'
@@ -19,6 +19,7 @@ export function Onboarding() {
     if (!pid) {
       pid = uid()
       await db.profiles.add({ id: pid, name: name.trim() || 'Ich', createdAt: now, minutesMobile: 20, minutesDesk: 30, retention: 0.9 })
+      requestPersistentStorage()
       // Bittet den Browser, die Daten nicht automatisch zu löschen.
       navigator.storage?.persist?.().catch(() => {})
     }

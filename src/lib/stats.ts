@@ -1,7 +1,7 @@
 import type { Exam, Mode, ReviewLog, StudyCard } from './db'
 import { cardMode } from './db'
 import { DEFAULT_COSTS, type Costs, type DoneToday } from './planner'
-import { DAY, isoDate, parseIsoDate, startOfDay } from './dates'
+import { addDays, parseIsoDate, studyDate, studyDayStart } from './dates'
 import { retrievability } from './scheduler'
 
 /** Ab dieser Abrufwahrscheinlichkeit am Klausurtag gilt eine Karte als sicher. */
@@ -60,7 +60,7 @@ export function examStats(exam: Exam, cards: StudyCard[], now: number, retention
 
 /** Erster Durchgang je Karte am heutigen Tag. */
 export function doneToday(logs: ReviewLog[], now: number): DoneToday[] {
-  const start = startOfDay(now)
+  const start = studyDayStart(now)
   const seen = new Set<string>()
   const out: DoneToday[] = []
   for (const l of [...logs].sort((a, b) => a.reviewedAt - b.reviewedAt)) {
@@ -82,12 +82,12 @@ export function estimateCosts(logs: ReviewLog[]): Record<Mode, Costs> {
     const ml = logs.filter((l) => l.mode === mode)
     // Neue Karte: alle Durchgänge am Tag ihrer Einführung zusammen.
     const introDay = new Map<string, string>()
-    for (const l of ml) if (l.stateBefore === 0) introDay.set(l.cardId, isoDate(l.reviewedAt))
+    for (const l of ml) if (l.stateBefore === 0) introDay.set(l.cardId, studyDate(l.reviewedAt))
     const newTotals = new Map<string, number>()
     const reviewDurations: number[] = []
     for (const l of ml) {
       const d = Math.min(l.durationMs, cap)
-      if (introDay.get(l.cardId) === isoDate(l.reviewedAt)) newTotals.set(l.cardId, (newTotals.get(l.cardId) ?? 0) + d)
+      if (introDay.get(l.cardId) === studyDate(l.reviewedAt)) newTotals.set(l.cardId, (newTotals.get(l.cardId) ?? 0) + d)
       else reviewDurations.push(d)
     }
     const blend = (values: number[], fallback: number) => {
@@ -104,13 +104,14 @@ export function estimateCosts(logs: ReviewLog[]): Record<Mode, Costs> {
 
 /** Aufeinanderfolgende Tage mit mindestens einer Lerneinheit (heute zählt, falls schon gelernt). */
 export function streak(logs: ReviewLog[], now: number): number {
-  const days = new Set(logs.map((l) => isoDate(l.reviewedAt)))
-  let t = startOfDay(now)
-  if (!days.has(isoDate(t))) t -= DAY
+  const days = new Set(logs.map((l) => studyDate(l.reviewedAt)))
+  const prev = (d: string) => studyDate(addDays(parseIsoDate(d), -1) + 12 * 3600_000)
+  let d = studyDate(now)
+  if (!days.has(d)) d = prev(d)
   let n = 0
-  while (days.has(isoDate(t))) {
+  while (days.has(d)) {
     n++
-    t = startOfDay(t - DAY / 2)
+    d = prev(d)
   }
   return n
 }

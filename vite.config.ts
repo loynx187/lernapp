@@ -12,7 +12,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Updates nie mitten in einer Sitzung aktivieren – siehe src/lib/appUpdate.ts
+      registerType: 'prompt',
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'beispiel-paket.json'],
       manifest: {
         name: 'Lernapp',

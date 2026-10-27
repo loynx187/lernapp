@@ -6,6 +6,20 @@ export function startOfDay(t: number | Date): number {
   return d.getTime()
 }
 
+/** Ein Lerntag beginnt um 4:00 Uhr: Wer nach Mitternacht lernt, lernt noch für den Vortag (wie bei Anki). */
+export const DAY_START_HOUR = 4
+
+/** Beginn des Lerntags, zu dem der Zeitpunkt gehört. */
+export function studyDayStart(t: number | Date): number {
+  const d = new Date(t)
+  if (d.getHours() < DAY_START_HOUR) d.setDate(d.getDate() - 1)
+  d.setHours(DAY_START_HOUR, 0, 0, 0)
+  return d.getTime()
+}
+
+/** Datum (YYYY-MM-DD) des Lerntags, zu dem der Zeitpunkt gehört. */
+export const studyDate = (t: number | Date) => isoDate(studyDayStart(t))
+
 export function addDays(t: number, days: number): number {
   const d = new Date(t)
   d.setDate(d.getDate() + days)

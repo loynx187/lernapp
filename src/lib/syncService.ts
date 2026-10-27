@@ -1,5 +1,5 @@
 import { db, type Profile } from './db'
-import { addDays, daysUntil, isoWeek, startOfDay } from './dates'
+import { addDays, daysUntil, isoWeek, studyDayStart } from './dates'
 import { adoptPendingTokens, deleteFile, download, DropboxError, getRev, listFolder, upload } from './dropbox'
 import { loadStudyData, type StudyData } from './study'
 import { examStats, streak } from './stats'
@@ -151,7 +151,7 @@ export function reminderText(profile: Profile, today: StudyData, tomorrow: Study
   const left = (d: StudyData) => d.plan.modes.mobile.reviewsLeft + d.plan.modes.mobile.newLeft + d.plan.modes.desk.reviewsLeft + d.plan.modes.desk.newLeft
   const useToday = left(today) > 0
   const d = useToday ? today : tomorrow
-  const day = useToday ? now : addDays(startOfDay(now), 1)
+  const day = useToday ? studyDayStart(now) : addDays(studyDayStart(now), 1)
   const lines = [`Lernplan ${new Date(day).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })}`]
   const m = d.plan.modes.mobile
   const k = d.plan.modes.desk
@@ -213,7 +213,7 @@ async function writeReminder(profileId: string, now: number, last: SyncStatus): 
   const profile = await db.profiles.get(profileId)
   if (!profile) return last
   const today = await loadStudyData(profile, now)
-  const tomorrow = await loadStudyData(profile, addDays(startOfDay(now), 1) + 7 * 3600_000)
+  const tomorrow = await loadStudyData(profile, addDays(studyDayStart(now), 1) + 3 * 3600_000)
   const text = reminderText(profile, today, tomorrow, now)
   if (text !== last.reminder) await upload(profileId, REMINDER_PATH, text)
   const semester = profile.activeSemesterId ? await db.semesters.get(profile.activeSemesterId) : undefined

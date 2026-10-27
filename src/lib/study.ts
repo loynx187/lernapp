@@ -1,5 +1,5 @@
 import { db, tombstone, uid, type Exam, type Mode, type Profile, type ReviewLog, type StudyCard } from './db'
-import { DAY, isoDate } from './dates'
+import { DAY, studyDate } from './dates'
 import { planDay, type DayPlan } from './planner'
 import { planExams, semesterKind, SEMESTER_KINDS } from './semesters'
 import { review, type Grade } from './scheduler'
@@ -82,7 +82,7 @@ export async function undoReview(u: Undo) {
 
 /** Speichert den heutigen Stand jeder Prüfung für den Verlaufsgraphen. */
 export async function updateSnapshots(profile: Profile, exams: Exam[], cards: StudyCard[], now = Date.now()) {
-  const date = isoDate(now)
+  const date = studyDate(now)
   const rows = exams
     .filter((e) => e.date >= date)
     .map((e) => {

@@ -1,11 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
+import './lib/appUpdate'
 import 'katex/dist/katex.min.css'
 import './styles.css'
 import { App } from './App'
+import { requestPersistentStorage } from './lib/db'
 
-registerSW({ immediate: true })
+requestPersistentStorage()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -19,6 +19,12 @@ test('Probeklausur durchführen, auswerten und in den Lernplan übernehmen', asy
   for (let i = 0; i < total - 1; i++) {
     if (await page.locator('.option').count()) await page.locator('.option').nth(1).click()
     await page.getByRole('button', { name: 'Weiter' }).click()
+    if (i === 1) {
+      // App wird zwischendurch beendet (z. B. von iOS im Hintergrund) – der Stand bleibt erhalten.
+      await page.reload()
+      await expect(page.getByText('Probeklausur fortgesetzt')).toBeVisible()
+      await expect(page.locator('.session-top small')).toHaveText(`3/${total}`)
+    }
   }
   await page.getByRole('button', { name: 'Abgeben', exact: true }).click()
 

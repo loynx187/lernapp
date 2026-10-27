@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppState, useActive } from '../state'
 import { db, deleteProfile, deleteSemester, uid, type Profile } from '../lib/db'
-import { createBackup, parseBackup, restoreBackup } from '../lib/backup'
+import { createBackup, parseBackup, restoreBackup, markBackup } from '../lib/backup'
 import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
@@ -73,7 +73,8 @@ export function Settings() {
 
   async function exportBackup() {
     const b = await createBackup(profile.id)
-    await saveFile(`lernapp-sicherung-${safeFileName(profile.name)}-${isoDate(Date.now())}.json`, JSON.stringify(b))
+    if (!(await saveFile(`lernapp-sicherung-${safeFileName(profile.name)}-${isoDate(Date.now())}.json`, JSON.stringify(b)))) return
+    await markBackup(profile.id)
     setMessage('Sicherung erstellt.')
   }
 
@@ -225,7 +226,8 @@ export function Settings() {
           Deine Daten liegen auf diesem Gerät
           {storage.usage !== undefined && ` (${(storage.usage / 1024 / 1024).toFixed(1)} MB)`}
           {sync.connected ? ' und in deiner Dropbox. ' : '. '}
-          {storage.persisted === false && !sync.connected && 'Der Browser darf sie bei Speichermangel löschen – lege regelmäßig eine Sicherung an. '}
+          {storage.persisted === true && 'Der Browser hält sie dauerhaft vor. '}
+          {storage.persisted === false && !sync.connected && 'Der Browser darf sie bei Speichermangel löschen – installiere die App auf dem Homescreen und lege regelmäßig eine Sicherung an. '}
           Zusätzlich kannst du jederzeit eine Sicherungsdatei anlegen, z. B. in iCloud Drive.
         </p>
         <button className="btn block" onClick={exportBackup}>Sicherung exportieren</button>

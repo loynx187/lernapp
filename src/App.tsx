@@ -16,6 +16,7 @@ import { MockExam } from './pages/MockExam'
 import { FsrsSettings } from './pages/FsrsSettings'
 import { Documents } from './pages/Documents'
 import { SyncProvider } from './sync-state'
+import { ErrorBoundary, UpdateBanner } from './components/AppChrome'
 
 /** Jede Sitzung neu aufbauen, auch beim direkten Wechsel zwischen zwei Sitzungen. */
 function SessionRoute() {
@@ -44,6 +45,7 @@ function Shell() {
   // Die Übersicht nutzt auf dem iPad die volle Breite, Unterseiten bleiben schmal und gut lesbar.
   return (
     <main className={pathname === '/' ? 'main wide' : 'main'}>
+      <UpdateBanner />
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/lernen/:mode" element={<SessionRoute />} />
@@ -72,7 +74,9 @@ export function App() {
       <AppStateProvider>
         <SyncProvider>
           <div className="app">
-            <Shell />
+            <ErrorBoundary>
+              <Shell />
+            </ErrorBoundary>
           </div>
         </SyncProvider>
       </AppStateProvider>

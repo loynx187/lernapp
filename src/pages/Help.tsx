@@ -101,8 +101,22 @@ export function Help() {
             <li><b>Gemischt üben:</b> Karten verschiedener Fächer und Kapitel werden abwechselnd abgefragt.</li>
             <li><b>Semesterart:</b> Im dualen Semester (alle Klausuren in einer Woche) muss neuer Stoff aller Fächer bis vor Beginn der Prüfungsphase sitzen – mit längerem Wiederholungspuffer. Im regulären Semester hat jedes Fach seinen eigenen Zeitplan bis zu seiner Klausur. Einstellbar pro Semester.</li>
             <li><b>Laufende Vorlesung:</b> Kommen die Unterlagen nach und nach, schalte bei der Prüfung „Vorlesung läuft noch“ ein. Neuer Stoff wird dann innerhalb einer Woche nach dem Import begonnen (Dauer einstellbar), statt bis zur Klausur gestreckt zu werden – so lernst du im Takt der Vorlesung und hast am Ende Zeit für Wiederholung und Altklausuren. Die Prognose gilt so lange als vorläufig. Sind alle Unterlagen da, den Schalter wieder ausschalten.</li>
+            <li><b>Lerntag:</b> Ein Lerntag geht von 4:00 bis 4:00 Uhr. Wer nach Mitternacht lernt, lernt noch für den Vortag – Pensum und Lernserie stimmen trotzdem.</li>
             <li><b>Kernstoff zuerst:</b> Karten mit geringer Klausurrelevanz (Zusatzstoff) kommen nur dran, wenn nach dem Kernstoff noch Zeit übrig ist.</li>
             <li><b>Zeitbudget:</b> Reicht deine eingestellte Zeit nicht, bekommen nahe und wichtige Prüfungen Vorrang und die App zeigt dir, wie viel Zeit nötig wäre.</li>
+          </ul>
+        </details>
+      </div>
+
+      <div className="card stack">
+        <details>
+          <summary>Deine Daten und Updates</summary>
+          <ul className="help" style={{ marginTop: 8 }}>
+            <li><b>Speicherort:</b> Alles liegt auf deinem Gerät, mit Dropbox-Sync zusätzlich in deiner Dropbox (inkl. Wochensicherungen der letzten 8 Wochen). Die App bittet den Browser, die Daten dauerhaft zu behalten; am zuverlässigsten klappt das, wenn die App auf dem Homescreen installiert ist.</li>
+            <li><b>Ohne Dropbox:</b> Die App erinnert dich wöchentlich daran, unter Einstellungen → „Sicherung exportieren“ eine Sicherungsdatei anzulegen, z. B. in iCloud Drive.</li>
+            <li><b>Updates:</b> Neue Versionen werden beim Öffnen der App übernommen. Kommt eine während des Lernens, erscheint danach „Neue Version verfügbar“ – eine Lernsitzung oder Probeklausur wird nie unterbrochen.</li>
+            <li><b>Probeklausur:</b> Wird laufend gespeichert. Wechselst du zwischendurch die App oder wird sie beendet, geht es beim nächsten Öffnen an derselben Stelle weiter – die Zeit läuft wie in der echten Klausur weiter.</li>
+            <li><b>Fehler:</b> Geht etwas schief, zeigt die App eine Fehlerseite mit „Neu laden“ und „Sicherung exportieren“. Deine Daten sind davon nicht betroffen.</li>
           </ul>
         </details>
       </div>

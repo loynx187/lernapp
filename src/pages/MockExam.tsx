@@ -15,6 +15,22 @@ const GRADE_RATING = { richtig: Rating.Good, teilweise: Rating.Hard, falsch: Rat
 
 type Phase = 'setup' | 'running' | 'review' | 'done'
 
+/** Laufende Probeklausur – wird gespeichert, damit sie einen App-Wechsel oder Neustart übersteht. */
+interface SavedMockExam {
+  phase: 'running' | 'review'
+  minutes: number
+  itemIds: string[]
+  index: number
+  selected: Record<string, number[]>
+  inputs: Record<string, string[]>
+  grades: Record<string, Grade | undefined>
+  adopt: boolean
+  endsAt: number
+  startedAt: number
+}
+
+const savedKey = (examId: string) => `mockexam:${examId}`
+
 const clock = (ms: number) => {
   const s = Math.max(0, Math.round(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -40,6 +56,40 @@ export function MockExam() {
   const [endsAt, setEndsAt] = useState(0)
   const [now, setNow] = useState(Date.now())
   const startedAt = useRef(0)
+  const [resumed, setResumed] = useState(false)
+  const restored = useRef(false)
+
+  // Gespeicherte Probeklausur fortsetzen (z. B. nachdem iOS die App im Hintergrund beendet hat).
+  useEffect(() => {
+    if (!data || restored.current) return
+    restored.current = true
+    db.meta.get(savedKey(id)).then((m) => {
+      const saved = m?.value as SavedMockExam | undefined
+      if (!saved) return
+      const byId = new Map(data.cards.map((c) => [c.id, c]))
+      const list = saved.itemIds.map((cid) => byId.get(cid)).filter((c): c is StudyCard => !!c)
+      if (!list.length) return
+      setItems(list)
+      setMinutes(saved.minutes)
+      setIndex(Math.min(saved.index, list.length))
+      setSelected(saved.selected)
+      setInputs(saved.inputs)
+      setGrades(saved.grades)
+      setAdopt(saved.adopt)
+      setEndsAt(saved.endsAt)
+      startedAt.current = saved.startedAt
+      setNow(Date.now())
+      setPhase(saved.phase)
+      setResumed(true)
+    })
+  }, [data, id])
+
+  useEffect(() => {
+    if (phase === 'running' || phase === 'review') {
+      const value: SavedMockExam = { phase, minutes, itemIds: items.map((c) => c.id), index, selected, inputs, grades, adopt, endsAt, startedAt: startedAt.current }
+      db.meta.put({ key: savedKey(id), value })
+    } else if (phase === 'done') db.meta.delete(savedKey(id))
+  }, [id, phase, minutes, items, index, selected, inputs, grades, adopt, endsAt])
 
   const preview = useMemo(() => (data ? composeMockExam(data.cards, minutes) : []), [data, minutes])
 
@@ -82,6 +132,13 @@ export function MockExam() {
     setGrades(auto)
     setIndex(0)
     setPhase('review')
+  }
+
+  async function discard() {
+    if (!confirm('Probeklausur verwerfen? Deine Eingaben gehen verloren.')) return
+    await db.meta.delete(savedKey(id))
+    setResumed(false)
+    setPhase('setup')
   }
 
   async function finish() {
@@ -192,6 +249,13 @@ export function MockExam() {
           {index + 1}/{items.length}
         </small>
       </div>
+
+      {resumed && (
+        <div className="notice">
+          Probeklausur fortgesetzt{phase === 'running' ? ' – die Zeit ist weitergelaufen' : ''}.{' '}
+          <button className="btn small ghost" style={{ color: 'var(--accent)', padding: 0, minHeight: 0 }} onClick={discard}>Verwerfen</button>
+        </div>
+      )}
 
       <article className="card flashcard">
         <div className="meta">

@@ -2,11 +2,12 @@ import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { loadStudyData, updateSnapshots } from '../lib/study'
-import { addDays, formatCountdown, isoDate, startOfDay } from '../lib/dates'
+import { addDays, formatCountdown, isoDate, studyDate, studyDayStart } from '../lib/dates'
 import { cardMode, type Mode } from '../lib/db'
 import { examStats, streak } from '../lib/stats'
 import { DayBars, PageHeader, Progress, Rings, Widget } from '../components/ui'
 import { useSync } from '../sync-state'
+import { BACKUP_REMINDER_DAYS, lastBackup } from '../lib/backup'
 import { db } from '../lib/db'
 import { FSRS_HINT_REVIEWS } from './FsrsSettings'
 
@@ -21,6 +22,7 @@ export function Dashboard() {
   const sync = useSync()
   const data = useLiveQuery(() => loadStudyData(profile), [profile])
   const reviewCount = useLiveQuery(() => db.reviews.where('profileId').equals(profile.id).count(), [profile.id])
+  const backupAt = useLiveQuery(async () => (await lastBackup(profile.id)) ?? 0, [profile.id])
 
   useEffect(() => {
     if (data) updateSnapshots(profile, data.exams, data.cards).catch(() => {})
@@ -34,6 +36,14 @@ export function Dashboard() {
   const next = upcoming[0]
   const nextPlan = next && plan.exams.find((p) => p.examId === next.id)
   const days = streak(logs, now)
+  // Ohne Dropbox: Erinnerung an eine Sicherungsdatei, sobald seit der letzten (bzw. dem ersten Lernen) eine Woche vergangen ist.
+  const since = backupAt || Math.min(...logs.map((l) => l.reviewedAt))
+  const backupDue =
+    !sync.connected && backupAt !== undefined && logs.length && now - since >= BACKUP_REMINDER_DAYS * 864e5
+      ? backupAt
+        ? Math.floor((now - backupAt) / 864e5)
+        : 0
+      : null
   const modes = (['mobile', 'desk'] as Mode[]).filter((m) => cards.some((c) => cardMode(c) === m))
 
   // Gesamtfortschritt über alle anstehenden Prüfungen
@@ -52,9 +62,9 @@ export function Dashboard() {
   )
 
   // Gelernte Karten der letzten 7 Tage
-  const today = startOfDay(now)
+  const today = studyDayStart(now)
   const week = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6))
-  const counts = week.map((d) => logs.filter((l) => isoDate(l.reviewedAt) === isoDate(d)).length)
+  const counts = week.map((d) => logs.filter((l) => studyDate(l.reviewedAt) === isoDate(d)).length)
   const dayLabels = week.map((d) => new Date(d).toLocaleDateString('de-DE', { weekday: 'narrow' }))
 
   return (
@@ -77,6 +87,13 @@ export function Dashboard() {
           <Widget size="medium" to="/lernalgorithmus" title="Lernalgorithmus anpassen" icon="chart" tint="var(--ok)">
             <div className="w-headline">{reviewCount?.toLocaleString('de-DE')} Bewertungen geschafft</div>
             <p className="w-caption">Jetzt lässt sich der Wiederholungsplan an dein Gedächtnis anpassen – dauert 2 Minuten. Tippen für die Anleitung.</p>
+          </Widget>
+        )}
+
+        {backupDue !== null && (
+          <Widget size="medium" to="/einstellungen" title="Sicherung" icon="download" tint="var(--warn)">
+            <div className="w-headline">{backupDue ? `Letzte Sicherung vor ${backupDue} Tagen` : 'Noch keine Sicherung'}</div>
+            <p className="w-caption">Ohne Dropbox liegen deine Lerndaten nur auf diesem Gerät. Tippen und unter „Daten & Sicherung“ eine Sicherungsdatei anlegen, z. B. in iCloud Drive.</p>
           </Widget>
         )}
 

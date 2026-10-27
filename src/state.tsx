@@ -3,9 +3,10 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db, type Profile, type Semester } from './lib/db'
 import { setFsrsWeights } from './lib/scheduler'
 
-const KEY = 'lernapp.profileId'
+export const PROFILE_KEY = 'lernapp.profileId'
+const KEY = PROFILE_KEY
 
-function readStored(): string | null {
+export function readStored(): string | null {
   try {
     return localStorage.getItem(KEY)
   } catch {

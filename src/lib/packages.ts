@@ -169,16 +169,16 @@ export async function readJsonFile(file: File): Promise<unknown> {
   }
 }
 
-/** Bietet eine Datei zum Speichern an – auf dem iPhone über das Teilen-Menü („In Dateien sichern“). */
-export async function saveFile(name: string, content: string, type = 'application/json') {
+/** Bietet eine Datei zum Speichern an – auf dem iPhone über das Teilen-Menü („In Dateien sichern“). Liefert false bei Abbruch. */
+export async function saveFile(name: string, content: string, type = 'application/json'): Promise<boolean> {
   const file = new File([content], name, { type })
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
   if (nav.canShare?.({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
     try {
       await navigator.share({ files: [file], title: name })
-      return
+      return true
     } catch (e) {
-      if ((e as Error).name === 'AbortError') return
+      if ((e as Error).name === 'AbortError') return false
     }
   }
   const url = URL.createObjectURL(file)
@@ -187,6 +187,7 @@ export async function saveFile(name: string, content: string, type = 'applicatio
   a.download = name
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+  return true
 }
 
 export const safeFileName = (s: string) => s.replace(/[^\p{L}\p{N}._-]+/gu, '_').slice(0, 60)

@@ -1,5 +1,5 @@
 import type { Mode } from './db'
-import { addDays, daysUntil, startOfDay } from './dates'
+import { addDays, daysUntil, studyDayStart } from './dates'
 
 /** Die Felder einer Karte, die der Planer braucht. */
 export interface PlanCard {
@@ -147,7 +147,7 @@ export function distribute(budget: number, demands: { cost: number; weight: numb
 
 export function planDay(input: PlanInput): DayPlan {
   const { now, cards, done, budgetMinutes, costs } = input
-  const endOfToday = addDays(startOfDay(now), 1)
+  const endOfToday = addDays(studyDayStart(now), 1)
   const exams = input.exams
     .map((e) => ({ ...e, daysLeft: daysUntil(e.date, now) }))
     .filter((e) => e.daysLeft >= 0)
@@ -269,7 +269,7 @@ export interface QueueOptions {
  */
 export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions): PlanCard[] {
   const { mode, now, examId } = opts
-  const endOfToday = addDays(startOfDay(now), 1)
+  const endOfToday = addDays(studyDayStart(now), 1)
   const examPlans = plan.exams.filter((p) => !examId || p.examId === examId)
 
   const reviewGroups = examPlans.map((p) =>

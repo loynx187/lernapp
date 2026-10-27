@@ -1,9 +1,21 @@
-import { uid, type ReviewLog } from './db'
+import { db, uid, type ReviewLog } from './db'
 import { BACKUP_FORMAT } from './packages'
 import { exportDoc, parseSyncDoc, replaceProfile, type SyncDoc } from './sync'
 
 /** Sicherungsdatei: derselbe Inhalt wie ein Synchronisationsstand, nur mit eigenem Formatnamen. */
 export type Backup = Omit<SyncDoc, 'format' | 'formatVersion'> & { format: typeof BACKUP_FORMAT; formatVersion: 2; exportedAt: string }
+
+/** Ohne Dropbox erinnert die App nach so vielen Tagen an eine Sicherung. */
+export const BACKUP_REMINDER_DAYS = 7
+
+const backupKey = (profileId: string) => `backup:${profileId}`
+
+/** Merkt sich (nur auf diesem Gerät), wann zuletzt eine Sicherungsdatei angelegt wurde. */
+export const markBackup = (profileId: string, now = Date.now()) => db.meta.put({ key: backupKey(profileId), value: now })
+
+export async function lastBackup(profileId: string): Promise<number | undefined> {
+  return (await db.meta.get(backupKey(profileId)))?.value as number | undefined
+}
 
 export async function createBackup(profileId: string): Promise<Backup> {
   const { format: _f, formatVersion: _v, ...doc } = await exportDoc(profileId)

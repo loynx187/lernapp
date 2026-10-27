@@ -331,3 +331,15 @@ export async function deleteSemester(semesterId: string) {
   await db.semesters.delete(semesterId)
   if (semester) await db.tombstones.put(tombstone('semesters', semesterId, semester.profileId))
 }
+
+/**
+ * Bittet den Browser, die Lerndaten nicht bei Speichermangel zu löschen. Erst nach dem
+ * Anlegen eines Profils, damit Browser mit Rückfrage (Firefox) nicht beim ersten Öffnen fragen.
+ */
+export async function requestPersistentStorage() {
+  try {
+    if ((await db.profiles.count()) && !(await navigator.storage?.persisted?.())) await navigator.storage?.persist?.()
+  } catch {
+    // nicht unterstützt
+  }
+}
