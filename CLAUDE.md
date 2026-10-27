@@ -16,6 +16,9 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 - `npm run dev` – Entwicklungsserver unter http://localhost:5173/lernapp/
 - `npm run validate -- <paket.json> [--alt <alt.json>] [--folien 1-25]` – Kartenpaket prüfen
 
+## FSRS-Parameter optimieren
+Wenn der Nutzer eine Sicherung hochlädt und persönliche FSRS-Parameter möchte: `pip install "fsrs[optimizer]"` (in einer venv im Scratchpad), dann `python scripts/optimize-fsrs.py <sicherung.json>`. Die ausgegebene Zahlenreihe dem Nutzer schicken – er fügt sie in der App unter Einstellungen → Lernalgorithmus ein. Sicherungen enthalten Lerndaten: nicht committen.
+
 ## Kartenpakete aus Vorlesungsunterlagen erstellen
 **Immer nach dem Skill `.claude/skills/kartenpaket/SKILL.md` vorgehen** (auch ohne `/kartenpaket`-Aufruf, sobald PDFs für Karten hochgeladen werden). Unterlagen, Pakete, Fachprofile und Meldungen liegen im privaten Repository `loynx187/lernapp-inhalte` (`faecher/<fach>/…`).
 Format: `docs/KARTENPAKET-FORMAT.md`. Beispiel: `public/beispiel-paket.json`.

@@ -115,6 +115,10 @@ export function Settings() {
           <input type="range" min={0.8} max={0.95} step={0.01} value={profile.retention} onChange={(e) => update({ retention: Number(e.target.value) })} />
           <small>Wie sicher du eine Karte bei der nächsten Wiederholung noch wissen sollst. Höher = mehr Wiederholungen. 90 % ist ein guter Standard.</small>
         </label>
+        <Link to="/lernalgorithmus" className="row between" style={{ marginTop: 14 }}>
+          <span>Lernalgorithmus (FSRS)</span>
+          <small>{profile.fsrsWeights ? 'persönlich angepasst' : 'Standard'} ›</small>
+        </Link>
       </div>
 
       <div className="section-title">Semester</div>

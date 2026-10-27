@@ -19,6 +19,10 @@ export interface Profile extends Synced {
   /** Zielwahrscheinlichkeit, eine Karte bei der Wiederholung noch zu wissen (FSRS). */
   retention: number
   activeSemesterId?: string
+  /** Persönliche FSRS-Parameter (aus scripts/optimize-fsrs.py); fehlen sie, gelten die Standardwerte. */
+  fsrsWeights?: number[]
+  /** Hinweis zur Personalisierung wurde ausgeblendet. */
+  fsrsHintDismissed?: boolean
 }
 
 export interface Semester extends Synced {

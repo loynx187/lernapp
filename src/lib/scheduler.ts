@@ -1,19 +1,43 @@
-import { createEmptyCard, fsrs, generatorParameters, Rating, type Card, type FSRS, type Grade } from 'ts-fsrs'
+import { checkParameters, createEmptyCard, default_w, fsrs, generatorParameters, migrateParameters, Rating, type Card, type FSRS, type Grade } from 'ts-fsrs'
 import type { MemoryState } from './db'
 import { addDays, DAY, parseIsoDate, startOfDay } from './dates'
 
 export { Rating }
 export type { Grade }
 
-const schedulers = new Map<number, FSRS>()
+const schedulers = new Map<string, FSRS>()
+
+/** Persönliche FSRS-Parameter des aktiven Profils (undefined = Standardwerte). Gesetzt vom AppStateProvider. */
+let weights: number[] | undefined
+
+export function setFsrsWeights(w: number[] | undefined) {
+  weights = w
+}
 
 function scheduler(retention: number): FSRS {
-  let f = schedulers.get(retention)
+  const key = `${retention}|${weights?.join(',') ?? ''}`
+  let f = schedulers.get(key)
   if (!f) {
-    f = fsrs(generatorParameters({ request_retention: retention, enable_fuzz: true, enable_short_term: true }))
-    schedulers.set(retention, f)
+    f = fsrs(generatorParameters({ request_retention: retention, enable_fuzz: true, enable_short_term: true, w: weights }))
+    schedulers.set(key, f)
   }
   return f
+}
+
+export const FSRS_PARAM_COUNT = default_w.length
+
+/**
+ * Liest eine Zahlenreihe (z. B. Ausgabe von scripts/optimize-fsrs.py) als FSRS-Parameter.
+ * Ältere Parametersätze (FSRS-4.5/5) werden umgerechnet. Wirft bei ungültiger Eingabe.
+ */
+export function parseFsrsWeights(text: string): number[] {
+  const nums = text
+    .split(/[\s,;]+/)
+    .filter(Boolean)
+    .map((x) => Number(x))
+  if (!nums.length || nums.some((n) => !Number.isFinite(n))) throw new Error('Bitte nur Zahlen einfügen, getrennt durch Kommas.')
+  if (![17, 19, 21].includes(nums.length)) throw new Error(`Erwartet werden ${FSRS_PARAM_COUNT} Zahlen, gefunden: ${nums.length}.`)
+  return [...checkParameters(migrateParameters(nums))]
 }
 
 export function newMemoryState(now = Date.now()): MemoryState {

@@ -7,6 +7,8 @@ import { cardMode, type Mode } from '../lib/db'
 import { examStats, streak } from '../lib/stats'
 import { DayBars, PageHeader, Progress, Rings, Widget } from '../components/ui'
 import { useSync } from '../sync-state'
+import { db } from '../lib/db'
+import { FSRS_HINT_REVIEWS } from './FsrsSettings'
 
 const MODE_INFO: Record<Mode, { title: string; unit: string; extra: number }> = {
   mobile: { title: 'Unterwegs', unit: 'Karten', extra: 10 },
@@ -18,6 +20,7 @@ export function Dashboard() {
   const { profile, semester } = useActive()
   const sync = useSync()
   const data = useLiveQuery(() => loadStudyData(profile), [profile])
+  const reviewCount = useLiveQuery(() => db.reviews.where('profileId').equals(profile.id).count(), [profile.id])
 
   useEffect(() => {
     if (data) updateSnapshots(profile, data.exams, data.cards).catch(() => {})
@@ -70,6 +73,13 @@ export function Dashboard() {
 
       <div className="widgets-wrap">
       <div className="widgets">
+        {(reviewCount ?? 0) >= FSRS_HINT_REVIEWS && !profile.fsrsWeights && !profile.fsrsHintDismissed && (
+          <Widget size="medium" to="/lernalgorithmus" title="Lernalgorithmus anpassen" icon="chart" tint="var(--ok)">
+            <div className="w-headline">{reviewCount?.toLocaleString('de-DE')} Bewertungen geschafft</div>
+            <p className="w-caption">Jetzt lässt sich der Wiederholungsplan an dein Gedächtnis anpassen – dauert 2 Minuten. Tippen für die Anleitung.</p>
+          </Widget>
+        )}
+
         {!semester.kind && (
           <Widget size="medium" to={`/semester/${semester.id}`} title="Semester einrichten" icon="settings" tint="var(--warn)">
             <div className="w-headline">Wie sieht deine Prüfungsphase aus?</div>
