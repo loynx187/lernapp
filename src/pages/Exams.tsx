@@ -4,7 +4,7 @@ import { useActive } from '../state'
 import { db, MAX_EXAMS_PER_SEMESTER } from '../lib/db'
 import { daysUntil, formatCountdown, formatDate } from '../lib/dates'
 import { examStats } from '../lib/stats'
-import { Progress, pct } from '../components/ui'
+import { PageHeader, Progress, pct } from '../components/ui'
 
 export function Exams() {
   const { profile, semester } = useActive()
@@ -20,15 +20,15 @@ export function Exams() {
 
   return (
     <>
-      <div className="header">
-        <div>
-          <h1>Prüfungen</h1>
-          <span className="muted">{semester.name}</span>
-        </div>
-        <Link className="btn small primary" to="/pruefung/neu" aria-disabled={full} onClick={(e) => full && e.preventDefault()}>
-          + Neu
-        </Link>
-      </div>
+      <PageHeader
+        title="Prüfungen"
+        subtitle={semester.name}
+        action={
+          <Link className="btn small primary" to="/pruefung/neu" aria-disabled={full} onClick={(e) => full && e.preventDefault()}>
+            Neue Prüfung
+          </Link>
+        }
+      />
       {full && <div className="notice">Maximal {MAX_EXAMS_PER_SEMESTER} Prüfungen pro Semester.</div>}
       {rows.length === 0 && (
         <div className="card empty">

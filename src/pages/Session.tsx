@@ -227,7 +227,7 @@ export function Session() {
               </p>
             )}
             {card.type === 'task' && card.result && (
-              <div className="step" style={{ marginTop: 10, borderColor: 'var(--good)' }}>
+              <div className="step result" style={{ marginTop: 12 }}>
                 <b>Ergebnis</b>
                 <Rich text={card.result} />
               </div>

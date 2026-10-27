@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { db } from '../lib/db'
 import { importPackage, parsePackage, parseTextCards, readJsonFile, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
-import { Icon } from '../components/ui'
+import { PageHeader } from '../components/ui'
 
 export function Import() {
   const { semester } = useActive()
   const [search] = useSearchParams()
-  const navigate = useNavigate()
   const exams = useLiveQuery(() => db.exams.where('semesterId').equals(semester.id).sortBy('date'), [semester.id])
   const [examId, setExamId] = useState(search.get('exam') ?? '')
   const [pkg, setPkg] = useState<CardPackage | null>(null)
@@ -75,12 +74,7 @@ export function Import() {
 
   return (
     <>
-      <div className="header">
-        <button className="btn ghost small" onClick={() => navigate(-1)} aria-label="Zurück">
-          <Icon name="back" />
-        </button>
-        <h1 className="grow">Karten importieren</h1>
-      </div>
+      <PageHeader back title="Karten importieren" />
 
       {exams.length === 0 ? (
         <div className="card empty stack">

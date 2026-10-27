@@ -6,7 +6,7 @@ import { loadStudyData, updateSnapshots } from '../lib/study'
 import { formatCountdown } from '../lib/dates'
 import { cardMode, type Mode } from '../lib/db'
 import { streak } from '../lib/stats'
-import { Progress } from '../components/ui'
+import { PageHeader, Progress } from '../components/ui'
 
 const MODE_INFO: Record<Mode, { title: string; hint: string; unit: string }> = {
   mobile: { title: 'Unterwegs', hint: 'Karteikarten, Formeln, Multiple Choice', unit: 'Karten' },
@@ -30,13 +30,16 @@ export function Today() {
 
   return (
     <>
-      <div className="header">
-        <div>
-          <h1>Hallo {profile.name}</h1>
-          <span className="muted">{semester.name}</span>
-        </div>
-        {days > 0 && <span className="chip" title="Tage in Folge gelernt">{days} {days === 1 ? 'Tag' : 'Tage'} in Folge</span>}
-      </div>
+      <PageHeader
+        eyebrow={new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
+        title={`Hallo ${profile.name}.`}
+        subtitle={
+          <>
+            {semester.name}
+            {days > 0 && ` · ${days} ${days === 1 ? 'Tag' : 'Tage'} in Folge gelernt`}
+          </>
+        }
+      />
 
       {exams.length === 0 ? (
         <div className="card empty stack">

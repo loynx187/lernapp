@@ -19,8 +19,8 @@ export default defineConfig({
         short_name: 'Lernapp',
         description: 'Prüfungsvorbereitung mit Spaced Repetition',
         lang: 'de',
-        theme_color: '#1f4fd1',
-        background_color: '#f6f7f9',
+        theme_color: '#f5f5f7',
+        background_color: '#f5f5f7',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

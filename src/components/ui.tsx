@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export function Progress({ value, color = 'var(--accent)' }: { value: number; color?: string }) {
   const pct = Math.max(0, Math.min(100, value * 100))
@@ -32,8 +33,33 @@ const paths = {
 
 export function Icon({ name, size = 24 }: { name: keyof typeof paths; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={paths[name]} />
     </svg>
+  )
+}
+
+/** Seitenkopf mit großem Titel; optional Zurück-Link und Aktion in einer Leiste darüber. */
+export function PageHeader({ title, eyebrow, subtitle, back, action }: { title: ReactNode; eyebrow?: ReactNode; subtitle?: ReactNode; back?: boolean; action?: ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <header className="page-header">
+      {(back || action) && (
+        <div className="page-bar">
+          {back ? (
+            <button className="back-link" onClick={() => navigate(-1)}>
+              <Icon name="back" size={22} />
+              Zurück
+            </button>
+          ) : (
+            <span />
+          )}
+          {action}
+        </div>
+      )}
+      {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+      <h1>{title}</h1>
+      {subtitle && <p className="subtitle">{subtitle}</p>}
+    </header>
   )
 }

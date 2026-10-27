@@ -150,7 +150,7 @@ export const cardMode = (c: Pick<CardContent, 'type' | 'mode'>): Mode =>
 
 export const MAX_EXAMS_PER_SEMESTER = 10
 
-export const EXAM_COLORS = ['#1f4fd1', '#d1491f', '#0f8a5f', '#8a3fd1', '#c99a06', '#d11f6a', '#0f7f9a', '#5b6b0f', '#9a4f0f', '#4a5568']
+export const EXAM_COLORS = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#5856d6', '#a2845e', '#8e8e93']
 
 /** Löscht ein Profil mit allen zugehörigen Daten. */
 export async function deleteProfile(profileId: string) {

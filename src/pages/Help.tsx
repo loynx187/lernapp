@@ -1,16 +1,9 @@
-import { useNavigate } from 'react-router-dom'
-import { Icon } from '../components/ui'
+import { PageHeader } from '../components/ui'
 
 export function Help() {
-  const navigate = useNavigate()
   return (
     <>
-      <div className="header">
-        <button className="btn ghost small" onClick={() => navigate(-1)} aria-label="Zurück">
-          <Icon name="back" />
-        </button>
-        <h1 className="grow">Hilfe</h1>
-      </div>
+      <PageHeader back title="Hilfe" />
 
       <div className="card stack">
         <details open>

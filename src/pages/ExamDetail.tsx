@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { cardMode, db } from '../lib/db'
@@ -7,12 +7,11 @@ import { addDays, daysUntil, formatCountdown, formatDate, isoDate } from '../lib
 import { examStats } from '../lib/stats'
 import { exportPackage, safeFileName, saveFile } from '../lib/packages'
 import { HistoryChart } from '../components/HistoryChart'
-import { Icon, Progress, Stat, pct } from '../components/ui'
+import { PageHeader, Progress, Stat, pct } from '../components/ui'
 
 export function ExamDetail() {
   const { id = '' } = useParams()
   const { profile } = useActive()
-  const navigate = useNavigate()
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
     if (!exam) return { exam: undefined }
@@ -48,21 +47,18 @@ export function ExamDetail() {
 
   return (
     <>
-      <div className="header">
-        <button className="btn ghost small" onClick={() => navigate(-1)} aria-label="Zurück">
-          <Icon name="back" />
-        </button>
-        <div className="grow">
-          <h1 className="row" style={{ gap: 8 }}>
-            <span className="dot" style={{ background: exam.color, width: 14, height: 14 }} />
-            {exam.name}
-          </h1>
-          <span className="muted">
-            {formatDate(exam.date)} · {formatCountdown(days)}
+      <PageHeader
+        back
+        action={<Link className="btn small" to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link>}
+        eyebrow={
+          <span className="row" style={{ gap: 6 }}>
+            <span className="dot" style={{ background: exam.color, width: 8, height: 8 }} />
+            Klausur {formatCountdown(days)}
           </span>
-        </div>
-        <Link className="btn small" to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link>
-      </div>
+        }
+        title={exam.name}
+        subtitle={formatDate(exam.date)}
+      />
 
       {stats.total === 0 ? (
         <div className="card empty stack">

@@ -5,6 +5,7 @@ import { db, deleteProfile, deleteSemester, uid, type Profile } from '../lib/db'
 import { createBackup, parseBackup, restoreBackup } from '../lib/backup'
 import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
+import { PageHeader } from '../components/ui'
 
 export function Settings() {
   const { profile, semester, semesters } = useActive()
@@ -82,9 +83,7 @@ export function Settings() {
 
   return (
     <>
-      <div className="header">
-        <h1>Einstellungen</h1>
-      </div>
+      <PageHeader title="Einstellungen" />
       {message && <div className="notice">{message}</div>}
 
       <div className="section-title">Lernplan</div>
@@ -105,23 +104,25 @@ export function Settings() {
       </div>
 
       <div className="section-title">Semester</div>
-      <div className="card stack">
+      <div className="list">
         {semesters.map((s) => (
-          <div className="row" key={s.id}>
+          <div className="list-item" key={s.id}>
             <button
-              className={`btn small grow ${s.id === semester.id ? 'primary' : ''}`}
-              style={{ justifyContent: 'flex-start', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', textAlign: 'left' }}
+              className="grow truncate"
+              style={{ border: 'none', background: 'none', font: 'inherit', color: 'inherit', textAlign: 'left', padding: 0, cursor: 'pointer' }}
               onClick={() => update({ activeSemesterId: s.id })}
               aria-pressed={s.id === semester.id}
             >
-              {s.id === semester.id && '✓ '}
+              <span style={{ display: 'inline-block', width: 22, color: 'var(--accent)', fontWeight: 600 }}>{s.id === semester.id ? '✓' : ''}</span>
               {s.name}
             </button>
-            <button className="btn small" onClick={() => renameSemester(s.id, s.name)}>Ändern</button>
-            <button className="btn small danger" onClick={() => removeSemester(s.id, s.name)} aria-label={`${s.name} löschen`}>Löschen</button>
+            <button className="btn small ghost" style={{ color: 'var(--accent)' }} onClick={() => renameSemester(s.id, s.name)}>Ändern</button>
+            <button className="btn small ghost danger" onClick={() => removeSemester(s.id, s.name)} aria-label={`${s.name} löschen`}>Löschen</button>
           </div>
         ))}
-        <button className="btn block" onClick={addSemester}>+ Neues Semester</button>
+        <div className="list-item">
+          <button className="btn small ghost" style={{ color: 'var(--accent)', marginLeft: -8 }} onClick={addSemester}>Neues Semester hinzufügen</button>
+        </div>
       </div>
 
       <div className="section-title">Profil</div>

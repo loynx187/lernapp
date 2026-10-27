@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useActive } from '../state'
 import { db, deleteExam, EXAM_COLORS, MAX_EXAMS_PER_SEMESTER, uid } from '../lib/db'
 import { addDays, isoDate } from '../lib/dates'
-import { Icon } from '../components/ui'
+import { PageHeader } from '../components/ui'
 
 const WEIGHTS = [
   { v: 1, label: 'Niedrig' },
@@ -62,12 +62,7 @@ export function ExamForm() {
 
   return (
     <form onSubmit={submit}>
-      <div className="header">
-        <button type="button" className="btn ghost small" onClick={() => navigate(-1)} aria-label="Zurück">
-          <Icon name="back" />
-        </button>
-        <h1 className="grow">{id ? 'Prüfung bearbeiten' : 'Neue Prüfung'}</h1>
-      </div>
+      <PageHeader back title={id ? 'Prüfung bearbeiten' : 'Neue Prüfung'} />
       <div className="card">
         <label className="field">
           <span>Name</span>
@@ -78,10 +73,10 @@ export function ExamForm() {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
         <div className="field">
-          <span style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Wichtigkeit</span>
-          <div className="row">
+          <span className="field-label">Wichtigkeit</span>
+          <div className="segmented" role="radiogroup" aria-label="Wichtigkeit">
             {WEIGHTS.map((w) => (
-              <button type="button" key={w.v} className={`btn small grow ${weight === w.v ? 'primary' : ''}`} onClick={() => setWeight(w.v)}>
+              <button type="button" key={w.v} role="radio" aria-checked={weight === w.v} className={weight === w.v ? 'on' : ''} onClick={() => setWeight(w.v)}>
                 {w.label}
               </button>
             ))}
@@ -89,7 +84,7 @@ export function ExamForm() {
           <small>Bei knapper Zeit bekommen wichtigere Prüfungen mehr vom Tagesbudget (z. B. nach ECTS oder Schwierigkeit).</small>
         </div>
         <div className="field">
-          <span style={{ display: 'block', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Farbe</span>
+          <span className="field-label">Farbe</span>
           <div className="row wrap">
             {EXAM_COLORS.map((c) => (
               <button
