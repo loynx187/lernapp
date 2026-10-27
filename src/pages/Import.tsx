@@ -134,6 +134,26 @@ export function Import() {
                 <button className="btn block" onClick={loadExample}>Beispielpaket ausprobieren</button>
               </div>
 
+              <div className="card stack">
+                <details>
+                  <summary>So entstehen Kartenpakete aus deinen Unterlagen</summary>
+                  <ol className="help" style={{ marginTop: 8 }}>
+                    <li>In der Claude-App eine neue Claude-Code-Sitzung mit dem Repository <code>lernapp</code> starten.</li>
+                    <li>Die PDFs hochladen – Skript, Übungsaufgaben und Altklausuren, soweit vorhanden.</li>
+                    <li>
+                      <code>/kartenpaket &lt;Fach&gt;</code> schreiben, z. B. <code>/kartenpaket Thermodynamik</code>. Bei einem neuen Fach stellt Claude einmalig ein paar Fragen zu Prüfung und Schwerpunkten.
+                    </li>
+                    <li>
+                      <b>Update eines bestehenden Pakets</b> (z. B. neue Folien): zusätzlich das bisherige Paket hochladen – hier in der App unter Prüfung → Kartenpakete → „Teilen“ → „In Dateien sichern“. Sonst geht der Lernfortschritt verloren.
+                    </li>
+                    <li>Die fertige <code>.lernpaket.json</code> sichern und hier über „Datei auswählen“ importieren. Dein Lernplan passt sich automatisch an.</li>
+                  </ol>
+                  <p className="muted" style={{ marginBottom: 0 }}>
+                    Claude arbeitet dabei immer dieselbe Checkliste ab und berücksichtigt die Schwerpunkte des jeweiligen Fachs. Unterlagen und Pakete werden nicht im (öffentlichen) Repository gespeichert.
+                  </p>
+                </details>
+              </div>
+
               <div className="section-title">Text einfügen</div>
               <div className="card">
                 <p className="muted">
