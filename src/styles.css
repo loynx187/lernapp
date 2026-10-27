@@ -245,7 +245,8 @@ code { font-size: 0.9em; background: var(--fill); padding: 1px 6px; border-radiu
 .btn.ghost:hover { background: var(--fill); filter: none; }
 
 /* Formulare */
-label.field { display: block; margin-bottom: 18px; }
+.field { display: block; margin-bottom: 22px; }
+.field small { display: block; margin-top: 8px; line-height: 1.4; }
 label.field > span, .field-label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 8px; }
 input[type='text'], input[type='date'], input[type='number'], select, textarea {
   width: 100%;
