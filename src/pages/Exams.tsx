@@ -6,6 +6,7 @@ import { daysUntil, formatCountdown, formatDate } from '../lib/dates'
 import { examStats } from '../lib/stats'
 import { loadStudyData } from '../lib/study'
 import { PageHeader, Progress, pct } from '../components/ui'
+import { OrderButton, OrderSteps } from '../components/OrderButton'
 
 export function Exams() {
   const { profile, semester } = useActive()
@@ -67,6 +68,18 @@ export function Exams() {
         )
       })}
       <Link className="btn block" to="/import" style={{ marginTop: 8 }}>Karten importieren</Link>
+      {rows.length > 0 && (
+        <>
+          <div className="section-title">Alle Fächer mit Claude einrichten</div>
+          <div className="card stack">
+            <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+              Ein Auftrag für alle Prüfungen dieses Semesters – z. B. um zu Semesterbeginn alle Fachprofile anzulegen oder Unterlagen mehrerer Fächer auf einmal zu schicken. Claude fragt gesammelt nach, was fehlt, und gibt dir eine Datei mit den Fachprofilen zum Importieren zurück.
+            </p>
+            <OrderButton exams={rows.map((r) => r.exam)} semester={semester} label="Auftrag für alle Prüfungen kopieren" />
+            <OrderSteps />
+          </div>
+        </>
+      )}
     </>
   )
 }

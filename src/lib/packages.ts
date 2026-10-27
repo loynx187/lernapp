@@ -1,4 +1,5 @@
-import { db, type CardContent, type Exam, type PackageRecord, type StudyCard } from './db'
+import { db, type CardContent, type Exam, type PackageRecord, type ProfileField, type StudyCard } from './db'
+import { mergeProfile } from './profile'
 import { newMemoryState } from './scheduler'
 import { PACKAGE_FORMAT, type CardPackage } from './package-format'
 
@@ -11,6 +12,8 @@ export interface ImportResult {
   archived: number
   restored: number
   resolvedReports: number
+  /** Vom Paket vorgeschlagene und ins Fachprofil übernommene Felder. */
+  profileFields: ProfileField[]
 }
 
 const contentKey = (c: CardContent) =>
@@ -24,9 +27,9 @@ const contentKey = (c: CardContent) =>
 export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now()): Promise<ImportResult> {
   const chapterTitles = new Map((pkg.chapters ?? []).map((c) => [c.id, c.title]))
   const chapterOrder = new Map((pkg.chapters ?? []).map((c, i) => [c.id, i]))
-  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, resolvedReports: 0 }
+  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, resolvedReports: 0, profileFields: [] }
 
-  await db.transaction('rw', db.cards, db.packages, db.reports, async () => {
+  await db.transaction('rw', db.cards, db.packages, db.reports, db.exams, async () => {
     const changed: string[] = []
     const existing = new Map(
       (await db.cards.where('packageId').equals(pkg.id).filter((c) => c.examId === exam.id).toArray()).map((c) => [c.uid, c]),
@@ -81,6 +84,12 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       cardCount: pkg.cards.length,
     }
     await db.packages.put(record)
+    const current = await db.exams.get(exam.id)
+    if (pkg.profile && current) {
+      const { profile, changed } = mergeProfile(current.profile, pkg.profile, false)
+      if (changed.length || profile.slug !== current.profile?.slug) await db.exams.update(exam.id, { profile })
+      result.profileFields = changed
+    }
   })
   return result
 }

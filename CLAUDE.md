@@ -22,6 +22,7 @@ Wenn der Nutzer eine Sicherung hochlädt und persönliche FSRS-Parameter möchte
 
 ## Kartenpakete aus Vorlesungsunterlagen erstellen
 **Immer nach dem Skill `.claude/skills/kartenpaket/SKILL.md` vorgehen** (auch ohne `/kartenpaket`-Aufruf, sobald PDFs für Karten hochgeladen werden). Unterlagen, Pakete, Fachprofile und Meldungen liegen im privaten Repository `loynx187/lernapp-inhalte` (`faecher/<fach>/…`).
+Meist schickt der Nutzer dazu einen **Auftrag aus der App** (`lernapp-auftrag`: Prüfungen, Fachprofil, Paketstände, offene Meldungen; erzeugt in `src/lib/profile.ts`). Das Fachprofil der App ist maßgeblich; Vorschläge gehen als `profile` im Paket oder als `lernapp-fachprofile`-Datei zurück.
 Format: `docs/KARTENPAKET-FORMAT.md`. Beispiel: `public/beispiel-paket.json`.
 
 - **Unterlagen (PDFs), Pakete und Fachprofile nie in dieses Repository committen** – es ist öffentlich und die Inhalte sind urheberrechtlich geschützt. Sie gehören ins private Archiv; Pakete zusätzlich als Datei an den Nutzer übergeben.

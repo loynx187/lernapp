@@ -1,6 +1,6 @@
 // Kartenpaket-Format und Validierung. Bewusst ohne Laufzeit-Imports, damit
 // scripts/validate-paket.ts die Prüfung auch außerhalb der App nutzen kann.
-import type { CardContent, CardType, Mode, NumericAnswer } from './db'
+import type { CardContent, CardType, ExamProfile, Mode, NumericAnswer, TaskShare } from './db'
 
 export const PACKAGE_FORMAT = 'lernapp-paket'
 export const BACKUP_FORMAT = 'lernapp-backup'
@@ -15,6 +15,8 @@ export interface CardPackage {
   created?: string
   sources?: { file: string; pages?: number }[]
   chapters?: { id: string; title: string }[]
+  /** Vorschläge für das Fachprofil der Prüfung; die App übernimmt sie nur in leere Felder. */
+  profile?: ExamProfile
   cards: CardContent[]
 }
 
@@ -91,6 +93,36 @@ export function parsePackage(raw: unknown): CardPackage {
     version: typeof p.version === 'number' ? p.version : 1,
     created: isStr(p.created) ? p.created : undefined,
     chapters,
+    profile: parseProfile(p.profile),
     cards,
   }
+}
+
+const TASK_SHARES: TaskShare[] = ['keine', 'wenig', 'mittel', 'hoch']
+const TEXT_FIELDS = ['slug', 'form', 'aids', 'focus', 'omit', 'notation', 'notes'] as const
+
+/** Liest ein Fachprofil (aus Paket oder Profildatei); unbekannte oder leere Felder entfallen. */
+export function parseProfile(raw: unknown): ExamProfile | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Record<string, unknown>
+  const out: ExamProfile = {}
+  for (const k of TEXT_FIELDS) if (isStr(r[k]) && r[k].trim()) out[k] = r[k].trim()
+  if (out.slug) out.slug = slugify(out.slug)
+  if (typeof r.duration === 'number' && r.duration > 0) out.duration = Math.round(r.duration)
+  if (TASK_SHARES.includes(r.taskShare as TaskShare)) out.taskShare = r.taskShare as TaskShare
+  return Object.keys(out).length ? out : undefined
+}
+
+/** Ordnername eines Fachs: Kleinbuchstaben, Umlaute ausgeschrieben, Bindestriche. */
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }

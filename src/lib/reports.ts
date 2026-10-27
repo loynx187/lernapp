@@ -36,10 +36,29 @@ export async function deleteReport(r: CardReport) {
   })
 }
 
-/** Datei für die nächste Paketerstellung: offene Meldungen mit Karteninhalt, damit Claude sie zuordnen kann. */
-export async function exportReports(exam: Exam) {
-  const reports = (await db.reports.where('examId').equals(exam.id).toArray()).filter((r) => !r.resolvedAt)
+/** Offene Meldungen einer Prüfung mit Karteninhalt, damit Claude sie zuordnen kann. */
+export async function openReportEntries(examId: string) {
+  const reports = (await db.reports.where('examId').equals(examId).toArray()).filter((r) => !r.resolvedAt)
   const cards = new Map((await db.cards.bulkGet(reports.map((r) => r.cardId))).filter(Boolean).map((c) => [c!.id, c!]))
+  return reports
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map((r) => {
+      const c = cards.get(r.cardId)
+      return {
+        packageId: r.packageId,
+        uid: r.uid,
+        category: r.category,
+        note: r.note,
+        reportedAt: new Date(r.createdAt).toISOString(),
+        front: c?.front,
+        back: c?.back,
+        source: c?.source,
+      }
+    })
+}
+
+/** Datei für die nächste Paketerstellung. */
+export async function exportReports(exam: Exam) {
   const packages = await db.packages.where('examId').equals(exam.id).toArray()
   return {
     format: REPORTS_FORMAT,
@@ -47,20 +66,6 @@ export async function exportReports(exam: Exam) {
     exportedAt: new Date().toISOString(),
     exam: exam.name,
     packages: packages.map((p) => ({ id: p.packageId, title: p.title, version: p.version })),
-    reports: reports
-      .sort((a, b) => a.createdAt - b.createdAt)
-      .map((r) => {
-        const c = cards.get(r.cardId)
-        return {
-          packageId: r.packageId,
-          uid: r.uid,
-          category: r.category,
-          note: r.note,
-          reportedAt: new Date(r.createdAt).toISOString(),
-          front: c?.front,
-          back: c?.back,
-          source: c?.source,
-        }
-      }),
+    reports: await openReportEntries(exam.id),
   }
 }

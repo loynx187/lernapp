@@ -5,6 +5,7 @@ import { useActive } from '../state'
 import { db } from '../lib/db'
 import { importPackage, parsePackage, parseTextCards, readJsonFile, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
 import { PageHeader } from '../components/ui'
+import { applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
 
 export function Import() {
   const { semester } = useActive()
@@ -17,6 +18,8 @@ export function Import() {
   const [result, setResult] = useState<ImportResult | null>(null)
   const [text, setText] = useState('')
   const [textTitle, setTextTitle] = useState('')
+  const [profiles, setProfiles] = useState<ProfileEntry[] | null>(null)
+  const [profilesDone, setProfilesDone] = useState<string[] | null>(null)
 
   useEffect(() => {
     if (!examId && exams?.length) setExamId(exams[0].id)
@@ -32,7 +35,14 @@ export function Import() {
   const load = (raw: unknown) => {
     setError('')
     setResult(null)
+    setProfilesDone(null)
     try {
+      if ((raw as { format?: unknown })?.format === PROFILES_FORMAT) {
+        setPkg(null)
+        setProfiles(parseProfilesFile(raw))
+        return
+      }
+      setProfiles(null)
       setPkg(parsePackage(raw))
     } catch (e) {
       setPkg(null)
@@ -59,6 +69,18 @@ export function Import() {
   }
 
   const textPairs = text.trim() ? parseTextCards(text) : []
+
+  async function importProfiles(entries: ProfileEntry[]) {
+    const done: string[] = []
+    for (const entry of entries) {
+      const exam = matchExam(exams!, entry)
+      if (!exam) continue
+      const changed = await applyProfile(exam.id, entry.profile, true)
+      done.push(changed.length ? `${exam.name} (${changed.map(fieldLabel).join(', ')})` : `${exam.name} (unverändert)`)
+    }
+    setProfiles(null)
+    setProfilesDone(done)
+  }
 
   async function doImport(p: CardPackage) {
     const exam = exams!.find((e) => e.id === examId)
@@ -103,9 +125,39 @@ export function Import() {
               <Link to={`/pruefung/${examId}`}>Zur Prüfung</Link>
             </div>
           )}
+          {result && result.profileFields.length > 0 && (
+            <div className="notice">
+              Claude hat fürs Fachprofil vorgeschlagen: {result.profileFields.map(fieldLabel).join(', ')}. <Link to={`/pruefung/${examId}/profil`}>Prüfen</Link>
+            </div>
+          )}
+          {profilesDone && (
+            <div className="notice">
+              <b>Fachprofile übernommen:</b> {profilesDone.join(' · ') || 'keine passende Prüfung gefunden'}. Die Vorschläge sind im Fachprofil der jeweiligen Prüfung markiert.
+            </div>
+          )}
           {error && <div className="notice warn">{error}</div>}
 
-          {pkg ? (
+          {profiles ? (
+            <div className="card stack">
+              <h2>Fachprofile von Claude</h2>
+              {profiles.map((entry, i) => {
+                const exam = matchExam(exams, entry)
+                return (
+                  <div key={i} className="row between">
+                    <span>{entry.name ?? entry.slug}</span>
+                    <small className={exam ? '' : 'badge-warn'}>{exam ? `→ ${exam.name}` : 'keine passende Prüfung'}</small>
+                  </div>
+                )
+              })}
+              <p className="muted" style={{ margin: 0, fontSize: 14 }}>Die Angaben ersetzen die bisherigen Felder und werden als Vorschlag markiert, bis du das Fachprofil speicherst.</p>
+              <div className="row">
+                <button className="btn grow" onClick={() => setProfiles(null)}>Abbrechen</button>
+                <button className="btn primary grow" disabled={!profiles.some((e) => matchExam(exams, e))} onClick={() => importProfiles(profiles)}>
+                  Übernehmen
+                </button>
+              </div>
+            </div>
+          ) : pkg ? (
             <div className="card stack">
               <h2>{pkg.title}</h2>
               <p className="muted" style={{ margin: 0 }}>
@@ -127,7 +179,7 @@ export function Import() {
             <>
               <div className="section-title">Kartenpaket</div>
               <div className="card stack">
-                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt.</p>
+                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt – oder eine Datei mit Fachprofilen von Claude.</p>
                 <label className="btn primary block">
                   Datei auswählen
                   <input type="file" accept=".json,application/json" hidden onChange={(e) => onFile(e.target.files?.[0])} />
@@ -139,15 +191,9 @@ export function Import() {
                 <details>
                   <summary>So entstehen Kartenpakete aus deinen Unterlagen</summary>
                   <ol className="help" style={{ marginTop: 8 }}>
-                    <li>In der Claude-App eine neue Claude-Code-Sitzung mit dem Repository <code>lernapp</code> starten.</li>
-                    <li>Die PDFs hochladen – Skript, Übungsaufgaben und Altklausuren, soweit vorhanden.</li>
-                    <li>
-                      <code>/kartenpaket &lt;Fach&gt;</code> schreiben, z. B. <code>/kartenpaket Thermodynamik</code>. Bei einem neuen Fach stellt Claude einmalig ein paar Fragen zu Prüfung und Schwerpunkten.
-                    </li>
-                    <li>
-                      <b>Update eines bestehenden Pakets</b> (z. B. neue Folien): zusätzlich das bisherige Paket hochladen – hier in der App unter Prüfung → Kartenpakete → „Teilen“ → „In Dateien sichern“. Sonst geht der Lernfortschritt verloren.
-                    </li>
-                    <li>Die fertige <code>.lernpaket.json</code> sichern und hier über „Datei auswählen“ importieren. Dein Lernplan passt sich automatisch an.</li>
+                    <li>Auf der Seite der Prüfung unter „Karten mit Claude erstellen“ auf „Auftrag für Claude kopieren“ tippen. Der Auftrag enthält Fach, Klausurtermin, dein Fachprofil, die vorhandenen Pakete und offene Meldungen.</li>
+                    <li>In der Claude-App eine neue Claude-Code-Sitzung mit dem Repository <code>lernapp</code> starten, den Auftrag einfügen und die PDFs anhängen – Skript, Übungsaufgaben und Altklausuren, soweit vorhanden.</li>
+                    <li>Die fertige <code>.lernpaket.json</code> sichern und hier über „Datei auswählen“ importieren. Updates behalten deinen Lernfortschritt; die Vorversion holt Claude aus deinem privaten Archiv.</li>
                   </ol>
                   <p className="muted" style={{ marginBottom: 0 }}>
                     Claude arbeitet dabei immer dieselbe Checkliste ab und berücksichtigt die Schwerpunkte des jeweiligen Fachs. Unterlagen und Pakete werden nicht im (öffentlichen) Repository gespeichert.

@@ -45,7 +45,35 @@ export interface Exam extends Synced {
   weight: number
   color: string
   createdAt: number
+  /** Fachprofil: Vorgaben für Claude bei der Erstellung von Kartenpaketen (siehe profile.ts). */
+  profile?: ExamProfile
 }
+
+export type TaskShare = 'keine' | 'wenig' | 'mittel' | 'hoch'
+
+export interface ExamProfile {
+  /** Ordnername des Fachs im Inhalte-Archiv; bleibt beim Umbenennen der Prüfung gleich. */
+  slug?: string
+  /** Prüfungsform, z. B. „schriftlich“. */
+  form?: string
+  /** Prüfungsdauer in Minuten. */
+  duration?: number
+  /** Erlaubte Hilfsmittel. */
+  aids?: string
+  /** Gewünschter Anteil an Rechenaufgaben. */
+  taskShare?: TaskShare
+  /** Schwerpunkte und Hinweise des Dozenten. */
+  focus?: string
+  /** Was weggelassen oder nur als Zusatzstoff abgefragt werden soll. */
+  omit?: string
+  /** Notation, Formelzeichen, Einheiten. */
+  notation?: string
+  notes?: string
+  /** Von Claude vorgeschlagene, noch nicht bestätigte Felder. */
+  suggested?: ProfileField[]
+}
+
+export type ProfileField = Exclude<keyof ExamProfile, 'suggested'>
 
 /** Inhalt einer Karte, wie er in einem Kartenpaket steht. */
 export interface CardContent {

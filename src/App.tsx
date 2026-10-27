@@ -6,6 +6,7 @@ import { Session } from './pages/Session'
 import { Exams } from './pages/Exams'
 import { ExamDetail } from './pages/ExamDetail'
 import { ExamForm } from './pages/ExamForm'
+import { ExamProfilePage } from './pages/ExamProfile'
 import { Import } from './pages/Import'
 import { Settings } from './pages/Settings'
 import { Help } from './pages/Help'
@@ -50,6 +51,7 @@ function Shell() {
         <Route path="/pruefung/neu" element={<ExamForm />} />
         <Route path="/pruefung/:id" element={<ExamDetail />} />
         <Route path="/pruefung/:id/bearbeiten" element={<ExamForm />} />
+        <Route path="/pruefung/:id/profil" element={<ExamProfilePage />} />
         <Route path="/import" element={<Import />} />
         <Route path="/einstellungen" element={<Settings />} />
         <Route path="/hilfe" element={<Help />} />

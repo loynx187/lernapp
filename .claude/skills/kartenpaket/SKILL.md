@@ -15,8 +15,18 @@ Unterlagen, Pakete, Fachprofile und Meldungen liegen im **privaten** Repository 
 
 ## 1. Auftrag klären
 
+**Auftrag aus der App:** Meist fügt der Nutzer einen Block `lernapp-auftrag` ein (in der App: Prüfung → „Auftrag für Claude kopieren“ bzw. Prüfungen → „Auftrag für alle Prüfungen kopieren“). Er enthält je Prüfung `name`, `slug` (= Ordner im Archiv), `date`, `weight`, das **Fachprofil** (`profile`), welche Felder davon nur unbestätigte Vorschläge von dir sind (`unconfirmed`), die importierten `packages` mit Version und offene Meldungen (`reports`, Aufbau wie `lernapp-meldungen`). Dann gilt:
+- Fach, Slug und Prüfungstermin aus dem Auftrag nehmen – nicht nachfragen.
+- **Das Fachprofil der App ist maßgeblich.** Vom Nutzer bestätigte Felder (alle in `profile` außer `unconfirmed`) gehen vor Einträgen in `profil.md`; übertrage sie dorthin. Fehlt der Ordner im Archiv, lege ihn mit `profil.md` aus der Vorlage an.
+- Paketversionen mit dem Archiv abgleichen. Ist die Version in der App älter als im Archiv, den Nutzer darauf hinweisen (er hat das letzte Update evtl. nicht importiert).
+- `reports` wie eine Meldungsdatei behandeln: als `meldungen/<Datum>_auftrag.json` ablegen und in Schritt 3 bearbeiten.
+- **Mehrere Prüfungen ohne Unterlagen** (Semesterstart): Für jedes Fach den Archiv-Ordner mit `profil.md` anlegen, gesammelt in **einer** Nachricht nur nach den Angaben fragen, die im Profil fehlen, und danach eine Datei `lernapp-fachprofile` zurückgeben (Format siehe `docs/KARTENPAKET-FORMAT.md`, Dateiname `Fachprofile_<Semester>.json`, per `SendUserFile`). Der Nutzer importiert sie unter „Karten importieren“.
+- Mit Unterlagen für mehrere Fächer: Unterlagen den Fächern anhand von Dateinamen und Inhalt zuordnen, im Zweifel nachfragen, dann je Fach die Schritte 1–5.
+
+Ohne Auftrag (nur `/kartenpaket <Fach>`): wie unten; am Ende auf „Auftrag für Claude kopieren“ in der App hinweisen.
+
 - **Fach** aus dem Argument oder der Nachricht; Slug: Kleinbuchstaben, Umlaute ausgeschrieben, Bindestriche (z. B. `technische-mechanik-2`). Lies `faecher/<slug>/profil.md` im Archiv.
-  - **Kein Fachprofil vorhanden:** Lege es aus `fachprofil-vorlage.md` (neben diesem Skill) an. Frage den Nutzer gesammelt in einer Nachricht nur, was sich nicht aus den Unterlagen ablesen lässt (Prüfungsform/Dauer, erlaubte Hilfsmittel, Formelsammlung, Hinweise des Dozenten).
+  - **Kein Fachprofil vorhanden:** Lege es aus `fachprofil-vorlage.md` (neben diesem Skill) an. Frage den Nutzer gesammelt in einer Nachricht nur, was weder im Auftrag steht noch sich aus den Unterlagen ablesen lässt (Prüfungsform/Dauer, erlaubte Hilfsmittel, Formelsammlung, Hinweise des Dozenten).
 - **Neu oder Update?** Prüfe `pakete/` und die Unterlagen-Tabelle im Profil. Gehören die Unterlagen zu einem bestehenden Paket (neue/geänderte Folien desselben Skripts), ist das ein Update: Die Vorversion liegt in `pakete/<paket-id>.lernpaket.json`. Sonst neues Paket – Richtwert: **ein Paket pro Vorlesungsblock bzw. Skriptteil**, nicht ein Riesenpaket pro Fach.
 - **Meldungen:** Hat der Nutzer eine Meldungsdatei (`lernapp-meldungen`, aus der App exportiert) hochgeladen, lege sie unter `meldungen/` ab. Jede offene Meldung zu einem Paket dieses Fachs wird in Schritt 3 bearbeitet – auch wenn keine neuen Unterlagen dabei sind.
 - Neue Unterlagen nach `faecher/<slug>/unterlagen/` kopieren (sprechende Dateinamen beibehalten).
@@ -49,6 +59,8 @@ Allgemeine Regeln (gelten für jedes Fach):
 
 Dann die **Schwerpunkte aus dem Fachprofil** anwenden (Anteil Rechenaufgaben, Fokus-Themen, Notation, was weggelassen wird).
 
+**Fachprofil-Vorschläge im Paket:** Was du über die Prüfung herausgefunden hast (aus Unterlagen, Altklausuren oder Antworten des Nutzers) und was im Fachprofil der App leer oder `unconfirmed` ist, gehört als `profile` ins Paket (Felder: `form`, `duration` in Minuten, `aids`, `taskShare` = `keine`/`wenig`/`mittel`/`hoch`, `focus`, `omit`, `notation`, `notes`, dazu immer `slug`). Kurz und konkret formulieren – es erscheint so in der App. Die App übernimmt es nur in leere bzw. unbestätigte Felder und markiert es als Vorschlag; bestätigte Angaben des Nutzers überschreibt es nie. Keine Vorlesungsinhalte ins Profil.
+
 Paket-Metadaten: `id` stabil und sprechend (`<fach>-<thema>`), `title` „<Fach> – <Unterlage>“, `module` = Prüfungsname, `version` (neu: 1; Update: Vorversion + 1), `chapters` in Skriptreihenfolge.
 
 ## 4. Prüfen
@@ -65,8 +77,8 @@ Paket-Metadaten: `id` stabil und sprechend (`<fach>-<thema>`), `title` „<Fach>
 ## 5. Ablegen und übergeben
 
 - Paket nach `faecher/<slug>/pakete/<paket-id>.lernpaket.json` schreiben (überschreibt die Vorversion – die bleibt in der Git-Historie).
-- Fachprofil aktualisieren: Unterlagen-Tabelle (Datei, Inhalt, Paket-ID, Version) und neue Erkenntnisse (z. B. Klausurschwerpunkte aus Altklausuren, Rückmeldungen).
+- `profil.md` aktualisieren: Angaben aus dem Fachprofil der App, Unterlagen-Tabelle (Datei, Inhalt, Paket-ID, Version) und neue Erkenntnisse (z. B. Klausurschwerpunkte aus Altklausuren, Rückmeldungen).
 - Im Archiv committen und pushen (Unterlagen, Paket, Profil, Meldungen).
 - Datei zusätzlich mit `SendUserFile` schicken (Dateiname `<Fach>_<Thema>.lernpaket.json`).
-- Kurze Zusammenfassung: Anzahl Karten je Typ und Kapitel, gesetzte Schwerpunkte, fehlende Folien oder unklare Stellen, bei Updates was neu/geändert/entfernt ist, Ergebnis jeder Meldung.
+- Kurze Zusammenfassung: vorgeschlagene Fachprofil-Angaben (der Nutzer bestätigt sie in der App), Anzahl Karten je Typ und Kapitel, gesetzte Schwerpunkte, fehlende Folien oder unklare Stellen, bei Updates was neu/geändert/entfernt ist, Ergebnis jeder Meldung.
 - Import-Hinweis: App → Prüfung → „Paket importieren oder aktualisieren“. Gemeldete Karten, die geändert wurden, gelten danach in der App automatisch als erledigt.

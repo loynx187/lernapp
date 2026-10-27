@@ -8,11 +8,13 @@ import { examStats } from '../lib/stats'
 import { exportPackage, safeFileName, saveFile } from '../lib/packages'
 import { deleteReport, exportReports, REPORT_CATEGORIES, setResolved } from '../lib/reports'
 import { HistoryChart } from '../components/HistoryChart'
+import { OrderButton, OrderSteps } from '../components/OrderButton'
+import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { PageHeader, Progress, Stat, pct } from '../components/ui'
 
 export function ExamDetail() {
   const { id = '' } = useParams()
-  const { profile } = useActive()
+  const { profile, semester } = useActive()
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
     if (!exam) return { exam: undefined }
@@ -43,6 +45,13 @@ export function ExamDetail() {
   const days = daysUntil(exam.date)
   const hasDesk = cards.some((c) => cardMode(c) === 'desk')
   const hasMobile = cards.some((c) => cardMode(c) === 'mobile')
+  const suggested = exam.profile?.suggested ?? []
+  const filled = PROFILE_FIELDS.filter((f) => exam.profile?.[f.key] !== undefined)
+  const profileSummary = filled.length
+    ? [exam.profile?.form, exam.profile?.duration && `${exam.profile.duration} min`, exam.profile?.taskShare && `Rechenaufgaben: ${exam.profile.taskShare}`]
+        .filter(Boolean)
+        .join(' · ') || `${filled.length} von ${PROFILE_FIELDS.length} Angaben`
+    : 'Noch leer – optional, Claude fragt sonst nach.'
 
   async function share(packageId: string) {
     const pkg = await exportPackage(exam!, packageId)
@@ -163,7 +172,7 @@ export function ExamDetail() {
             </div>
           </div>
           <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>
-            Die Exportdatei bei der nächsten Paketerstellung zusammen mit <code>/kartenpaket</code> hochladen. Korrigierte Karten werden nach dem Import automatisch als erledigt markiert.
+            Offene Meldungen stehen automatisch im Auftrag für Claude (unten). Korrigierte Karten werden nach dem Import als erledigt markiert.
           </p>
         </>
       )}
@@ -185,6 +194,25 @@ export function ExamDetail() {
         ))}
         <Link className="btn block" to={`/import?exam=${exam.id}`}>Paket importieren oder aktualisieren</Link>
         <Link className="btn block" to="/unterlagen">Skripte für „Folie ansehen“</Link>
+      </div>
+
+      <div className="section-title">Karten mit Claude erstellen</div>
+      <div className="card stack">
+        <div className="row between">
+          <div className="grow">
+            <b>Fachprofil</b>
+            <br />
+            <small>{profileSummary}</small>
+          </div>
+          <Link className="btn small" to={`/pruefung/${exam.id}/profil`}>{suggested.length ? 'Prüfen' : filled.length ? 'Ändern' : 'Ausfüllen'}</Link>
+        </div>
+        {suggested.length > 0 && (
+          <div className="notice" style={{ margin: 0 }}>
+            Claude hat {suggested.map(fieldLabel).join(', ')} vorgeschlagen – bitte prüfen und speichern.
+          </div>
+        )}
+        <OrderButton exams={[exam]} semester={semester} label="Auftrag für Claude kopieren" />
+        <OrderSteps />
       </div>
     </>
   )

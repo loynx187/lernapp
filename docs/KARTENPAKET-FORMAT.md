@@ -13,6 +13,7 @@ Ein Kartenpaket enthält die Karten zu einer Prüfung bzw. einem Skript. Es enth
   "created": "2026-10-27",
   "sources": [{ "file": "TM2_Skript.pdf", "pages": 300 }],
   "chapters": [{ "id": "k1", "title": "Zug und Druck" }],
+  "profile": { "slug": "technische-mechanik-ii", "form": "schriftlich", "duration": 120, "taskShare": "hoch" },
   "cards": [ ... ]
 }
 ```
@@ -22,6 +23,7 @@ Ein Kartenpaket enthält die Karten zu einer Prüfung bzw. einem Skript. Es enth
 | `id` | Stabile Paket-ID. Gleiche ID = Update desselben Pakets. |
 | `version` | Bei jedem Update erhöhen. |
 | `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. |
+| `profile` | Optional: Vorschläge für das Fachprofil der Prüfung (siehe unten). Die App übernimmt sie nur in leere oder noch unbestätigte Felder. |
 
 ## Karten
 
@@ -87,3 +89,62 @@ In der App können fehlerhafte oder unklare Karten gemeldet werden (Lernsitzung 
 ```
 
 `category`: `fehler` (fachlich falsch), `unklar`, `aufteilen` (zu lang), `sonstiges`. Über `packageId` + `uid` ist die Karte im Paket eindeutig. Ändert ein Paket-Update eine gemeldete Karte, gilt die Meldung in der App automatisch als erledigt.
+
+## Fachprofil
+
+Jede Prüfung hat in der App ein Fachprofil (Prüfung → Karten mit Claude erstellen → Fachprofil). Felder, alle optional:
+
+| Feld | Inhalt |
+|---|---|
+| `slug` | Ordner des Fachs im Inhalte-Archiv (`faecher/<slug>`), bleibt beim Umbenennen der Prüfung gleich |
+| `form` | Prüfungsform, z. B. „schriftliche Klausur“ |
+| `duration` | Dauer in Minuten |
+| `aids` | erlaubte Hilfsmittel |
+| `taskShare` | Anteil Rechenaufgaben: `keine`, `wenig`, `mittel`, `hoch` |
+| `focus` | Schwerpunkte, Hinweise des Dozenten |
+| `omit` | was weggelassen oder nur als Zusatzstoff abgefragt wird |
+| `notation` | Formelzeichen, Einheiten |
+| `notes` | Sonstiges |
+
+Von Claude übernommene Felder gelten als Vorschlag, bis der Nutzer das Fachprofil speichert.
+
+## Auftrag (`lernapp-auftrag`)
+
+Text, den die App für Claude erzeugt („Auftrag für Claude kopieren“): eine Zeile `/kartenpaket <Prüfungen>` und ein JSON-Block:
+
+```json
+{
+  "format": "lernapp-auftrag",
+  "formatVersion": 1,
+  "created": "2026-10-27",
+  "semester": { "name": "5. Semester", "kind": "dual" },
+  "exams": [
+    {
+      "name": "Technische Mechanik II",
+      "slug": "technische-mechanik-ii",
+      "date": "2027-02-01",
+      "weight": 2,
+      "profile": { "form": "schriftlich", "aids": "Taschenrechner" },
+      "unconfirmed": ["aids"],
+      "packages": [{ "id": "tm2-festigkeitslehre", "title": "…", "version": 2, "cards": 140 }],
+      "reports": [ { "packageId": "…", "uid": "…", "category": "fehler", "note": "…", "front": "…", "back": "…" } ]
+    }
+  ]
+}
+```
+
+`unconfirmed`: Felder, die Claude vorgeschlagen und der Nutzer noch nicht bestätigt hat. `reports`: offene Meldungen wie in der Meldungsdatei.
+
+## Fachprofile (`Fachprofile_<Semester>.json`)
+
+Antwort von Claude, wenn mehrere Fächer ohne Kartenpaket eingerichtet werden. Import in der App unter „Karten importieren“; Zuordnung über `slug`, sonst über den Namen. Die Angaben ersetzen die bisherigen Felder und werden als Vorschlag markiert.
+
+```json
+{
+  "format": "lernapp-fachprofile",
+  "formatVersion": 1,
+  "exams": [
+    { "name": "Technische Mechanik II", "slug": "technische-mechanik-ii", "profile": { "form": "schriftlich", "duration": 120, "taskShare": "hoch" } }
+  ]
+}
+```
