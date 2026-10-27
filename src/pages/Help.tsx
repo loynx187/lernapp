@@ -66,7 +66,7 @@ export function Help() {
           </ol>
           <CopyWidgetScript />
           <p style={{ marginTop: 10 }}>
-            <b>Transparenter Hintergrund:</b> Lange auf den Homescreen drücken, ganz nach rechts auf die leere Seite wischen und einen Screenshot machen. Dann das Skript in Scriptable antippen → „Transparenten Hintergrund einrichten“ → Screenshot, Größe und Position wählen. Die angezeigte Position (z. B. „oben links“) beim Widget unter „Widget bearbeiten“ → „Parameter“ eintragen. Nach einem neuen Hintergrundbild die Einrichtung wiederholen.
+            <b>Hintergrund:</b> Standard ist Weiß. Für Schwarz lange auf das Widget drücken → „Widget bearbeiten“ → bei „Parameter“ <code>schwarz</code> eintragen. Tippst du das Skript in Scriptable an, zeigt es eine Vorschau.
           </p>
           <p className="muted">
             Das Widget zeigt den Stand des letzten Abgleichs; iOS aktualisiert Widgets etwa alle 15–60 Minuten. Ein ⚠︎ erscheint, wenn der Stand älter als 36 Stunden ist. Ein Tipp aufs Widget öffnet die Lernapp.
