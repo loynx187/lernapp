@@ -74,7 +74,10 @@ export function Help() {
         <details>
           <summary>Folie ansehen</summary>
           <p style={{ marginTop: 8 }}>
-            Nach dem Aufdecken einer Karte öffnet „Folie ansehen“ die passende Seite der Vorlesungsunterlage. Die PDF wird auf dem Gerät gespeichert – beim ersten Mal wählst du sie einmalig aus (z. B. aus der Dateien-App), oder du legst sie in Dropbox unter <i>Apps → (App-Ordner) → Unterlagen</i> ab. Der Dateiname muss dem in der Quellenangabe entsprechen.
+            Nach dem Aufdecken einer Karte öffnet „Folie ansehen“ die passende Seite der Vorlesungsunterlage. Unter Einstellungen → <i>Unterlagen</i> wählst du alle Skripte auf einmal aus (z. B. aus iCloud Drive in der Dateien-App); die App ordnet sie anhand der Dateinamen zu.
+          </p>
+          <p>
+            <b>Mehrere Geräte:</b> Mit Dropbox-Sync legt die App ausgewählte Unterlagen zusätzlich in deiner Dropbox ab – deine anderen Geräte laden sie dann automatisch. Ohne Sync wählst du sie auf jedem Gerät einmal aus. Einen iCloud-Ordner dauerhaft verknüpfen können Web-Apps auf dem iPhone leider nicht.
           </p>
         </details>
       </div>

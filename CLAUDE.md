@@ -11,7 +11,8 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 - Datenmodell: Profil → Semester → Prüfung (max. 10/Semester) → Karten. Karten-ID: `${examId}:${packageId}:${uid}`.
 
 ## Befehle
-- `npm test` – Unit-Tests (Vitest)
+- `npm test` – Unit-Tests (Vitest, `src/**/*.test.ts`)
+- `npm run test:e2e` – Browser-Tests (Playwright, `e2e/`) gegen den Produktions-Build; laufen auch in GitHub Actions vor jeder Veröffentlichung. Dropbox wird darin simuliert (`e2e/helpers.ts`). Neue Funktionen bekommen einen Browser-Test. Testdateien nur unter Pfaden ohne Umlaute anlegen (Chromium wählt sie sonst nicht aus).
 - `npm run build` – Typprüfung + Build
 - `npm run dev` – Entwicklungsserver unter http://localhost:5173/lernapp/
 - `npm run validate -- <paket.json> [--alt <alt.json>] [--folien 1-25]` – Kartenpaket prüfen

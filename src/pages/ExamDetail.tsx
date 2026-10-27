@@ -184,6 +184,7 @@ export function ExamDetail() {
           </div>
         ))}
         <Link className="btn block" to={`/import?exam=${exam.id}`}>Paket importieren oder aktualisieren</Link>
+        <Link className="btn block" to="/unterlagen">Skripte für „Folie ansehen“</Link>
       </div>
     </>
   )

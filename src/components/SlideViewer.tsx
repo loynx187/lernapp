@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { findPdf, loadPdf, storePdf } from '../lib/pdfs'
+import { Link } from 'react-router-dom'
 import { Icon } from './ui'
 
 type Doc = Awaited<ReturnType<typeof loadPdf>>
@@ -50,9 +51,10 @@ export function SlideViewer({ file, page, profileId, onClose }: { file: string; 
 
   async function pick(f?: File) {
     if (!f) return
-    await storePdf(file, f)
     setState('loading')
     open(f)
+    // Speichern (und ggf. Hochladen nach Dropbox) im Hintergrund – die Folie ist sofort sichtbar.
+    storePdf(file, f, profileId).catch(() => {})
   }
 
   return (
@@ -73,7 +75,7 @@ export function SlideViewer({ file, page, profileId, onClose }: { file: string; 
         {state === 'missing' && (
           <div className="stack">
             <p className="muted" style={{ margin: 0 }}>
-              Die Unterlage <b>{file}</b> ist auf diesem Gerät noch nicht vorhanden. Wähle die PDF-Datei einmalig aus – danach öffnet sich die Folie direkt. Mit Dropbox-Sync kannst du sie auch in den Ordner <i>Apps → (App-Ordner) → Unterlagen</i> legen.
+              Die Unterlage <b>{file}</b> ist auf diesem Gerät noch nicht vorhanden. Wähle die PDF-Datei einmalig aus – mit Dropbox-Sync steht sie danach auch auf deinen anderen Geräten bereit. Alle Skripte auf einmal zuordnen: <Link to="/unterlagen">Unterlagen</Link>.
             </p>
             <label className="btn primary block">
               PDF auswählen

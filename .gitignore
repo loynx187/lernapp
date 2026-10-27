@@ -5,3 +5,5 @@ dist
 # Vorlesungsunterlagen niemals ins (öffentliche) Repository
 material/
 *.pdf
+test-results/
+playwright-report/

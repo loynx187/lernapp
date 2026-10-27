@@ -21,7 +21,8 @@ App öffnen: **https://loynx187.github.io/lernapp/**
 ```bash
 npm install
 npm run dev     # http://localhost:5173/lernapp/
-npm test
+npm test          # Unit-Tests
+npm run test:e2e  # Browser-Tests (Playwright)
 npm run build
 ```
 
