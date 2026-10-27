@@ -39,6 +39,8 @@ test('Fachprofil hinterlegen, Auftrag kopieren, Vorschläge von Claude übernehm
   await expect(page.getByPlaceholder('z. B. schriftliche Klausur')).toHaveValue('schriftlich')
   await expect(page.getByText('Vorschlag von Claude')).toHaveCount(1)
   await page.getByRole('button', { name: 'Speichern' }).click()
+  // Erst auf die Prüfungsseite warten: Speichern navigiert asynchron und würde sonst den folgenden Seitenwechsel überschreiben.
+  await expect(page.getByRole('heading', { name: 'Thermodynamik' })).toBeVisible()
   await expect(page.getByText(/vorgeschlagen – bitte prüfen/)).toHaveCount(0)
 
   // Fachprofile-Datei von Claude für alle Prüfungen
