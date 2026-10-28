@@ -14,11 +14,21 @@ export interface StudyData {
   blocks: Map<string, number>
 }
 
+/** IDs der Karten mit offener Meldung. */
+export async function pausedCardIds(examIds: string[]): Promise<Set<string>> {
+  const reports = await db.reports.where('examId').anyOf(examIds).filter((r) => !r.resolvedAt).toArray()
+  return new Set(reports.map((r) => r.cardId))
+}
+
 /** Lädt alles, was für Tagesplan und Lernsitzung des aktiven Semesters nötig ist. */
 export async function loadStudyData(profile: Profile, now = Date.now()): Promise<StudyData> {
   const exams = profile.activeSemesterId ? await db.exams.where('semesterId').equals(profile.activeSemesterId).toArray() : []
   exams.sort((a, b) => a.date.localeCompare(b.date))
-  const cards = (await Promise.all(exams.map((e) => db.cards.where('[examId+archived]').equals([e.id, 0]).toArray()))).flat()
+  // Karten mit offener Meldung sind pausiert, bis die Meldung erledigt ist (Korrektur per Paket-Update oder abgehakt).
+  const paused = await pausedCardIds(exams.map((e) => e.id))
+  const cards = (await Promise.all(exams.map((e) => db.cards.where('[examId+archived]').equals([e.id, 0]).toArray())))
+    .flat()
+    .filter((c) => !paused.has(c.id))
   const examIds = new Set(exams.map((e) => e.id))
   const blocks = packageBlocks((await Promise.all(exams.map((e) => db.packages.where('examId').equals(e.id).toArray()))).flat())
   const logs = await db.reviews
