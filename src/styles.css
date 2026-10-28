@@ -153,7 +153,8 @@ pre code { display: block; background: none; padding: 0; font-size: inherit; lin
   --gap: 14px;
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  grid-auto-rows: calc((100cqw - var(--gap) * (var(--cols) - 1)) / var(--cols));
+  /* Mindestens quadratisch; braucht der Inhalt mehr Platz, wächst die Zeile mit (statt abzuschneiden) */
+  grid-auto-rows: minmax(calc((100cqw - var(--gap) * (var(--cols) - 1)) / var(--cols)), auto);
   grid-auto-flow: dense;
   gap: var(--gap);
 }
