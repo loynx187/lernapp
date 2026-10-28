@@ -21,7 +21,7 @@ export interface StudyData {
   homework: Homework[]
   /** Heute für Hausaufgaben eingeplante Minuten (gehen vom Schreibtisch-Budget ab) */
   homeworkMinutes: number
-  /** Eingestelltes und gemessenes Tagesbudget je Modus */
+  /** Eingestelltes und gemessenes Tagesbudget je Modus (Schreibtisch: nur der Teil für Aufgaben, nach Abzug der Hausaufgaben) */
   budgets: Record<Mode, BudgetInfo>
   /** Empfehlung für neue Schreibtischaufgaben (Karten-ID → Wert und Begründung) */
   recommendations: Map<string, TaskRecommendation>
@@ -58,9 +58,11 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
   const homework = sortOpen((await Promise.all(exams.map((e) => db.homework.where('examId').equals(e.id).toArray()))).flat())
   const homeworkMinutes = Math.round(homeworkMinutesToday(homework, now))
   const auto = profile.budgetAuto !== false
+  // Hausaufgaben haben einen Abgabetermin: Ihr Tagesanteil ist fest reserviert und wird nie an die gemessene
+  // Lernzeit angepasst. Angepasst wird nur die übrige Schreibtisch-Zeit für Aufgaben (nur deren Dauer wird gemessen).
   const budgets = {
     mobile: budgetInfo(profile.minutesMobile, logs, 'mobile', now, auto),
-    desk: budgetInfo(profile.minutesDesk, logs, 'desk', now, auto),
+    desk: budgetInfo(Math.max(0, profile.minutesDesk - homeworkMinutes), logs, 'desk', now, auto),
   }
   const recommendations = rankTasks(cards, new Map(exams.map((e) => [e.id, daysUntil(e.date, now)])), now, profile.retention)
   const plan = planDay({
@@ -72,8 +74,7 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
       logs.filter((l) => examIds.has(l.examId)),
       now,
     ),
-    // Hausaufgaben haben am Schreibtisch Vorrang: ihr Tagesanteil geht vom Budget ab.
-    budgetMinutes: { mobile: budgets.mobile.effective, desk: Math.max(0, budgets.desk.effective - homeworkMinutes) },
+    budgetMinutes: { mobile: budgets.mobile.effective, desk: budgets.desk.effective },
     costs: estimateCosts(logs),
   })
   return { exams, cards, logs, plan, blocks, homework, homeworkMinutes, budgets, recommendations }

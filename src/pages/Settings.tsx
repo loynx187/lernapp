@@ -119,7 +119,7 @@ export function Settings() {
         <label className="field">
           <span>Am Schreibtisch (Rechenaufgaben): {profile.minutesDesk} min pro Tag</span>
           <input type="range" min={0} max={240} step={15} value={profile.minutesDesk} onChange={(e) => update({ minutesDesk: Number(e.target.value) })} />
-          <BudgetNote info={budgets?.desk} />
+          <BudgetNote info={budgets?.desk} desk />
         </label>
         <label className="row" style={{ gap: 10, marginBottom: 14 }}>
           <input type="checkbox" checked={profile.budgetAuto !== false} onChange={(e) => update({ budgetAuto: e.target.checked })} />
@@ -274,14 +274,15 @@ export function Settings() {
 }
 
 /** Gemessene Lernzeit zum eingestellten Budget und das Budget, mit dem tatsächlich geplant wird. */
-function BudgetNote({ info }: { info?: BudgetInfo }) {
+function BudgetNote({ info, desk }: { info?: BudgetInfo; desk?: boolean }) {
   if (!info || info.setting === 0) return null
+  const hw = desk ? ' Hausaufgaben bekommen immer ihre volle Zeit bis zur Abgabe; angepasst wird nur die Zeit für Aufgaben.' : ''
   if (info.measured === undefined)
-    return <small>Noch zu wenig Daten: Ab {BUDGET_MIN_DAYS} Lerntagen wird deine tatsächliche Lernzeit gemessen.</small>
+    return <small>Noch zu wenig Daten: Ab {BUDGET_MIN_DAYS} Lerntagen wird deine tatsächliche Lernzeit gemessen.{hw}</small>
   return (
     <small>
-      Gemessen: ⌀ {Math.round(info.measured)} min an {info.days} Lerntagen (letzte {BUDGET_WINDOW_DAYS} Tage)
-      {info.effective !== info.setting ? ` · geplant wird mit ${info.effective} min` : ''}
+      Gemessen{desk ? ' (Aufgaben)' : ''}: ⌀ {Math.round(info.measured)} min an {info.days} Lerntagen (letzte {BUDGET_WINDOW_DAYS} Tage)
+      {!desk && info.effective !== info.setting ? ` · geplant wird mit ${info.effective} min` : ''}.{hw}
     </small>
   )
 }

@@ -176,7 +176,7 @@ export function Dashboard() {
                     ) : (
                       <span className="w-pill">{m === 'mobile' ? '10 extra' : '1 extra'}</span>
                     )}
-                    {t.minutesNeeded > budget && <span className="w-warn">Budget zu knapp</span>}
+                    {(t.minutesNeeded > budget || (m === 'desk' && data.homeworkMinutes > profile.minutesDesk)) && <span className="w-warn">Budget zu knapp</span>}
                   </div>
                 </div>
               </Widget>
