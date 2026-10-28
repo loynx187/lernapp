@@ -28,10 +28,10 @@ export function PendingDocs({ exam }: { exam: Exam }) {
           <div className="grow" style={{ minWidth: 0 }}>
             <b>{d.title}</b>
             <br />
-            <small className={due.has(d.id) ? 'badge-warn' : 'muted'}>
-              {d.repeatDays ? `alle ${d.repeatDays === 7 ? 'Woche' : `${d.repeatDays} Tage`} · ` : ''}
+            <small className="muted">
+              {d.repeatDays && !/wöchentlich|jede woche/i.test(d.note ?? '') ? `${d.repeatDays === 7 ? 'jede Woche' : `alle ${d.repeatDays} Tage`} · ` : ''}
               {due.has(d.id)
-                ? 'Erinnerung aktiv'
+                ? <span className="badge-warn">jetzt fällig</span>
                 : d.snoozedUntil && (!d.from || d.snoozedUntil > d.from)
                   ? `zurückgestellt bis ${formatDate(d.snoozedUntil)}`
                   : `Erinnerung ab ${formatDate(d.from!)}`}
@@ -47,7 +47,7 @@ export function PendingDocs({ exam }: { exam: Exam }) {
         </div>
       ))}
       <form className="row" style={{ gap: 6, flexWrap: 'wrap' }} onSubmit={add}>
-        <input className="grow" style={{ minWidth: 160 }} placeholder="z. B. Altklausuren, Musterlösung Blatt 3" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Fehlende Unterlage" />
+        <input type="text" className="grow" style={{ minWidth: 160 }} placeholder="z. B. Altklausuren, Musterlösung Blatt 3" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Fehlende Unterlage" />
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Erinnern ab" title="Erinnern ab (optional)" />
         <button className="btn small" type="submit" disabled={!title.trim()}>Eintragen</button>
       </form>

@@ -345,6 +345,7 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 /* Lernsitzung */
 .session-top { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 .session-top .progress { flex: 1; }
+.session-count { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .flashcard { min-height: 46vh; display: flex; flex-direction: column; padding: 24px; background: var(--glass-strong); }
 .flashcard .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
 .recommend-reason { margin: -8px 0 14px; font-size: 13px; color: var(--accent); }
@@ -414,7 +415,7 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .chapters { display: flex; flex-direction: column; gap: 16px; }
 .chapter-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 12px; font-size: 15px; align-items: center; }
 .chapter-row.paused > span { color: var(--muted); }
-.chapter-pause { border: none; background: color-mix(in srgb, var(--muted) 12%, transparent); color: var(--muted); border-radius: 50%; width: 28px; height: 28px; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.chapter-pause { position: relative; border: none; background: color-mix(in srgb, var(--muted) 12%, transparent); color: var(--muted); border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .pending-row { display: flex; align-items: center; gap: 10px; }
 .chapter-row .progress { grid-column: 1 / -1; }
 
@@ -474,3 +475,10 @@ ol.help li, ul.help li { margin-bottom: 6px; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Tippfläche mindestens 44 pt, auch wenn der Knopf kleiner aussieht */
+.chapter-pause::after { content: ''; position: absolute; inset: -6px; }
+
+input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--accent); flex-shrink: 0; }
+.exam-actions { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 8px; margin-bottom: 12px; }
+.exam-actions .btn { padding: 10px 12px; border-radius: 20px; line-height: 1.2; }

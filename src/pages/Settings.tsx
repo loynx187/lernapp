@@ -156,7 +156,7 @@ export function Settings() {
             >
               <span style={{ display: 'inline-block', width: 22, color: 'var(--accent)', fontWeight: 600 }}>{s.id === semester.id ? '✓' : ''}</span>
               {s.name}
-              <small style={{ display: 'block', marginLeft: 22 }}>{s.kind ? SEMESTER_KINDS[s.kind].label : 'Art der Prüfungsphase noch nicht festgelegt'}</small>
+              <small style={{ display: 'block', marginLeft: 22, whiteSpace: 'normal' }}>{s.kind ? SEMESTER_KINDS[s.kind].label : 'Art der Prüfungsphase noch nicht festgelegt'}</small>
             </button>
             <Link className="btn small ghost" style={{ color: 'var(--accent)' }} to={`/semester/${s.id}`}>Ändern</Link>
             <button className="btn small ghost danger" onClick={() => removeSemester(s.id, s.name)} aria-label={`${s.name} löschen`}>Löschen</button>

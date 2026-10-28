@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
 import { homeworkDueByExam, isDueSoon } from '../lib/homework'
 import { duePending } from '../lib/pending'
-import { dueLabel } from './Homework'
+import { shortDue } from './Homework'
 import { useSync } from '../sync-state'
 import { BACKUP_REMINDER_DAYS, lastBackup } from '../lib/backup'
 import { db } from '../lib/db'
@@ -207,7 +207,7 @@ export function Dashboard() {
               {homework.length > 0 ? (
                 <>
                   <div className="w-number">{homework.length}</div>
-                  <div className="w-caption truncate">offen · {dueLabel(homework[0], now).replace(/ \(.*\)$/, '')}</div>
+                  <div className="w-caption truncate">offen · {shortDue(homework[0], now)}</div>
                 </>
               ) : (
                 <div className="w-headline">Nichts offen</div>
