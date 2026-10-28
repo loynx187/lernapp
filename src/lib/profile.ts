@@ -3,7 +3,8 @@ import { isoDate } from './dates'
 import { parseProfile, slugify } from './package-format'
 import { deletedCards } from './cards'
 import { openReportEntries } from './reports'
-import { openPending } from './pending'
+import { mergePending, openPending } from './pending'
+import { parsePending, type PendingInput } from './package-format'
 import { semesterKind } from './semesters'
 
 export { slugify } from './package-format'
@@ -101,7 +102,9 @@ export function orderText(order: Awaited<ReturnType<typeof buildOrder>>) {
 export interface ProfileEntry {
   name?: string
   slug?: string
-  profile: ExamProfile
+  profile?: ExamProfile
+  /** Erinnerungen an fehlende Unterlagen für diese Prüfung */
+  pending?: PendingInput[]
 }
 
 export function parseProfilesFile(raw: unknown): ProfileEntry[] {
@@ -109,9 +112,10 @@ export function parseProfilesFile(raw: unknown): ProfileEntry[] {
   if (r?.format !== PROFILES_FORMAT || !Array.isArray(r.exams)) throw new Error('Die Datei enthält keine Fachprofile.')
   return r.exams.flatMap((e: Record<string, unknown>) => {
     const profile = parseProfile(e?.profile)
-    if (!profile) return []
+    const pending = parsePending(e?.pending)
+    if (!profile && !pending) return []
     const slug = typeof e.slug === 'string' ? slugify(e.slug) : undefined
-    return [{ name: typeof e.name === 'string' ? e.name : undefined, slug, profile: slug ? { ...profile, slug } : profile }]
+    return [{ name: typeof e.name === 'string' ? e.name : undefined, slug, profile: profile && slug ? { ...profile, slug } : profile, pending }]
   })
 }
 
@@ -121,6 +125,15 @@ export function matchExam(exams: Exam[], entry: ProfileEntry): Exam | undefined 
     (entry.slug && exams.find((e) => examSlug(e) === entry.slug)) ||
     (entry.name ? exams.find((e) => slugify(e.name) === slugify(entry.name!)) : undefined)
   )
+}
+
+/** Übernimmt Erinnerungen an fehlende Unterlagen aus einer Fachprofil-Datei; liefert die Zahl neuer Einträge. */
+export async function applyPending(examId: string, incoming: PendingInput[] | undefined) {
+  const exam = await db.exams.get(examId)
+  const merged = exam && mergePending(exam.pendingDocs, incoming)
+  if (!exam || !merged) return 0
+  await db.exams.update(examId, { pendingDocs: merged })
+  return merged.length - (exam.pendingDocs?.length ?? 0)
 }
 
 export async function applyProfile(examId: string, incoming: ExamProfile, overwrite: boolean) {

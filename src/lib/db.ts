@@ -68,6 +68,8 @@ export interface PendingDoc {
   from?: string
   /** Nach „Später“ erst ab diesem Tag wieder erinnern (YYYY-MM-DD). */
   snoozedUntil?: string
+  /** Wiederkehrend (z. B. 7 = wöchentliche Übungsblätter): „Erledigt“ verschiebt die nächste Erinnerung um so viele Tage. */
+  repeatDays?: number
   doneAt?: number
 }
 
