@@ -5,6 +5,10 @@ import { planDay, type DayPlan } from './planner'
 import { planExams, semesterKind, SEMESTER_KINDS } from './semesters'
 import { review, type Grade } from './scheduler'
 import { doneToday, estimateCosts, examStats, packageBlocks, toPlanCard } from './stats'
+import { budgetInfo, type BudgetInfo } from './budget'
+import { rankTasks, type TaskRecommendation } from './tasks'
+import { daysUntil } from './dates'
+import type { PlanCard } from './planner'
 
 export interface StudyData {
   exams: Exam[]
@@ -17,6 +21,15 @@ export interface StudyData {
   homework: Homework[]
   /** Heute für Hausaufgaben eingeplante Minuten (gehen vom Schreibtisch-Budget ab) */
   homeworkMinutes: number
+  /** Eingestelltes und gemessenes Tagesbudget je Modus */
+  budgets: Record<Mode, BudgetInfo>
+  /** Empfehlung für neue Schreibtischaufgaben (Karten-ID → Wert und Begründung) */
+  recommendations: Map<string, TaskRecommendation>
+}
+
+/** Karten für Planer und Lernsitzung, neue Schreibtischaufgaben mit ihrem Empfehlungswert. */
+export function planCards(d: Pick<StudyData, 'cards' | 'blocks' | 'recommendations'>): PlanCard[] {
+  return d.cards.map((c) => ({ ...toPlanCard(c, d.blocks), priority: d.recommendations.get(c.id)?.score }))
 }
 
 /** IDs der Karten mit offener Meldung. */
@@ -44,20 +57,26 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
   const semester = profile.activeSemesterId ? await db.semesters.get(profile.activeSemesterId) : undefined
   const homework = sortOpen((await Promise.all(exams.map((e) => db.homework.where('examId').equals(e.id).toArray()))).flat())
   const homeworkMinutes = Math.round(homeworkMinutesToday(homework, now))
+  const auto = profile.budgetAuto !== false
+  const budgets = {
+    mobile: budgetInfo(profile.minutesMobile, logs, 'mobile', now, auto),
+    desk: budgetInfo(profile.minutesDesk, logs, 'desk', now, auto),
+  }
+  const recommendations = rankTasks(cards, new Map(exams.map((e) => [e.id, daysUntil(e.date, now)])), now, profile.retention)
   const plan = planDay({
     now,
     exams: planExams(exams, semester),
     buffer: SEMESTER_KINDS[semesterKind(semester)].buffer,
-    cards: cards.map((c) => toPlanCard(c, blocks)),
+    cards: planCards({ cards, blocks, recommendations }),
     done: doneToday(
       logs.filter((l) => examIds.has(l.examId)),
       now,
     ),
     // Hausaufgaben haben am Schreibtisch Vorrang: ihr Tagesanteil geht vom Budget ab.
-    budgetMinutes: { mobile: profile.minutesMobile, desk: Math.max(0, profile.minutesDesk - homeworkMinutes) },
+    budgetMinutes: { mobile: budgets.mobile.effective, desk: Math.max(0, budgets.desk.effective - homeworkMinutes) },
     costs: estimateCosts(logs),
   })
-  return { exams, cards, logs, plan, blocks, homework, homeworkMinutes }
+  return { exams, cards, logs, plan, blocks, homework, homeworkMinutes, budgets, recommendations }
 }
 
 export interface Undo {

@@ -23,6 +23,8 @@ export interface Profile extends Synced {
   fsrsWeights?: number[]
   /** Hinweis zur Personalisierung wurde ausgeblendet. */
   fsrsHintDismissed?: boolean
+  /** false: immer mit dem eingestellten Budget planen statt es an die gemessene Lernzeit anzupassen (Standard: anpassen). */
+  budgetAuto?: boolean
 }
 
 export interface Semester extends Synced {
@@ -100,6 +102,10 @@ export interface CardContent {
   tags?: string[]
   /** Klausurrelevanz 1–3 (z. B. aus Altklausuren abgeleitet). */
   relevance?: number
+  /** Themen-Schlagworte; verknüpfen Rechenaufgaben mit Karten desselben Themas (auch paketübergreifend). */
+  topics?: string[]
+  /** Aufgabe stammt aus einer Alt- oder Probeklausur – wird am Schreibtisch bevorzugt empfohlen. */
+  pastExam?: boolean
   /** Überschreibt den Modus; Standard: Aufgaben am Schreibtisch, alles andere unterwegs. */
   mode?: Mode
 }

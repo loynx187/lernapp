@@ -138,7 +138,7 @@ export function Dashboard() {
             const hwCount = m === 'desk' ? hwDue.length : 0
             const left = t.reviewsLeft + t.newLeft + hwCount
             const info = MODE_INFO[m]
-            const budget = m === 'mobile' ? profile.minutesMobile : profile.minutesDesk
+            const budget = data.budgets[m].effective
             const forMode = subjects.filter((s) => s.left[m] > 0)
             const choose = forMode.length > 1
             return (
@@ -169,7 +169,7 @@ export function Dashboard() {
                       <>
                         {hwCount > 0 && <span>{hwCount} {hwCount === 1 ? 'Hausaufgabe' : 'Hausaufgaben'}</span>}
                         <span>{t.reviewsLeft} Wiederholungen</span>
-                        <span>{t.newLeft} neu</span>
+                        <span>{t.newLeft} {m === 'desk' ? 'empfohlen' : 'neu'}</span>
                         {choose && <span className="truncate">Empfohlen: {examById.get(forMode[0].examId)?.name}</span>}
                         <span className="w-pill">ca. {t.minutesLeft} min · {choose ? 'Fach wählen' : 'Start'}</span>
                       </>
@@ -250,7 +250,7 @@ export function Dashboard() {
                       </div>
                     ) : null}
                     {st.total > 0 && upcoming.length <= 3 && (
-                      <small className="muted">{st.introduced} von {st.total} Karten begonnen · {st.secure} sicher bis zur Klausur</small>
+                      <small className="muted">{st.introduced} von {st.total} Karten begonnen · {st.secure} sicher bis zur Klausur{st.tasks.total > 0 && ` · ${st.tasks.practiced}/${st.tasks.total} Aufgaben`}</small>
                     )}
                     {!st.total && (
                       <small className="muted">Noch keine Karten</small>

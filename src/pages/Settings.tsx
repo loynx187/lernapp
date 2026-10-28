@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { budgetInfo, BUDGET_MIN_DAYS, BUDGET_WINDOW_DAYS, type BudgetInfo } from '../lib/budget'
+import { DAY } from '../lib/dates'
 import { Link } from 'react-router-dom'
 import { useAppState, useActive } from '../state'
 import { db, deleteProfile, deleteSemester, uid, type Profile } from '../lib/db'
@@ -95,6 +97,13 @@ export function Settings() {
     }
   }
 
+  const budgets = useLiveQuery(async () => {
+    const now = Date.now()
+    const logs = await db.reviews.where('reviewedAt').above(now - BUDGET_WINDOW_DAYS * DAY).filter((l) => l.profileId === profile.id).toArray()
+    const auto = profile.budgetAuto !== false
+    return { mobile: budgetInfo(profile.minutesMobile, logs, 'mobile', now, auto), desk: budgetInfo(profile.minutesDesk, logs, 'desk', now, auto) }
+  }, [profile.id, profile.minutesMobile, profile.minutesDesk, profile.budgetAuto])
+
   return (
     <>
       <PageHeader back title="Einstellungen" />
@@ -105,10 +114,16 @@ export function Settings() {
         <label className="field">
           <span>Unterwegs (Karten): {profile.minutesMobile} min pro Tag</span>
           <input type="range" min={5} max={120} step={5} value={profile.minutesMobile} onChange={(e) => update({ minutesMobile: Number(e.target.value) })} />
+          <BudgetNote info={budgets?.mobile} />
         </label>
         <label className="field">
           <span>Am Schreibtisch (Rechenaufgaben): {profile.minutesDesk} min pro Tag</span>
           <input type="range" min={0} max={240} step={15} value={profile.minutesDesk} onChange={(e) => update({ minutesDesk: Number(e.target.value) })} />
+          <BudgetNote info={budgets?.desk} />
+        </label>
+        <label className="row" style={{ gap: 10, marginBottom: 14 }}>
+          <input type="checkbox" checked={profile.budgetAuto !== false} onChange={(e) => update({ budgetAuto: e.target.checked })} />
+          <span style={{ fontSize: 15 }}>Budget an die gemessene Lernzeit anpassen</span>
         </label>
         <label className="field" style={{ marginBottom: 0 }}>
           <span>Zielsicherheit: {Math.round(profile.retention * 100)} %</span>
@@ -255,5 +270,18 @@ export function Settings() {
         {__APP_BUILD__} · {new Date(__APP_BUILT_AT__).toLocaleDateString('de-DE')}
       </p>
     </>
+  )
+}
+
+/** Gemessene Lernzeit zum eingestellten Budget und das Budget, mit dem tatsächlich geplant wird. */
+function BudgetNote({ info }: { info?: BudgetInfo }) {
+  if (!info || info.setting === 0) return null
+  if (info.measured === undefined)
+    return <small>Noch zu wenig Daten: Ab {BUDGET_MIN_DAYS} Lerntagen wird deine tatsächliche Lernzeit gemessen.</small>
+  return (
+    <small>
+      Gemessen: ⌀ {Math.round(info.measured)} min an {info.days} Lerntagen (letzte {BUDGET_WINDOW_DAYS} Tage)
+      {info.effective !== info.setting ? ` · geplant wird mit ${info.effective} min` : ''}
+    </small>
   )
 }

@@ -346,6 +346,7 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .session-top .progress { flex: 1; }
 .flashcard { min-height: 46vh; display: flex; flex-direction: column; padding: 24px; background: var(--glass-strong); }
 .flashcard .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+.recommend-reason { margin: -8px 0 14px; font-size: 13px; color: var(--accent); }
 .flashcard .content { font-size: 19px; line-height: 1.45; overflow-wrap: anywhere; }
 .flashcard .content img, .card-image { max-width: 100%; border-radius: var(--radius-sm); }
 .flashcard hr { border: none; border-top: 0.5px solid var(--separator); margin: 22px 0; }
