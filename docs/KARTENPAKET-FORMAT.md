@@ -159,6 +159,28 @@ Antwort von Claude, wenn mehrere Fächer ohne Kartenpaket eingerichtet werden. I
 
 Je Prüfung `profile` und/oder `pending` (Erinnerungen an fehlende Unterlagen, Aufbau wie im Kartenpaket) – so lassen sich Erinnerungen für mehrere Fächer mit einer Datei anlegen, ohne Pakete zu aktualisieren.
 
+## Vorlage ohne Lernfortschritt (`lernapp-vorlage`)
+
+Export aus der App unter Einstellungen → „Vorlage exportieren“: alle Semester mit ihren Prüfungen und Kartenpaketen, ohne Lernstand, Bewertungen, Hausaufgaben und persönliche Einstellungen. Import in einem Schritt beim ersten Start („Vorlage von Kommilitonen übernehmen“) oder unter „Karten importieren“.
+
+```json
+{
+  "format": "lernapp-vorlage",
+  "formatVersion": 1,
+  "exportedAt": "2026-10-28T13:00:00.000Z",
+  "semesters": [
+    { "name": "5. Semester", "kind": "dual", "active": true, "exams": [
+      { "name": "Regelungstechnik", "date": "2027-02-01", "weight": 2, "color": "#ff9500",
+        "profile": { "form": "schriftlich", "duration": 120 },
+        "pending": [{ "id": "rt-altklausuren", "title": "Altklausuren" }],
+        "packages": [ { "format": "lernapp-paket", "formatVersion": 1, "id": "…", "chapters": [{ "id": "k18", "title": "…", "later": true }], "cards": [] } ] }
+    ] }
+  ]
+}
+```
+
+Pausierte Kapitel stehen als `later` im Paket. Semester und Prüfungen werden beim Import über den Namen zugeordnet: vorhandene werden ergänzt (Pakete als Update, Lernfortschritt bleibt, Fachprofil nur in leere Felder), fehlende neu angelegt.
+
 ## Karten aus anderen Tools (Text-Import)
 
 Wer kein Claude nutzt, importiert Karten unter „Karten importieren“ → „Karten aus anderen Tools“ (Datei oder eingefügter Text). Erkannt werden:

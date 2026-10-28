@@ -7,9 +7,10 @@ import { importPackage, parsePackage, parseTextCards, textToPackage, type CardPa
 import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
 import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
+import { importTemplate, parseTemplate, templateSummary, TEMPLATE_FORMAT, type ProfileTemplate, type TemplateResult } from '../lib/template'
 
 export function Import() {
-  const { semester } = useActive()
+  const { profile, semester } = useActive()
   const [search] = useSearchParams()
   const exams = useLiveQuery(() => db.exams.where('semesterId').equals(semester.id).sortBy('date'), [semester.id])
   const [examId, setExamId] = useState(search.get('exam') ?? '')
@@ -22,6 +23,8 @@ export function Import() {
   const [profiles, setProfiles] = useState<ProfileEntry[] | null>(null)
   const [profilesDone, setProfilesDone] = useState<string[] | null>(null)
   const [promptCopied, setPromptCopied] = useState(false)
+  const [template, setTemplate] = useState<ProfileTemplate | null>(null)
+  const [templateDone, setTemplateDone] = useState<TemplateResult | null>(null)
 
   useEffect(() => {
     if (!examId && exams?.length) setExamId(exams[0].id)
@@ -38,7 +41,14 @@ export function Import() {
     setError('')
     setResult(null)
     setProfilesDone(null)
+    setTemplateDone(null)
     try {
+      if ((raw as { format?: unknown })?.format === TEMPLATE_FORMAT) {
+        setPkg(null)
+        setProfiles(null)
+        setTemplate(parseTemplate(raw))
+        return
+      }
       if ((raw as { format?: unknown })?.format === PROFILES_FORMAT) {
         setPkg(null)
         setProfiles(parseProfilesFile(raw))
@@ -110,6 +120,15 @@ export function Import() {
     setProfilesDone(done)
   }
 
+  async function doTemplate(t: ProfileTemplate) {
+    try {
+      setTemplateDone(await importTemplate(profile.id, t))
+      setTemplate(null)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }
+
   async function doImport(p: CardPackage) {
     const exam = exams!.find((e) => e.id === examId)
     if (!exam) return setError('Bitte wähle eine Prüfung.')
@@ -126,10 +145,58 @@ export function Import() {
     <>
       <PageHeader back title="Karten importieren" />
 
-      {exams.length === 0 ? (
+      {templateDone && (
+        <div className="notice">
+          <b>Vorlage übernommen.</b> {templateDone.examsAdded} {templateDone.examsAdded === 1 ? 'Prüfung' : 'Prüfungen'} neu
+          {templateDone.examsUpdated > 0 && `, ${templateDone.examsUpdated} vorhandene ergänzt (Lernfortschritt bleibt)`}
+          {templateDone.semestersAdded > 0 && `, ${templateDone.semestersAdded} ${templateDone.semestersAdded === 1 ? 'Semester' : 'Semester'} angelegt`}
+          {' '}· {templateDone.packages} {templateDone.packages === 1 ? 'Paket' : 'Pakete'} mit {templateDone.cards} Karten.
+          {templateDone.skipped.length > 0 && ` Nicht angelegt (höchstens 10 Prüfungen pro Semester): ${templateDone.skipped.join(', ')}.`}{' '}
+          <Link to="/pruefungen">Zu den Prüfungen</Link>
+        </div>
+      )}
+      {template ? (
+        <div className="card stack">
+          <h2>Vorlage ohne Lernfortschritt</h2>
+          {(() => {
+            const sum = templateSummary(template)
+            return (
+              <p className="muted" style={{ margin: 0 }}>
+                {sum.semesters} Semester · {sum.exams} {sum.exams === 1 ? 'Prüfung' : 'Prüfungen'} · {sum.packages} {sum.packages === 1 ? 'Paket' : 'Pakete'} · {sum.cards} Karten
+              </p>
+            )
+          })()}
+          {template.semesters.map((s, i) => (
+            <div key={i} className="stack" style={{ gap: 4 }}>
+              <b>{s.name}</b>
+              {s.exams.map((e, j) => (
+                <div key={j} className="row between">
+                  <span className="row" style={{ gap: 8, minWidth: 0 }}>
+                    <span className="dot" style={{ background: e.color }} />
+                    <span className="truncate">{e.name}</span>
+                  </span>
+                  <small className="muted">{e.packages.reduce((n, p) => n + p.cards.length, 0)} Karten</small>
+                </div>
+              ))}
+            </div>
+          ))}
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+            Semester und Prüfungen mit gleichem Namen werden ergänzt (dein Lernfortschritt bleibt), alle anderen neu angelegt. Lernstand, Hausaufgaben und Einstellungen sind nicht enthalten.
+          </p>
+          <div className="row">
+            <button className="btn grow" onClick={() => setTemplate(null)}>Abbrechen</button>
+            <button className="btn primary grow" onClick={() => doTemplate(template)}>Übernehmen</button>
+          </div>
+        </div>
+      ) : exams.length === 0 ? (
         <div className="card empty stack">
-          <p className="muted">Lege zuerst eine Prüfung an, in die die Karten importiert werden.</p>
+          {error && <div className="notice warn">{error}</div>}
+          <p className="muted">Lege zuerst eine Prüfung an, in die die Karten importiert werden – oder übernimm eine Vorlage mit Prüfungen und Karten (z. B. von Kommilitonen).</p>
           <Link className="btn primary" to="/pruefung/neu">Prüfung anlegen</Link>
+          <label className="btn">
+            Vorlage importieren
+            <input type="file" accept=".json,application/json" hidden onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
+          </label>
         </div>
       ) : (
         <>
@@ -217,7 +284,7 @@ export function Import() {
             <>
               <div className="section-title">Kartenpaket</div>
               <div className="card stack">
-                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt, eine Datei mit Fachprofilen von Claude – oder Karten aus ChatGPT, Anki, Quizlet &amp; Co. (.txt, .csv, .md, siehe unten).</p>
+                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt, eine Datei mit Fachprofilen von Claude, eine Vorlage mit allen Prüfungen ohne Lernfortschritt – oder Karten aus ChatGPT, Anki, Quizlet &amp; Co. (.txt, .csv, .md, siehe unten).</p>
                 <label className="btn primary block">
                   Datei auswählen
                   <input type="file" accept=".json,.txt,.csv,.tsv,.md,application/json,text/plain,text/csv,text/markdown" hidden onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
