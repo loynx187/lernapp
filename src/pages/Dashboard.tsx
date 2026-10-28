@@ -170,8 +170,7 @@ export function Dashboard() {
                     {left > 0 ? (
                       <>
                         {hwCount > 0 && <span>{hwCount} {hwCount === 1 ? 'Hausaufgabe' : 'Hausaufgaben'}</span>}
-                        <span>{t.reviewsLeft} Wiederholungen</span>
-                        <span>{t.newLeft} {m === 'desk' ? 'empfohlen' : 'neu'}</span>
+                        <span>{t.reviewsLeft} Wdh. · {t.newLeft} {m === 'desk' ? 'empfohlen' : 'neu'}</span>
                         {choose && <span className="truncate">Empfohlen: {examById.get(forMode[0].examId)?.name}</span>}
                         <span className="w-pill">ca. {t.minutesLeft} min · {choose ? 'Fach wählen' : 'Start'}</span>
                       </>
@@ -198,7 +197,7 @@ export function Dashboard() {
               ))}
               {missingDocs.length > 3 && <small>+ {missingDocs.length - 3} weitere</small>}
             </div>
-            <p className="w-caption" style={{ marginTop: 'auto' }}>Hochladen nicht vergessen – tippen, um abzuhaken oder zurückzustellen.</p>
+            <p className="w-caption" style={{ marginTop: 'auto' }}>Tippen zum Abhaken oder Zurückstellen.</p>
           </Widget>
         )}
 
