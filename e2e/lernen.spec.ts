@@ -65,7 +65,12 @@ test('Semesterart lässt sich ändern und wirkt auf den Lernplan', async ({ page
   }
   const regular = await deadline()
 
-  await page.goto('./#/einstellungen')
+  // Einstellungen und Hilfe als Symbole oben rechts auf der Startseite
+  await page.goto('./#/')
+  await page.getByRole('link', { name: 'Hilfe' }).click()
+  await expect(page.getByRole('heading', { name: 'Hilfe' })).toBeVisible()
+  await page.goto('./#/')
+  await page.getByRole('link', { name: 'Einstellungen' }).click()
   await page.getByRole('link', { name: 'Ändern' }).first().click()
   await page.getByRole('radio', { name: /^Dual/ }).click()
   await page.getByRole('button', { name: 'Speichern' }).click()
