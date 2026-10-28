@@ -129,6 +129,13 @@ export function Session() {
     setReporting(false)
   }
 
+  /** Gemeldete Karte ohne Bewertung aus der Sitzung nehmen – sie ist bis zur Korrektur pausiert. */
+  function skipCard() {
+    if (!card || !queue || busy) return
+    setQueue(queue.filter((c) => c.id !== card.id))
+    resetCardUi()
+  }
+
   async function removeCard() {
     if (!card || !queue || busy) return
     if (!confirm('Karte löschen? Sie wird nicht mehr abgefragt – auch nicht nach einem Paket-Update. Wiederherstellen kannst du sie auf der Seite der Prüfung.')) return
@@ -354,6 +361,13 @@ export function Session() {
       )}
 
       {reporting && <ReportForm onSubmit={submitReport} onCancel={() => setReporting(false)} />}
+
+      {reported.has(card.id) && !reporting && (
+        <div className="notice row between" style={{ alignItems: 'center' }}>
+          <span>Gemeldet – die Karte ist pausiert, bis sie korrigiert oder die Meldung erledigt ist.</span>
+          <button className="btn small" onClick={skipCard} disabled={busy}>Überspringen</button>
+        </div>
+      )}
 
       <div className="actions">
         {!revealed ? (

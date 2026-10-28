@@ -91,7 +91,7 @@ In der App können fehlerhafte oder unklare Karten gemeldet werden (Lernsitzung 
 }
 ```
 
-`category`: `fehler` (fachlich falsch), `unklar`, `aufteilen` (zu lang), `sonstiges`. Über `packageId` + `uid` ist die Karte im Paket eindeutig. Ändert ein Paket-Update eine gemeldete Karte, gilt die Meldung in der App automatisch als erledigt.
+`category`: `fehler` (fachlich falsch), `unklar`, `aufteilen` (zu lang), `sonstiges`. Über `packageId` + `uid` ist die Karte im Paket eindeutig. Gemeldete Karten sind pausiert (werden nicht abgefragt), bis die Meldung erledigt ist. Ändert ein Paket-Update eine gemeldete Karte, gilt die Meldung in der App automatisch als erledigt.
 
 ## Fachprofil
 

@@ -10,7 +10,7 @@ export function ReportForm({ onSubmit, onCancel }: { onSubmit: (category: Report
     <div className="card stack">
       <h3 style={{ margin: 0 }}>Karte melden</h3>
       <p className="muted" style={{ margin: 0, fontSize: 15 }}>
-        Die Meldung wird gesammelt und bei der nächsten Paketerstellung von Claude bearbeitet (steht automatisch im Auftrag für Claude).
+        Die Meldung wird gesammelt und bei der nächsten Paketerstellung von Claude bearbeitet (steht automatisch im Auftrag für Claude). Bis dahin wird die Karte nicht mehr abgefragt.
       </p>
       <div className="row wrap" role="radiogroup" aria-label="Art des Problems">
         {REPORT_CATEGORIES.map((c) => (

@@ -104,7 +104,7 @@ export function ExamCards() {
 
       {filter === 'gemeldet' && (
         <div className="notice">
-          Offene Meldungen stehen automatisch im <b>Auftrag für Claude</b> (Prüfungsseite). Ändert ein Paket-Update eine gemeldete Karte, ist die Meldung danach erledigt.
+          Gemeldete Karten sind pausiert und werden nicht abgefragt. Offene Meldungen stehen automatisch im <b>Auftrag für Claude</b> (Prüfungsseite). Ändert ein Paket-Update eine gemeldete Karte, ist die Meldung danach erledigt und die Karte kommt zurück – ebenso, wenn du sie hier abhakst.
           {openCount > 0 && (
             <>
               {' '}
@@ -138,7 +138,7 @@ export function ExamCards() {
                     <span className="grow" style={{ minWidth: 0, fontWeight: 500, fontSize: 16 }}>
                       <span className="truncate" style={{ display: 'block' }}>{plainText(c.front)}</span>
                       <small className="muted" style={{ fontWeight: 400 }}>
-                        {[c.s.state === 0 ? 'neu' : 'begonnen', open.length > 0 && 'gemeldet', c.deletedAt && `gelöscht am ${new Date(c.deletedAt).toLocaleDateString('de-DE')}`]
+                        {[c.s.state === 0 ? 'neu' : 'begonnen', open.length > 0 && 'gemeldet, pausiert', c.deletedAt && `gelöscht am ${new Date(c.deletedAt).toLocaleDateString('de-DE')}`]
                           .filter(Boolean)
                           .join(' · ')}
                       </small>

@@ -150,3 +150,19 @@ describe('Meldungen', () => {
     expect((await exportReports(exam)).reports.map((x) => x.uid)).toEqual(['k1-02'])
   })
 })
+
+describe('Gemeldete Karten', () => {
+  it('sind pausiert, bis die Meldung erledigt ist', async () => {
+    const { reportCard, setResolved } = await import('./reports')
+    const { pausedCardIds } = await import('./study')
+    const pkg = parsePackage(sample)
+    await importPackage(exam, pkg, 1000)
+    const card = (await db.cards.get(`e1:${pkg.id}:k1-01`))!
+    expect((await pausedCardIds(['e1'])).size).toBe(0)
+    await reportCard(card, 'fehler', '')
+    expect([...(await pausedCardIds(['e1']))]).toEqual([card.id])
+    const report = (await db.reports.toArray())[0]
+    await setResolved(report, true)
+    expect((await pausedCardIds(['e1'])).size).toBe(0)
+  })
+})
