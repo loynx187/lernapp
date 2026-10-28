@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
@@ -18,10 +19,16 @@ import { toggleChapterPause } from '../lib/pending'
 
 /** Bei laufender Vorlesung: Hinweis, wenn so lange kein neues Paket kam. */
 const LECTURE_REMINDER_DAYS = 14
+/** Ab so vielen Kapiteln wird die Liste gekürzt: Schwachstellen und die nächsten offenen Kapitel. */
+const CHAPTERS_SHORT = 8
+const CHAPTERS_NEXT = 5
+/** „Aktuell abrufbar“ erst ab so vielen begonnenen Karten – vorher sagt der Wert wenig. */
+const RECALL_MIN_CARDS = 10
 
 export function ExamDetail() {
   const { id = '' } = useParams()
   const { profile, semester } = useActive()
+  const [allChapters, setAllChapters] = useState(false)
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
     if (!exam) return { exam: undefined }
@@ -57,6 +64,11 @@ export function ExamDetail() {
   const lastImport = Math.max(0, ...packages.map((p) => p.importedAt))
   const sinceImport = lastImport ? Math.floor((Date.now() - lastImport) / 864e5) : 0
   const staleLecture = exam.ongoing && days > 0 && sinceImport >= LECTURE_REMINDER_DAYS ? sinceImport : 0
+  const isWeak = (ch: (typeof stats.chapters)[number]) => !ch.paused && ch.introduced > 0 && ch.recall < 0.8
+  const shortList = stats.chapters.length > CHAPTERS_SHORT && !allChapters
+  const nextOpen = new Set(stats.chapters.filter((ch) => !ch.paused && ch.introduced < ch.total).slice(0, CHAPTERS_NEXT).map((ch) => ch.chapter))
+  const shownChapters = shortList ? stats.chapters.filter((ch) => isWeak(ch) || nextOpen.has(ch.chapter)) : stats.chapters
+  const pausedCount = stats.chapters.filter((ch) => ch.paused).length
   const filled = PROFILE_FIELDS.filter((f) => exam.profile?.[f.key] !== undefined)
   const profileSummary = filled.length
     ? [exam.profile?.form, exam.profile?.duration && `${exam.profile.duration} min`, exam.profile?.taskShare && `Rechenaufgaben: ${exam.profile.taskShare}`]
@@ -84,6 +96,9 @@ export function ExamDetail() {
         subtitle={formatDate(exam.date)}
       />
 
+      <div className="exam-layout">
+      <div className="exam-main">
+
       {staleLecture > 0 && (
         <div className="notice">
           <b>Neue Unterlagen da?</b> Seit {staleLecture} Tagen kam kein neues Kartenpaket. Unten „Auftrag für Claude kopieren“ und die neuen Folien anhängen – oder unter <Link to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link> „Vorlesung läuft noch“ ausschalten, wenn alles da ist.
@@ -102,9 +117,12 @@ export function ExamDetail() {
               <Stat value={pct(stats.introduced, stats.total)} label="begonnen" />
               <Stat
                 value={plan ? `${Math.round(plan.forecastShare * profile.retention * 100)} %` : pct(stats.secure, stats.total)}
-                label={plan ? (exam.ongoing ? 'Prognose (vorläufig)' : 'Prognose Klausurtag') : 'sicher zur Klausur'}
+                label={plan ? `${exam.ongoing ? 'Prognose (vorläufig)' : 'Prognose Klausurtag'} · Ziel ${Math.round(profile.retention * 100)} %` : 'sicher zur Klausur'}
               />
-              <Stat value={stats.introduced ? `${Math.round(stats.recall * 100)} %` : '–'} label="aktuell abrufbar" />
+              <Stat
+                value={stats.introduced >= RECALL_MIN_CARDS ? `${Math.round(stats.recall * 100)} %` : '–'}
+                label={stats.introduced >= RECALL_MIN_CARDS ? 'aktuell abrufbar' : `abrufbar – ab ${RECALL_MIN_CARDS} begonnenen Karten`}
+              />
             </div>
             {stats.tasks.total > 0 && (
               <p className="muted" style={{ marginTop: 12, marginBottom: 0, fontSize: 14 }}>
@@ -134,10 +152,13 @@ export function ExamDetail() {
               </p>
             )}
             {plan && (
-              <p className="muted" style={{ marginTop: 8, marginBottom: 0, fontSize: 13 }}>
+              <details className="explain">
+                <summary>Wie wird die Prognose berechnet?</summary>
+                <p style={{ margin: '6px 0 0' }}>
                 Prognose: Anteil der Karten, die du am Klausurtag voraussichtlich abrufen kannst, wenn du täglich dein heutiges Pensum lernst. Zusatzstoff (Relevanz 1) kommt nur dran, wenn Zeit übrig ist; Schreibtischaufgaben werden nach Empfehlung geübt.
-                {exam.ongoing && ' Vorläufig, weil noch Unterlagen fehlen – sie bezieht sich nur auf den bisherigen Stoff.'}
-              </p>
+                {exam.ongoing && ' Vorläufig, weil noch Unterlagen fehlen – sie bezieht sich nur auf den bisherigen Stoff.'} Liegst du im Plan, entspricht sie deiner Zielsicherheit (Einstellungen); bei Rückstand sinkt sie.
+                </p>
+              </details>
             )}
           </div>
 
@@ -154,12 +175,12 @@ export function ExamDetail() {
 
           <div className="section-title">Kapitel</div>
           <div className="card chapters">
-            {stats.chapters.map((ch) => {
-              const weak = ch.introduced > 0 && ch.recall < 0.8
+            {shownChapters.map((ch) => {
+              const weak = isWeak(ch)
               return (
                 <div className={`chapter-row${ch.paused ? ' paused' : ''}`} key={ch.chapter}>
                   <span>{ch.title}</span>
-                  <small className={weak && !ch.paused ? 'badge-warn' : ''}>
+                  <small className={weak ? 'badge-warn' : ''}>
                     {ch.paused ? 'pausiert · ' : ''}
                     {ch.introduced}/{ch.total}
                     {ch.introduced > 0 && ` · ${Math.round(ch.recall * 100)} %`}
@@ -176,11 +197,20 @@ export function ExamDetail() {
                 </div>
               )
             })}
-            <small>Zahlen: begonnene Karten / alle · aktuelle Abrufwahrscheinlichkeit. Orange = Schwachstelle. Das Pause-Symbol pausiert ein Kapitel, das in der Vorlesung noch nicht dran war: Seine neuen Karten kommen erst nach dem Fortsetzen, schon gelernte werden weiter wiederholt.</small>
+            {stats.chapters.length > CHAPTERS_SHORT && (
+              <button className="btn small ghost chapters-toggle" onClick={() => setAllChapters((v) => !v)} aria-expanded={allChapters}>
+                {allChapters
+                  ? 'Weniger anzeigen'
+                  : `Alle ${stats.chapters.length} Kapitel anzeigen${pausedCount ? ` (${pausedCount} pausiert)` : ''}`}
+              </button>
+            )}
+            <small>{shortList && 'Gezeigt: Schwachstellen und die nächsten Kapitel. '}Zahlen: begonnene Karten / alle · aktuelle Abrufwahrscheinlichkeit. Orange = Schwachstelle. Das Pause-Symbol pausiert ein Kapitel, das in der Vorlesung noch nicht dran war: Seine neuen Karten kommen erst nach dem Fortsetzen, schon gelernte werden weiter wiederholt.</small>
           </div>
         </>
       )}
 
+      </div>
+      <div className="exam-side">
       {(cards.length > 0 || deleted.length > 0) && (
         <>
           <div className="section-title">Karten</div>
@@ -280,7 +310,12 @@ export function ExamDetail() {
           </div>
         )}
         <OrderButton exams={[exam]} semester={semester} label="Auftrag für Claude kopieren" />
-        <OrderSteps />
+        <details className="explain">
+          <summary>So funktioniert’s</summary>
+          <OrderSteps />
+        </details>
+      </div>
+      </div>
       </div>
     </>
   )

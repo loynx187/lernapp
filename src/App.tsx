@@ -45,9 +45,9 @@ function Shell() {
       </main>
     )
   }
-  // Die Übersicht nutzt auf dem iPad die volle Breite, Unterseiten bleiben schmal und gut lesbar.
+  // Übersicht und Prüfungsseite (zweispaltig) nutzen auf dem iPad die volle Breite, andere Unterseiten bleiben schmal und gut lesbar.
   return (
-    <main className={pathname === '/' ? 'main wide' : 'main'}>
+    <main className={pathname === '/' || /^\/pruefung\/(?!neu$)[^/]+$/.test(pathname) ? 'main wide' : 'main'}>
       <UpdateBanner />
       <Routes>
         <Route path="/" element={<Dashboard />} />

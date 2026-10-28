@@ -482,3 +482,16 @@ ol.help li, ul.help li { margin-bottom: 6px; }
 input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--accent); flex-shrink: 0; }
 .exam-actions { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; gap: 8px; margin-bottom: 12px; }
 .exam-actions .btn { padding: 10px 12px; border-radius: 20px; line-height: 1.2; }
+
+/* Prüfungsseite: auf breiten Bildschirmen zweispaltig – Lernen links, Verwaltung rechts */
+.exam-layout { display: block; }
+@media (min-width: 900px) {
+  .exam-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 28px; align-items: start; }
+  .exam-side > .section-title:first-child, .exam-main > .section-title:first-child { margin-top: 0; }
+}
+details.explain { margin-top: 8px; font-size: 13px; color: var(--muted); }
+details.explain > summary { cursor: pointer; color: var(--accent); font-size: 14px; list-style: none; }
+details.explain > summary::-webkit-details-marker { display: none; }
+details.explain > summary::after { content: '›'; display: inline-block; margin-left: 5px; transition: transform 0.15s ease; }
+details.explain[open] > summary::after { transform: rotate(90deg); }
+.btn.chapters-toggle { align-self: flex-start; color: var(--accent); margin: 2px 0 0 -8px; }
