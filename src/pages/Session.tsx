@@ -195,6 +195,7 @@ export function Session() {
         <Icon name="close" />
       </button>
       <Progress value={total ? reviewed / total : 1} />
+      <small className="session-count" aria-label={`${reviewed} von ${total} erledigt`}>{reviewed}/{total}</small>
       {card && (
         <button className="btn ghost small" onClick={() => setReporting((r) => !r)} aria-label="Karte melden" aria-pressed={reporting}>
           <Icon name="flag" />

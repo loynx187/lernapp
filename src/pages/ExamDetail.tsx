@@ -141,7 +141,7 @@ export function ExamDetail() {
             )}
           </div>
 
-          <div className="row" style={{ marginBottom: 12 }}>
+          <div className="exam-actions">
             {hasMobile && <Link className="btn grow" to={`/lernen/mobile?exam=${exam.id}`}>Karten üben</Link>}
             {hasDesk && <Link className="btn grow" to={`/lernen/desk?exam=${exam.id}`}>Aufgaben üben</Link>}
             <Link className="btn grow" to={`/probeklausur/${exam.id}`}>Probeklausur</Link>

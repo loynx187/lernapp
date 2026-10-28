@@ -17,6 +17,16 @@ export function dueLabel(h: Homework, now = Date.now()) {
   return `fällig in ${d} Tagen (${formatDate(h.due)})`
 }
 
+/** Kurzform fürs Widget: „heute“, „morgen“, „bis Mi.“, „bis 04.11.“, „2 Tage überfällig“ */
+export function shortDue(h: Homework, now = Date.now()) {
+  const d = daysUntil(h.due, now)
+  if (d < 0) return `${-d} ${d === -1 ? 'Tag' : 'Tage'} überfällig`
+  if (d === 0) return 'heute fällig'
+  if (d === 1) return 'morgen fällig'
+  const date = new Date(`${h.due}T12:00:00`)
+  return `bis ${d < 7 ? date.toLocaleDateString('de-DE', { weekday: 'short' }) : date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`
+}
+
 function useSemesterExams() {
   const { semester } = useActive()
   return useLiveQuery(() => db.exams.where('semesterId').equals(semester.id).sortBy('date'), [semester.id])

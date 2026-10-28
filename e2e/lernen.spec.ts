@@ -17,6 +17,7 @@ test('Einrichten, Lernen, Rechenaufgabe prüfen und Karte melden', async ({ page
 
   // Karteikarte lernen und melden
   await page.getByRole('link', { name: 'Unterwegs lernen' }).click()
+  await expect(page.locator('.session-count')).toHaveText(/^0\/\d+$/)
   await revealCard(page)
   await page.getByRole('button', { name: 'Karte melden' }).click()
   await page.getByRole('radio', { name: 'Unklar formuliert' }).click()

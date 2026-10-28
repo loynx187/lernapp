@@ -64,5 +64,8 @@ describe('plainText', () => {
   it('macht Formeln für einzeilige Listen lesbar', () => {
     expect(plainText('Das **Hookesche Gesetz** lautet $\\sigma = $ {{$E \\cdot \\varepsilon$}}.')).toBe('Das Hookesche Gesetz lautet σ = E · ε.')
     expect(plainText('Kragträger (l = 2\\,\\mathrm{m})')).toBe('Kragträger (l = 2 m)')
+    expect(plainText('**Eulersche Formel:** $e^{j\\varphi} = $ {{$\\cos\\varphi + j\\sin\\varphi$}}')).toBe('Eulersche Formel: e^(jφ) = cos φ + j sin φ')
+    expect(plainText('Welche Lösungen hat $x^2 + px + q = 0$?')).toBe('Welche Lösungen hat x² + px + q = 0?')
+    expect(plainText('$G(s) = \\dfrac{3s + 4}{s + 2}$, $T_1\\ddot y + \\dot y$, $\\sqrt{a^2+b^2}$, $s_{0i}$, $a_0$')).toBe('G(s) = (3s + 4)/(s + 2), T₁ÿ + ẏ, √(a²+b²), s₀ᵢ, a₀')
   })
 })
