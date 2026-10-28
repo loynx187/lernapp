@@ -161,7 +161,7 @@ Je Prüfung `profile` und/oder `pending` (Erinnerungen an fehlende Unterlagen, A
 
 ## Vorlage ohne Lernfortschritt (`lernapp-vorlage`)
 
-Export aus der App unter Einstellungen → „Vorlage exportieren“: alle Semester mit ihren Prüfungen und Kartenpaketen, ohne Lernstand, Bewertungen, Hausaufgaben und persönliche Einstellungen. Import unter „Karten importieren“.
+Export aus der App unter Einstellungen → „Vorlage exportieren“: alle Semester mit ihren Prüfungen und Kartenpaketen, ohne Lernstand, Bewertungen, Hausaufgaben und persönliche Einstellungen. Import in einem Schritt beim ersten Start („Vorlage von Kommilitonen übernehmen“) oder unter „Karten importieren“.
 
 ```json
 {

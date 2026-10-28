@@ -83,7 +83,7 @@ export function parseTemplate(raw: unknown): ProfileTemplate {
   const t = raw as Partial<ProfileTemplate> | null
   if (!t || t.format !== TEMPLATE_FORMAT) throw new Error('Die Datei ist keine Lernapp-Vorlage.')
   if (t.formatVersion !== 1) throw new Error('Diese Vorlage stammt aus einer neueren App-Version. Bitte App aktualisieren.')
-  if (!Array.isArray(t.semesters)) throw new Error('Die Vorlage enthält keine Semester.')
+  if (!Array.isArray(t.semesters) || !t.semesters.length) throw new Error('Die Vorlage enthält keine Semester.')
   const semesters = t.semesters.map((s): TemplateSemester => {
     if (!s || !isStr(s.name) || !Array.isArray(s.exams)) throw new Error('Die Vorlage enthält ein ungültiges Semester.')
     return {
@@ -128,6 +128,7 @@ const norm = (s: string) => s.trim().toLowerCase()
 export async function importTemplate(profileId: string, t: ProfileTemplate, now = Date.now()): Promise<TemplateResult> {
   const result: TemplateResult = { semestersAdded: 0, examsAdded: 0, examsUpdated: 0, packages: 0, cards: 0, skipped: [] }
   let activeId: string | undefined
+  let firstId: string | undefined
   for (const ts of t.semesters) {
     const semesters = await db.semesters.where('profileId').equals(profileId).toArray()
     let semester = semesters.find((s) => norm(s.name) === norm(ts.name))
@@ -137,6 +138,7 @@ export async function importTemplate(profileId: string, t: ProfileTemplate, now 
       result.semestersAdded++
     }
     if (ts.active) activeId = semester.id
+    firstId ??= semester.id
     for (const te of ts.exams) {
       const exams = await db.exams.where('semesterId').equals(semester.id).toArray()
       let exam: Exam | undefined = exams.find((e) => norm(e.name) === norm(te.name))
@@ -163,7 +165,9 @@ export async function importTemplate(profileId: string, t: ProfileTemplate, now 
     }
   }
   const profile = await db.profiles.get(profileId)
-  if (activeId && profile) await db.profiles.update(profileId, { activeSemesterId: activeId })
+  // Ohne markiertes Semester (oder in einem neuen Profil) das erste übernommene auswählen.
+  const select = activeId ?? (profile?.activeSemesterId ? undefined : firstId)
+  if (select && profile) await db.profiles.update(profileId, { activeSemesterId: select })
   return result
 }
 

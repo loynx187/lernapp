@@ -19,20 +19,27 @@ test('Profil als Vorlage ohne Lernfortschritt exportieren und in einem neuen Pro
   await expect(a.getByText(/Vorlage exportiert: 1 Prüfung/)).toBeVisible()
   expect(errorsA).toEqual([])
 
-  // Ziel: neues Gerät ohne Prüfungen
+  // Kommilitonin: ein Schritt direkt beim ersten Start
   const b = await (await browser.newContext()).newPage()
   const errorsB = collectErrors(b)
-  await onboard(b, { name: 'Lisa' })
-  await b.goto('./#/import')
-  await b.locator('input[type=file]').first().setInputFiles(file)
-  await expect(b.getByRole('heading', { name: 'Vorlage ohne Lernfortschritt' })).toContainText('Vorlage')
-  await expect(b.getByText('Regelungstechnik')).toBeVisible()
-  await b.getByRole('button', { name: 'Übernehmen' }).click()
-  await expect(b.locator('.notice', { hasText: 'Vorlage übernommen.' })).toContainText('1 Prüfung neu')
-
-  // Karten sind da, aber noch nichts begonnen
+  await b.goto('./')
+  await b.getByPlaceholder('Vorname').fill('Lisa')
+  await b.locator('input[type=file]').setInputFiles(file)
+  await expect(b.getByRole('heading', { name: /Lisa/ })).toBeVisible()
   await b.goto('./#/pruefungen')
   await b.getByText('Regelungstechnik').first().click()
   await expect(b.locator('.stats')).toContainText('0 %')
   expect(errorsB).toEqual([])
+
+  // Vorhandenes Profil ohne Prüfungen: über „Karten importieren“ mit Vorschau
+  const c = await (await browser.newContext()).newPage()
+  const errorsC = collectErrors(c)
+  await onboard(c, { name: 'Max' })
+  await c.goto('./#/import')
+  await c.locator('input[type=file]').first().setInputFiles(file)
+  await expect(c.getByRole('heading', { name: 'Vorlage ohne Lernfortschritt' })).toBeVisible()
+  await expect(c.getByText('Regelungstechnik')).toBeVisible()
+  await c.getByRole('button', { name: 'Übernehmen' }).click()
+  await expect(c.locator('.notice', { hasText: 'Vorlage übernommen.' })).toContainText('1 Prüfung neu')
+  expect(errorsC).toEqual([])
 })
