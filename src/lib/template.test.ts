@@ -87,6 +87,39 @@ describe('Profil-Vorlage', () => {
     expect((await db.cards.get(`e1:b:${pkg.cards[1].uid}`))!.deletedAt).toBe(10)
   })
 
+  it('übernimmt Korrekturen aus einer neueren Vorlage, auch bei anderem Semesternamen', async () => {
+    const pkg = await setup()
+    const t = await createTemplate('p1')
+    // Kommilitone: anderes Semester, Paket b in Version 2 mit korrigierter Karte, eine Karte bei ihm gelöscht
+    t.semesters[0].name = 'WS 26/27'
+    const b = t.semesters[0].exams[0].packages[0]
+    b.version = 2
+    b.cards = b.cards.map((c) => (c.uid === pkg.cards[0].uid ? { ...c, back: 'Korrigiert' } : c)).filter((c) => c.uid !== pkg.cards[4].uid)
+    t.semesters[0].exams[0].reports = []
+    const r = await importTemplate('p1', t, 50_000)
+    expect(r).toMatchObject({ semestersAdded: 0, examsAdded: 0, examsUpdated: 1, cardsChanged: 1, olderSkipped: [] })
+    expect(await db.semesters.count()).toBe(1)
+    const card = (await db.cards.get(`e1:b:${pkg.cards[0].uid}`))!
+    expect(card).toMatchObject({ back: 'Korrigiert', archived: 0 })
+    expect(card.s.reps).toBe(7)
+    // beim Kommilitonen fehlende Karte bleibt bei mir erhalten
+    expect((await db.cards.get(`e1:b:${pkg.cards[4].uid}`))!.archived).toBe(0)
+    expect((await db.packages.get('e1:b'))!.version).toBe(2)
+  })
+
+  it('dreht neuere eigene Pakete nicht auf eine ältere Vorlage zurück', async () => {
+    const pkg = await setup()
+    const t = await createTemplate('p1')
+    await db.packages.update('e1:a', { version: 3 })
+    const a = t.semesters[0].exams[0].packages[1]
+    a.cards = a.cards.map((c) => ({ ...c, back: 'Alt' }))
+    await db.reports.clear()
+    const r = await importTemplate('p1', t, 50_000)
+    expect(r.olderSkipped).toEqual([a.title])
+    expect((await db.cards.get(`e1:a:${pkg.cards[0].uid}`))!.back).not.toBe('Alt')
+    expect(r.reports).toBe(0) // Meldungen zur älteren Version werden nicht übernommen
+  })
+
   it('lehnt fremde Dateien ab', () => {
     expect(() => parseTemplate(sample)).toThrow(/keine Lernapp-Vorlage/)
   })
