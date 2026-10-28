@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { useAppState, useActive } from '../state'
 import { db, deleteProfile, deleteSemester, uid, type Profile } from '../lib/db'
 import { createBackup, parseBackup, restoreBackup, markBackup } from '../lib/backup'
+import { createTemplate, templateSummary } from '../lib/template'
 import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
@@ -78,6 +79,13 @@ export function Settings() {
     if (!(await saveFile(`lernapp-sicherung-${safeFileName(profile.name)}-${isoDate(Date.now())}.json`, JSON.stringify(b)))) return
     await markBackup(profile.id)
     setMessage('Sicherung erstellt.')
+  }
+
+  async function exportTemplate() {
+    const t = await createTemplate(profile.id)
+    if (!(await saveFile(`lernapp-vorlage-${safeFileName(profile.name)}-${isoDate(Date.now())}.json`, JSON.stringify(t)))) return
+    const { exams, cards } = templateSummary(t)
+    setMessage(`Vorlage exportiert: ${exams} ${exams === 1 ? 'Prüfung' : 'Prüfungen'}, ${cards} Karten.`)
   }
 
   async function importBackup(file?: File) {
@@ -250,6 +258,14 @@ export function Settings() {
           Sicherung wiederherstellen
           <input type="file" accept=".json,application/json" hidden onChange={(e) => importBackup(e.target.files?.[0])} />
         </label>
+      </div>
+
+      <div className="section-title">Vorlage ohne Lernfortschritt</div>
+      <div className="card stack">
+        <p className="muted" style={{ margin: 0 }}>
+          Alle Semester, Prüfungen (mit Termin, Fachprofil und offenen Erinnerungen) und Kartenpakete in einer Datei – ohne Lernstand, Bewertungen, Hausaufgaben und persönliche Einstellungen. Zum Weitergeben an Kommilitonen oder für einen Neustart; importiert wird sie unter „Karten importieren“.
+        </p>
+        <button className="btn block" onClick={exportTemplate}>Vorlage exportieren</button>
       </div>
 
       <div className="section-title">Unterlagen</div>
