@@ -6,16 +6,15 @@ import { addDays, formatCountdown, isoDate, studyDate, studyDayStart } from '../
 import { cardMode, type Mode } from '../lib/db'
 import { examStats, streak } from '../lib/stats'
 import { DayBars, PageHeader, Progress, Rings, Widget } from '../components/ui'
-import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
-import { isDueSoon } from '../lib/homework'
+import { homeworkDueByExam, isDueSoon } from '../lib/homework'
 import { dueLabel } from './Homework'
 import { useSync } from '../sync-state'
 import { BACKUP_REMINDER_DAYS, lastBackup } from '../lib/backup'
 import { db } from '../lib/db'
 import { FSRS_HINT_REVIEWS } from './FsrsSettings'
 
-const MODE_INFO: Record<Mode, { title: string; unit: string; one: string; extra: number }> = {
+export const MODE_INFO: Record<Mode, { title: string; unit: string; one: string; extra: number }> = {
   mobile: { title: 'Unterwegs', unit: 'Karten', one: 'Karte', extra: 10 },
   desk: { title: 'Schreibtisch', unit: 'Aufgaben', one: 'Aufgabe', extra: 1 },
 }
@@ -49,11 +48,9 @@ export function Dashboard() {
         : 0
       : null
   const modes = (['mobile', 'desk'] as Mode[]).filter((m) => cards.some((c) => cardMode(c) === m) || (m === 'desk' && data.homework.length > 0))
-  // Nach Fach getrennt lernen: das Fach mit dem größten Rückstand zuerst
+  // Nach Fach getrennt lernen: Bei mehreren Fächern führt das Widget zur Auswahl, empfohlen ist das mit dem größten Rückstand
   const hwDue = homework.filter((h) => isDueSoon(h, now))
-  const hwDueByExam = new Map<string, number>()
-  for (const h of hwDue) hwDueByExam.set(h.examId, (hwDueByExam.get(h.examId) ?? 0) + 1)
-  const subjects = subjectsToday(plan, hwDueByExam)
+  const subjects = subjectsToday(plan, homeworkDueByExam(homework, now))
   const examById = new Map(exams.map((e) => [e.id, e]))
 
   // Gesamtfortschritt über alle anstehenden Prüfungen
@@ -125,49 +122,20 @@ export function Dashboard() {
           </Widget>
         ) : (
           <>
-          {subjects.length > 1 &&
-            subjects.map((s, i) => {
-              const e = examById.get(s.examId)!
-              return (
-                <Widget
-                  key={s.examId}
-                  size="medium"
-                  title={e.name}
-                  icon="exams"
-                  tint={e.color}
-                  label={`${e.name} lernen`}
-                  badge={i === 0 && <span className="w-badge">Empfohlen</span>}
-                >
-                  <div className="w-split">
-                    <div>
-                      <div className="w-number">{s.left.mobile + s.left.desk}</div>
-                      <div className="w-caption">{s.behind ? <span className="w-warn">Rückstand</span> : 'heute offen'}</div>
-                    </div>
-                    <div className="w-side">
-                      {(['mobile', 'desk'] as Mode[])
-                        .filter((m) => s.left[m] > 0)
-                        .map((m) => (
-                          <Link key={m} className="w-pill" to={`/lernen/${m}?exam=${s.examId}`} aria-label={`${e.name}: ${MODE_INFO[m].title} lernen`}>
-                            {s.left[m]} {s.left[m] === 1 ? MODE_INFO[m].one : MODE_INFO[m].unit} · {MODE_INFO[m].title}
-                          </Link>
-                        ))}
-                    </div>
-                  </div>
-                </Widget>
-              )
-            })}
           {modes.map((m) => {
             const t = plan.modes[m]
             const hwCount = m === 'desk' ? hwDue.length : 0
             const left = t.reviewsLeft + t.newLeft + hwCount
             const info = MODE_INFO[m]
             const budget = m === 'mobile' ? profile.minutesMobile : profile.minutesDesk
+            const forMode = subjects.filter((s) => s.left[m] > 0)
+            const choose = forMode.length > 1
             return (
               <Widget
                 key={m}
                 size="medium"
-                to={left > 0 ? `/lernen/${m}` : `/lernen/${m}?extra=${info.extra}`}
-                title={subjects.length > 1 ? `${info.title} · alle Fächer` : info.title}
+                to={choose ? `/lernen/${m}/auswahl` : left > 0 ? `/lernen/${m}` : `/lernen/${m}?extra=${info.extra}`}
+                title={info.title}
                 icon={m === 'mobile' ? 'cards' : 'pencil'}
                 label={`${info.title} lernen`}
               >
@@ -176,7 +144,7 @@ export function Dashboard() {
                     {left > 0 ? (
                       <>
                         <div className="w-number">{left}</div>
-                        <div className="w-caption">{info.unit} heute</div>
+                        <div className="w-caption">{choose ? `${info.unit} in ${forMode.length} Fächern` : `${info.unit} heute`}</div>
                       </>
                     ) : (
                       <>
@@ -191,7 +159,8 @@ export function Dashboard() {
                         {hwCount > 0 && <span>{hwCount} {hwCount === 1 ? 'Hausaufgabe' : 'Hausaufgaben'}</span>}
                         <span>{t.reviewsLeft} Wiederholungen</span>
                         <span>{t.newLeft} neu</span>
-                        <span className="w-pill">ca. {t.minutesLeft} min · Start</span>
+                        {choose && <span className="truncate">Empfohlen: {examById.get(forMode[0].examId)?.name}</span>}
+                        <span className="w-pill">ca. {t.minutesLeft} min · {choose ? 'Fach wählen' : 'Start'}</span>
                       </>
                     ) : (
                       <span className="w-pill">{m === 'mobile' ? '10 extra' : '1 extra'}</span>
