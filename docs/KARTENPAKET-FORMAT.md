@@ -23,7 +23,7 @@ Ein Kartenpaket enthält die Karten zu einer Prüfung bzw. einem Skript. Es enth
 | `id` | Stabile Paket-ID. Gleiche ID = Update desselben Pakets. |
 | `version` | Bei jedem Update erhöhen. |
 | `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. Mehrere Pakete einer Prüfung kommen nacheinander in der Reihenfolge ihres ersten Imports (auf der Prüfungsseite mit ↑/↓ änderbar); in den letzten 14 Tagen vor der Klausur werden sie gemischt. Zusammenhängende Themen deshalb im selben Kapitel bzw. in aufeinanderfolgenden Kapiteln anordnen. Mit `"later": true` ist ein Kapitel in der Vorlesung noch nicht dran: Die App pausiert es beim ersten Import (seine neuen Karten werden nicht eingeführt und zählen nicht zum Fortschritt), der Nutzer setzt es auf der Prüfungsseite fort. So kann ein ganzes Skript auf einmal importiert werden. |
-| `pending` | Optional: noch fehlende Unterlagen, an die die App erinnern soll, z. B. `[{ "id": "altklausuren", "title": "Altklausuren", "note": "kommen im Laufe der Vorlesung", "from": "2026-12-01" }]`. `id` stabil halten – eine abgehakte Erinnerung legt ein Update nicht erneut an. `from` (optional): erst ab diesem Tag erinnern. |
+| `pending` | Optional: noch fehlende Unterlagen, an die die App erinnern soll, z. B. `[{ "id": "altklausuren", "title": "Altklausuren", "note": "kommen im Laufe der Vorlesung", "from": "2026-12-01" }]`. `id` stabil halten – eine abgehakte Erinnerung legt ein Update nicht erneut an. `from` (optional): erst ab diesem Tag erinnern. `repeatDays` (optional): wiederkehrend, z. B. `7` für wöchentliche Übungsblätter – „Erledigt“ verschiebt die Erinnerung zum nächsten Termin im Takt ab `from`. |
 | `profile` | Optional: Vorschläge für das Fachprofil der Prüfung (siehe unten). Die App übernimmt sie nur in leere oder noch unbestätigte Felder. |
 
 ## Karten
@@ -151,10 +151,13 @@ Antwort von Claude, wenn mehrere Fächer ohne Kartenpaket eingerichtet werden. I
   "format": "lernapp-fachprofile",
   "formatVersion": 1,
   "exams": [
-    { "name": "Technische Mechanik II", "slug": "technische-mechanik-ii", "profile": { "form": "schriftlich", "duration": 120, "taskShare": "hoch" } }
+    { "name": "Technische Mechanik II", "slug": "technische-mechanik-ii", "profile": { "form": "schriftlich", "duration": 120, "taskShare": "hoch" } },
+    { "name": "Regelungstechnik", "slug": "regelungstechnik", "pending": [{ "id": "uebungsblatt", "title": "Neues Übungsblatt", "from": "2026-11-04", "repeatDays": 7 }] }
   ]
 }
 ```
+
+Je Prüfung `profile` und/oder `pending` (Erinnerungen an fehlende Unterlagen, Aufbau wie im Kartenpaket) – so lassen sich Erinnerungen für mehrere Fächer mit einer Datei anlegen, ohne Pakete zu aktualisieren.
 
 ## Karten aus anderen Tools (Text-Import)
 

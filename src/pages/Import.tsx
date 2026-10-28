@@ -6,7 +6,7 @@ import { db } from '../lib/db'
 import { importPackage, parsePackage, parseTextCards, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
 import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
-import { applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
+import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
 
 export function Import() {
   const { semester } = useActive()
@@ -101,8 +101,10 @@ export function Import() {
     for (const entry of entries) {
       const exam = matchExam(exams!, entry)
       if (!exam) continue
-      const changed = await applyProfile(exam.id, entry.profile, true)
-      done.push(changed.length ? `${exam.name} (${changed.map(fieldLabel).join(', ')})` : `${exam.name} (unverändert)`)
+      const changed = entry.profile ? await applyProfile(exam.id, entry.profile, true) : []
+      const reminders = await applyPending(exam.id, entry.pending)
+      const parts = [changed.length && changed.map(fieldLabel).join(', '), reminders && `${reminders} ${reminders === 1 ? 'Erinnerung' : 'Erinnerungen'}`].filter(Boolean)
+      done.push(`${exam.name} (${parts.join('; ') || 'unverändert'})`)
     }
     setProfiles(null)
     setProfilesDone(done)
@@ -165,24 +167,27 @@ export function Import() {
           )}
           {profilesDone && (
             <div className="notice">
-              <b>Fachprofile übernommen:</b> {profilesDone.join(' · ') || 'keine passende Prüfung gefunden'}. Die Vorschläge sind im Fachprofil der jeweiligen Prüfung markiert.
+              <b>Übernommen:</b> {profilesDone.join(' · ') || 'keine passende Prüfung gefunden'}. Die Vorschläge sind im Fachprofil der jeweiligen Prüfung markiert.
             </div>
           )}
           {error && <div className="notice warn">{error}</div>}
 
           {profiles ? (
             <div className="card stack">
-              <h2>Fachprofile von Claude</h2>
+              <h2>Fachprofile und Erinnerungen von Claude</h2>
               {profiles.map((entry, i) => {
                 const exam = matchExam(exams, entry)
                 return (
                   <div key={i} className="row between">
-                    <span>{entry.name ?? entry.slug}</span>
+                    <span>
+                      {entry.name ?? entry.slug}
+                      {entry.pending && <small className="muted"> · {entry.pending.map((d) => d.title).join(', ')}</small>}
+                    </span>
                     <small className={exam ? '' : 'badge-warn'}>{exam ? `→ ${exam.name}` : 'keine passende Prüfung'}</small>
                   </div>
                 )
               })}
-              <p className="muted" style={{ margin: 0, fontSize: 14 }}>Die Angaben ersetzen die bisherigen Felder und werden als Vorschlag markiert, bis du das Fachprofil speicherst.</p>
+              <p className="muted" style={{ margin: 0, fontSize: 14 }}>Fachprofil-Angaben ersetzen die bisherigen Felder und werden als Vorschlag markiert, bis du das Fachprofil speicherst. Erinnerungen an fehlende Unterlagen kommen zur jeweiligen Prüfung (schon vorhandene bleiben, wie sie sind).</p>
               <div className="row">
                 <button className="btn grow" onClick={() => setProfiles(null)}>Abbrechen</button>
                 <button className="btn primary grow" disabled={!profiles.some((e) => matchExam(exams, e))} onClick={() => importProfiles(profiles)}>

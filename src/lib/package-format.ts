@@ -5,6 +5,24 @@ import type { CardContent, CardType, ExamProfile, Mode, NumericAnswer, PendingDo
 export const PACKAGE_FORMAT = 'lernapp-paket'
 export const BACKUP_FORMAT = 'lernapp-backup'
 
+/** Erinnerung an fehlende Unterlagen, wie sie in Paketen und Fachprofil-Dateien steht. */
+export type PendingInput = Pick<PendingDoc, 'id' | 'title' | 'note' | 'from' | 'repeatDays'>
+
+/** Liest Erinnerungen an fehlende Unterlagen; ungültige Einträge entfallen. */
+export function parsePending(raw: unknown): PendingInput[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const list = raw
+    .filter((d): d is Record<string, unknown> & { id: string; title: string } => !!d && isStr(d.id) && isStr(d.title) && !!d.title.trim())
+    .map((d) => ({
+      id: d.id,
+      title: d.title.trim(),
+      note: isStr(d.note) && d.note.trim() ? d.note.trim() : undefined,
+      from: isStr(d.from) && /^\d{4}-\d{2}-\d{2}$/.test(d.from) ? d.from : undefined,
+      repeatDays: typeof d.repeatDays === 'number' && d.repeatDays >= 1 ? Math.round(d.repeatDays) : undefined,
+    }))
+  return list.length ? list : undefined
+}
+
 export interface CardPackage {
   format: typeof PACKAGE_FORMAT
   formatVersion: 1
@@ -19,7 +37,7 @@ export interface CardPackage {
   /** Vorschläge für das Fachprofil der Prüfung; die App übernimmt sie nur in leere Felder. */
   profile?: ExamProfile
   /** Noch fehlende Unterlagen, an die die App erinnern soll (z. B. Altklausuren). */
-  pending?: Pick<PendingDoc, 'id' | 'title' | 'note' | 'from'>[]
+  pending?: PendingInput[]
   cards: CardContent[]
 }
 
@@ -96,16 +114,7 @@ export function parsePackage(raw: unknown): CardPackage {
         .filter((c): c is { id: string; title: string; later?: unknown } => !!c && isStr(c.id) && isStr(c.title))
         .map((c) => (c.later === true ? { id: c.id, title: c.title, later: true } : { id: c.id, title: c.title }))
     : undefined
-  const pending = Array.isArray(p.pending)
-    ? p.pending
-        .filter((d): d is Record<string, unknown> & { id: string; title: string } => !!d && isStr(d.id) && isStr(d.title) && !!d.title.trim())
-        .map((d) => ({
-          id: d.id,
-          title: d.title.trim(),
-          note: isStr(d.note) && d.note.trim() ? d.note.trim() : undefined,
-          from: isStr(d.from) && /^\d{4}-\d{2}-\d{2}$/.test(d.from) ? d.from : undefined,
-        }))
-    : undefined
+  const pending = parsePending(p.pending)
   return {
     format: PACKAGE_FORMAT,
     formatVersion: 1,
@@ -116,7 +125,7 @@ export function parsePackage(raw: unknown): CardPackage {
     created: isStr(p.created) ? p.created : undefined,
     chapters,
     profile: parseProfile(p.profile),
-    pending: pending?.length ? pending : undefined,
+    pending,
     cards,
   }
 }

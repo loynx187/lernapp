@@ -2,7 +2,8 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db, type Exam } from './db'
 import { importPackage, parsePackage } from './packages'
-import { completePending, duePending, mergePending, snoozePending, toggleChapterPause } from './pending'
+import { completePending, duePending, mergePending, nextOccurrence, snoozePending, toggleChapterPause } from './pending'
+import { applyPending, parseProfilesFile } from './profile'
 import { loadStudyData } from './study'
 import { examStats } from './stats'
 
@@ -80,5 +81,29 @@ describe('Kapitel pausieren', () => {
     expect(e.pausedChapters).toEqual([])
     d = await loadStudyData(profile, NOW)
     expect(d.cards.map((c) => c.uid).sort()).toEqual(['a', 'b'])
+  })
+})
+
+describe('Wiederkehrende Erinnerungen und Fachprofil-Datei', () => {
+  it('erinnert wöchentlich im Takt des Starttags, „Erledigt“ springt zum nächsten Termin', async () => {
+    // 28.10.2026 ist ein Mittwoch
+    expect(nextOccurrence({ from: '2026-10-21', repeatDays: 7 }, NOW)).toBe('2026-11-04')
+    expect(nextOccurrence({ from: '2026-10-28', repeatDays: 7 }, NOW)).toBe('2026-11-04')
+    await db.exams.update('e1', { pendingDocs: [{ id: 'ueb', title: 'Übungsblatt der Woche', from: '2026-10-28', repeatDays: 7 }] })
+    await completePending(exam, 'ueb', NOW)
+    const d = (await db.exams.get('e1'))!.pendingDocs![0]
+    expect(d).toMatchObject({ from: '2026-11-04' })
+    expect(d.doneAt).toBeUndefined()
+  })
+
+  it('legt Erinnerungen aus einer Fachprofil-Datei an, auch ohne Profilangaben', async () => {
+    const entries = parseProfilesFile({
+      format: 'lernapp-fachprofile',
+      exams: [{ name: 'Regelungstechnik', slug: 'regelungstechnik', pending: [{ id: 'altklausuren', title: 'Altklausuren' }, { id: 'ueb', title: 'Übungsblatt', from: '2026-11-04', repeatDays: 7 }] }],
+    })
+    expect(entries[0].profile).toBeUndefined()
+    expect(await applyPending('e1', entries[0].pending)).toBe(2)
+    expect(await applyPending('e1', entries[0].pending)).toBe(0)
+    expect((await db.exams.get('e1'))!.pendingDocs!.map((d) => d.repeatDays)).toEqual([undefined, 7])
   })
 })

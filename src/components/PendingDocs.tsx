@@ -29,6 +29,7 @@ export function PendingDocs({ exam }: { exam: Exam }) {
             <b>{d.title}</b>
             <br />
             <small className={due.has(d.id) ? 'badge-warn' : 'muted'}>
+              {d.repeatDays ? `alle ${d.repeatDays === 7 ? 'Woche' : `${d.repeatDays} Tage`} · ` : ''}
               {due.has(d.id)
                 ? 'Erinnerung aktiv'
                 : d.snoozedUntil && (!d.from || d.snoozedUntil > d.from)
@@ -41,7 +42,7 @@ export function PendingDocs({ exam }: { exam: Exam }) {
             {due.has(d.id) && (
               <button className="btn small" onClick={() => snoozePending(exam, d.id)} aria-label={`${d.title} später erinnern`}>Später</button>
             )}
-            <button className="btn small primary" onClick={() => completePending(exam, d.id)} aria-label={`${d.title} erledigt`}>Erledigt</button>
+            <button className="btn small primary" onClick={() => completePending(exam, d.id)} aria-label={`${d.title} erledigt`}>{d.repeatDays ? 'Diesmal erledigt' : 'Erledigt'}</button>
           </div>
         </div>
       ))}
