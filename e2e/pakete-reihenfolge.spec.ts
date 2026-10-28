@@ -31,6 +31,8 @@ test('Neue Karten kommen Paket für Paket, Kapitel bleiben je Paket getrennt', a
   // Kapitelübersicht: erst alle Kapitel des ersten Pakets, dann die des zweiten
   await page.goto('./#/pruefungen')
   await page.locator('a.card.link').first().click()
+  // Erst auf die Kapitelübersicht warten – allInnerTexts wartet nicht
+  await expect(page.locator('.chapter-row').first()).toBeVisible()
   const titles = await page.locator('.chapter-row > span').allInnerTexts()
   expect(titles).toEqual([...sample.chapters.map((c: { title: string }) => c.title), ...second.chapters.map((c: { title: string }) => c.title)])
 
