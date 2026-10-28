@@ -26,6 +26,8 @@ async function setup() {
   await db.cards.put({ ...card, s: { ...card.s, reps: 7, state: 2 } })
   await db.cards.update(`e1:b:${pkg.cards[1].uid}`, { archived: 1, deletedAt: 10 })
   await db.exams.update('e1', { pausedChapters: [chapterKey({ packageId: 'a', chapter: pkg.cards[0].chapter })] })
+  await db.reports.add({ id: 'm1', profileId: 'p1', examId: 'e1', cardId: `e1:a:${pkg.cards[2].uid}`, packageId: 'a', uid: pkg.cards[2].uid, category: 'fehler', note: 'Vorzeichen falsch', createdAt: 100 })
+  await db.reports.add({ id: 'm2', profileId: 'p1', examId: 'e1', cardId: `e1:a:${pkg.cards[3].uid}`, packageId: 'a', uid: pkg.cards[3].uid, category: 'unklar', note: '', createdAt: 100, resolvedAt: 200 })
   await db.reviews.add({ id: 'r1', profileId: 'p1', examId: 'e1', cardId: card.id, mode: 'mobile', rating: 3, stateBefore: 0, reviewedAt: 1, durationMs: 1000 })
   return pkg
 }
@@ -50,6 +52,8 @@ describe('Profil-Vorlage', () => {
     expect(exam.packages.map((p) => p.id)).toEqual(['b', 'a'])
     expect(exam.packages[0].cards).toHaveLength(pkg.cards.length - 1) // gelöschte Karte fehlt
     expect(exam.packages[1].chapters?.find((c) => c.id === pkg.cards[0].chapter)?.later).toBe(true)
+    // nur die offene Meldung
+    expect(exam.reports).toEqual([{ packageId: 'a', uid: pkg.cards[2].uid, category: 'fehler', note: 'Vorzeichen falsch', reportedAt: new Date(100).toISOString() }])
   })
 
   it('legt in einem neuen Profil alles ohne Fortschritt an, Reihenfolge und Pausen bleiben', async () => {
@@ -66,13 +70,18 @@ describe('Profil-Vorlage', () => {
     const cards = await db.cards.where('examId').equals(exam.id).toArray()
     expect(cards.every((c) => c.profileId === 'p2' && c.s.reps === 0)).toBe(true)
     expect((await db.profiles.get('p2'))!.activeSemesterId).toBe(exam.semesterId)
+    // Meldung gilt auch hier: Karte pausiert, bis ein Update sie ändert
+    expect(r.reports).toBe(1)
+    const { pausedCardIds } = await import('./study')
+    expect([...(await pausedCardIds([exam.id]))]).toEqual([`${exam.id}:a:${pkg.cards[2].uid}`])
   })
 
   it('ordnet vorhandene Prüfungen über den Namen zu und behält dort den Fortschritt', async () => {
     const pkg = await setup()
     const t = await createTemplate('p1')
     const r = await importTemplate('p1', t, 50_000)
-    expect(r).toMatchObject({ semestersAdded: 0, examsAdded: 0, examsUpdated: 1 })
+    expect(r).toMatchObject({ semestersAdded: 0, examsAdded: 0, examsUpdated: 1, reports: 0 })
+    expect(await db.reports.count()).toBe(2)
     expect(await db.exams.count()).toBe(1)
     expect((await db.cards.get(`e1:b:${pkg.cards[0].uid}`))!.s.reps).toBe(7)
     expect((await db.cards.get(`e1:b:${pkg.cards[1].uid}`))!.deletedAt).toBe(10)

@@ -1,7 +1,7 @@
 // Profil-Vorlage: alle Semester, Prüfungen und Kartenpakete eines Profils ohne Lernfortschritt –
 // zum Weitergeben an Kommilitonen oder für einen Neustart. Bewertungen, Lernstand, Hausaufgaben,
-// Meldungen und persönliche Einstellungen bleiben draußen.
-import { db, EXAM_COLORS, MAX_EXAMS_PER_SEMESTER, uid, type Exam, type ExamProfile } from './db'
+// und persönliche Einstellungen bleiben draußen. Offene Meldungen zu Karten gehen mit – sie gelten für alle.
+import { db, EXAM_COLORS, MAX_EXAMS_PER_SEMESTER, uid, type Exam, type ExamProfile, type ReportCategory } from './db'
 import { exportPackage, importPackage } from './packages'
 import { parsePackage, parsePending, parseProfile, type CardPackage, type PendingInput } from './package-format'
 import { HOMEWORK_PACKAGE_ID } from './homework'
@@ -24,7 +24,19 @@ export interface TemplateExam {
   pending?: PendingInput[]
   /** Pausierte Kapitel stehen als `later` in den Paketen. */
   packages: CardPackage[]
+  /** Offene Meldungen zu Karten (fachlich falsch, unklar …). Die Karten bleiben bis zur Korrektur pausiert. */
+  reports?: TemplateReport[]
 }
+
+export interface TemplateReport {
+  packageId: string
+  uid: string
+  category: ReportCategory
+  note: string
+  reportedAt: string
+}
+
+const CATEGORIES: ReportCategory[] = ['fehler', 'unklar', 'aufteilen', 'sonstiges']
 
 export interface TemplateSemester {
   name: string
@@ -58,6 +70,11 @@ export async function createTemplate(profileId: string): Promise<ProfileTemplate
         pkg.chapters = pkg.chapters?.map((c) => (paused.has(chapterKey({ packageId: r.packageId, chapter: c.id })) ? { ...c, later: true } : c))
         packages.push(pkg)
       }
+      const included = new Set(packages.flatMap((p) => p.cards.map((c) => `${p.id}:${c.uid}`)))
+      const reports = (await db.reports.where('examId').equals(e.id).toArray())
+        .filter((r) => !r.resolvedAt && included.has(`${r.packageId}:${r.uid}`))
+        .sort((a, b) => a.createdAt - b.createdAt)
+        .map((r) => ({ packageId: r.packageId, uid: r.uid, category: r.category, note: r.note, reportedAt: new Date(r.createdAt).toISOString() }))
       const pending = openPending(e).map(({ id, title, note, from, repeatDays }) => ({ id, title, note, from, repeatDays }))
       tExams.push({
         name: e.name,
@@ -69,6 +86,7 @@ export async function createTemplate(profileId: string): Promise<ProfileTemplate
         profile: e.profile,
         pending: pending.length ? pending : undefined,
         packages,
+        reports: reports.length ? reports : undefined,
       })
     }
     out.push({ name: s.name, kind: semesterKind(s), active: s.id === profile?.activeSemesterId || undefined, exams: tExams })
@@ -102,6 +120,11 @@ export function parseTemplate(raw: unknown): ProfileTemplate {
           profile: parseProfile(e.profile),
           pending: parsePending(e.pending),
           packages: Array.isArray(e.packages) ? e.packages.map((p) => parsePackage(p)) : [],
+          reports: Array.isArray(e.reports)
+            ? e.reports
+                .filter((r) => r && isStr(r.packageId) && isStr(r.uid) && CATEGORIES.includes(r.category))
+                .map((r) => ({ packageId: r.packageId, uid: r.uid, category: r.category, note: isStr(r.note) ? r.note : '', reportedAt: isStr(r.reportedAt) ? r.reportedAt : '' }))
+            : undefined,
         }
       }),
     }
@@ -115,6 +138,8 @@ export interface TemplateResult {
   examsUpdated: number
   packages: number
   cards: number
+  /** Übernommene offene Meldungen */
+  reports: number
   /** Prüfungen, die wegen des Limits pro Semester nicht angelegt wurden. */
   skipped: string[]
 }
@@ -126,7 +151,7 @@ const norm = (s: string) => s.trim().toLowerCase()
  * sonst neu angelegt; vorhandene Pakete werden aktualisiert, der Lernfortschritt bleibt erhalten.
  */
 export async function importTemplate(profileId: string, t: ProfileTemplate, now = Date.now()): Promise<TemplateResult> {
-  const result: TemplateResult = { semestersAdded: 0, examsAdded: 0, examsUpdated: 0, packages: 0, cards: 0, skipped: [] }
+  const result: TemplateResult = { semestersAdded: 0, examsAdded: 0, examsUpdated: 0, packages: 0, cards: 0, reports: 0, skipped: [] }
   let activeId: string | undefined
   let firstId: string | undefined
   for (const ts of t.semesters) {
@@ -162,6 +187,7 @@ export async function importTemplate(profileId: string, t: ProfileTemplate, now 
         result.packages++
         result.cards += pkg.cards.length
       }
+      result.reports += await importReports(exam, te.reports ?? [], now)
     }
   }
   const profile = await db.profiles.get(profileId)
@@ -171,9 +197,33 @@ export async function importTemplate(profileId: string, t: ProfileTemplate, now 
   return result
 }
 
+/** Legt Meldungen zu vorhandenen Karten an; gleiche offene Meldungen werden nicht doppelt angelegt. */
+async function importReports(exam: Exam, reports: TemplateReport[], now: number) {
+  if (!reports.length) return 0
+  const existing = (await db.reports.where('examId').equals(exam.id).toArray()).filter((r) => !r.resolvedAt)
+  const key = (cardId: string, category: string, note: string) => `${cardId}|${category}|${note.trim()}`
+  const seen = new Set(existing.map((r) => key(r.cardId, r.category, r.note)))
+  let added = 0
+  for (const r of reports) {
+    const cardId = `${exam.id}:${r.packageId}:${r.uid}`
+    const k = key(cardId, r.category, r.note)
+    if (seen.has(k) || !(await db.cards.get(cardId))) continue
+    seen.add(k)
+    await db.reports.add({ id: uid(), profileId: exam.profileId, examId: exam.id, cardId, packageId: r.packageId, uid: r.uid, category: r.category, note: r.note.trim(), createdAt: Date.parse(r.reportedAt) || now })
+    added++
+  }
+  return added
+}
+
 /** Kurzbeschreibung für die Vorschau. */
 export function templateSummary(t: ProfileTemplate) {
   const exams = t.semesters.flatMap((s) => s.exams)
   const packages = exams.flatMap((e) => e.packages)
-  return { semesters: t.semesters.length, exams: exams.length, packages: packages.length, cards: packages.reduce((n, p) => n + p.cards.length, 0) }
+  return {
+    semesters: t.semesters.length,
+    exams: exams.length,
+    packages: packages.length,
+    cards: packages.reduce((n, p) => n + p.cards.length, 0),
+    reports: exams.reduce((n, e) => n + (e.reports?.length ?? 0), 0),
+  }
 }

@@ -84,8 +84,8 @@ export function Settings() {
   async function exportTemplate() {
     const t = await createTemplate(profile.id)
     if (!(await saveFile(`lernapp-vorlage-${safeFileName(profile.name)}-${isoDate(Date.now())}.json`, JSON.stringify(t)))) return
-    const { exams, cards } = templateSummary(t)
-    setMessage(`Vorlage exportiert: ${exams} ${exams === 1 ? 'Prüfung' : 'Prüfungen'}, ${cards} Karten.`)
+    const { exams, cards, reports } = templateSummary(t)
+    setMessage(`Vorlage exportiert: ${exams} ${exams === 1 ? 'Prüfung' : 'Prüfungen'}, ${cards} Karten${reports ? `, ${reports} ${reports === 1 ? 'offene Meldung' : 'offene Meldungen'}` : ''}.`)
   }
 
   async function importBackup(file?: File) {
@@ -263,7 +263,7 @@ export function Settings() {
       <div className="section-title">Vorlage ohne Lernfortschritt</div>
       <div className="card stack">
         <p className="muted" style={{ margin: 0 }}>
-          Alle Semester, Prüfungen (mit Termin, Fachprofil und offenen Erinnerungen) und Kartenpakete in einer Datei – ohne Lernstand, Bewertungen, Hausaufgaben und persönliche Einstellungen. Zum Weitergeben an Kommilitonen oder für einen Neustart; importiert wird sie unter „Karten importieren“.
+          Alle Semester, Prüfungen (mit Termin, Fachprofil und offenen Erinnerungen), Kartenpakete und offene Meldungen zu Karten in einer Datei – ohne Lernstand, Bewertungen, Hausaufgaben und persönliche Einstellungen. Zum Weitergeben an Kommilitonen oder für einen Neustart; importiert wird sie unter „Karten importieren“.
         </p>
         <button className="btn block" onClick={exportTemplate}>Vorlage exportieren</button>
       </div>
