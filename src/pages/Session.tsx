@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useActive } from '../state'
 import { db, type Exam, type Mode, type ReportCategory, type StudyCard } from '../lib/db'
-import { buildQueue } from '../lib/planner'
+import { buildQueue, subjectsToday } from '../lib/planner'
 import { loadStudyData, recordReview, undoReview, type Undo } from '../lib/study'
 import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
 import { toPlanCard } from '../lib/stats'
@@ -210,7 +211,8 @@ export function Session() {
               ? `${reviewed} ${reviewed === 1 ? 'Karte' : 'Karten'} in ca. ${minutes} min gelernt.`
               : 'Für diesen Modus ist gerade nichts geplant.'}
           </p>
-          <Link className="btn primary block" to="/">Zur Übersicht</Link>
+          {examFilter && <NextSubject current={examFilter} mode={mode} />}
+          <Link className={`btn block${examFilter ? '' : ' primary'}`} to="/">Zur Übersicht</Link>
         </div>
       </>
     )
@@ -400,4 +402,21 @@ export function Session() {
 
 function sameSet(a: number[], b: number[]) {
   return a.length === b.length && a.every((x) => b.includes(x))
+}
+
+/** Nach einer Fach-Sitzung: das als Nächstes empfohlene Fach anbieten. */
+function NextSubject({ current, mode }: { current: string; mode: Mode }) {
+  const { profile } = useActive()
+  const next = useLiveQuery(async () => {
+    const d = await loadStudyData(profile)
+    const s = subjectsToday(d.plan).find((x) => x.examId !== current && x.left[mode] > 0)
+    const exam = s && d.exams.find((e) => e.id === s.examId)
+    return exam ? { exam, left: s!.left[mode] } : null
+  }, [profile, current, mode])
+  if (!next) return null
+  return (
+    <Link className="btn primary block" to={`/lernen/${mode}?exam=${next.exam.id}`}>
+      Weiter mit {next.exam.name} ({next.left})
+    </Link>
+  )
 }

@@ -81,16 +81,26 @@ export function PageHeader({ title, eyebrow, subtitle, back, action }: { title: 
 
 export type WidgetSize = 'small' | 'medium' | 'large'
 
-/** Kachel im Stil der iPadOS-Widgets; die ganze Fläche führt zur verlinkten Seite. */
-export function Widget({ size, to, title, icon, tint = 'var(--accent)', children, label }: { size: WidgetSize; to: string; title: string; icon: IconName; tint?: string; children: ReactNode; label?: string }) {
-  return (
-    <Link to={to} className={`widget widget-${size}`} aria-label={label ?? title}>
+/** Kachel im Stil der iPadOS-Widgets; mit `to` führt die ganze Fläche zur verlinkten Seite, ohne `to` enthält sie eigene Links. */
+export function Widget({ size, to, title, icon, tint = 'var(--accent)', children, label, badge }: { size: WidgetSize; to?: string; title: string; icon: IconName; tint?: string; children: ReactNode; label?: string; badge?: ReactNode }) {
+  const inner = (
+    <>
       <div className="widget-title" style={{ color: tint }}>
         <Icon name={icon} size={18} />
-        {title}
+        <span className="truncate">{title}</span>
+        {badge}
       </div>
       <div className="widget-body">{children}</div>
+    </>
+  )
+  return to ? (
+    <Link to={to} className={`widget widget-${size}`} aria-label={label ?? title}>
+      {inner}
     </Link>
+  ) : (
+    <section className={`widget widget-${size}`} aria-label={label ?? title}>
+      {inner}
+    </section>
   )
 }
 

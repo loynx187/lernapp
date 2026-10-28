@@ -333,3 +333,27 @@ export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions)
   }
   return out
 }
+
+export interface SubjectToday {
+  examId: string
+  /** Heute noch offen je Modus (fällige Wiederholungen + neue Karten). */
+  left: Record<Mode, number>
+  behind: boolean
+  daysLeft: number
+}
+
+/**
+ * Fächer mit heute offenem Pensum, das empfohlene zuerst: Fächer mit Rückstand (Budget reicht nicht
+ * für den Kernstoff) vor den anderen, dann das mit dem meisten offenen Pensum, bei Gleichstand die nähere Klausur.
+ */
+export function subjectsToday(plan: DayPlan): SubjectToday[] {
+  return plan.exams
+    .map((p) => ({
+      examId: p.examId,
+      left: { mobile: p.modes.mobile.reviewsDue + p.modes.mobile.newLeft, desk: p.modes.desk.reviewsDue + p.modes.desk.newLeft },
+      behind: p.behind,
+      daysLeft: p.daysLeft,
+    }))
+    .filter((s) => s.left.mobile + s.left.desk > 0)
+    .sort((a, b) => Number(b.behind) - Number(a.behind) || b.left.mobile + b.left.desk - (a.left.mobile + a.left.desk) || a.daysLeft - b.daysLeft)
+}
