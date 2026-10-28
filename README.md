@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.5.0** – Hausaufgaben: mit Abgabetermin, Dauer und Foto des Aufgabenblatts anlegen (Prüfungsseite → „Hausaufgabe hinzufügen“). Ihr Zeitbedarf wird bis zur Abgabe auf die Tage verteilt und geht vom Schreibtisch-Budget ab; ab drei Tagen vor der Abgabe erscheinen sie in der Schreibtisch-Sitzung vor den Karten. Noch nicht fällige lassen sich jederzeit vorziehen. Beim Abhaken optional Lösung notieren/fotografieren und die Hausaufgabe als Übungsaufgabe in die Wiederholung übernehmen. Synchronisiert über Dropbox und in Sicherungen enthalten.
 - **1.4.0** – Lernen nach Fach: Die Startseite zeigt das heutige Pensum je Prüfung mit eigenem Start für Unterwegs und Schreibtisch; das Fach mit Rückstand bzw. dem meisten offenen Pensum ist als „Empfohlen“ markiert. Nach einer Fach-Sitzung wird das nächste Fach angeboten. „Alle Fächer“ bleibt möglich.
 - **1.3.1** – Gemeldete Karten lassen sich in der Lernsitzung ohne Bewertung überspringen und sind pausiert, bis die Meldung erledigt ist (Paket-Update oder abgehakt). Eine fehlerhafte Karte verfälscht so nicht mehr den Lernplan.
 - **1.3.0** – Aufgaben können statt Zahlen auch Textantworten prüfen (z. B. Hexadezimalzahl, Ausgangsspalte einer Wahrheitstabelle, SCL-Schlüsselwort; Groß-/Kleinschreibung und Leerzeichen zählen nicht). Code-Blöcke (z. B. SCL) erscheinen in fester Schrift mit Einrückung; Lückentexte funktionieren auch im Code.

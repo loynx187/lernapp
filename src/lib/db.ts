@@ -204,12 +204,35 @@ export interface CardReport extends Synced {
   resolvedAt?: number
 }
 
+/** Hausaufgabe: einmalige Schreibtischaufgabe mit Abgabetermin (keine Wiederholung wie bei Karten). */
+export interface Homework {
+  id: string
+  profileId: string
+  examId: string
+  title: string
+  description: string
+  /** Abgabetermin (ISO-Datum) */
+  due: string
+  /** Geschätzte Bearbeitungszeit in Minuten */
+  minutes: number
+  /** Foto des Aufgabenblatts als Daten-URL (verkleinert) */
+  image?: string
+  createdAt: number
+  doneAt?: number
+  /** Eigene Lösung (Notiz und Foto), beim Abhaken optional erfasst */
+  solution?: string
+  solutionImage?: string
+  /** Als Übungsaufgabe in die Wiederholung übernommen */
+  keptAt?: number
+  updatedAt?: number
+}
+
 /** Merkt sich Löschungen, damit sie bei der Synchronisation nicht wieder auftauchen. */
 export interface Tombstone {
   /** `${table}:${key}` */
   id: string
   profileId: string
-  table: 'profiles' | 'semesters' | 'exams' | 'reviews' | 'reports'
+  table: 'profiles' | 'semesters' | 'exams' | 'reviews' | 'reports' | 'homework'
   key: string
   deletedAt: number
 }
@@ -241,6 +264,7 @@ export const db = new Dexie('lernapp') as Dexie & {
   meta: EntityTable<Meta, 'key'>
   reports: EntityTable<CardReport, 'id'>
   pdfs: EntityTable<StoredPdf, 'name'>
+  homework: EntityTable<Homework, 'id'>
 }
 
 export const uid = () =>
@@ -275,6 +299,8 @@ db.version(4).stores({ reports: 'id, profileId, examId, cardId' })
 
 db.version(5).stores({ pdfs: 'name' })
 
+db.version(6).stores({ homework: 'id, profileId, examId' })
+
 /** Solange aktiv, übernehmen Schreibzugriffe den mitgelieferten Änderungszeitpunkt (Sync). */
 let keepTimestamps = false
 
@@ -287,7 +313,7 @@ export async function withSyncedTimestamps<T>(fn: () => Promise<T>): Promise<T> 
   }
 }
 
-for (const table of [db.profiles, db.semesters, db.exams, db.cards, db.packages, db.snapshots, db.reports] as Dexie.Table<Synced>[]) {
+for (const table of [db.profiles, db.semesters, db.exams, db.cards, db.packages, db.snapshots, db.reports, db.homework] as Dexie.Table<Synced>[]) {
   table.hook('creating', (_key, obj) => {
     if (!keepTimestamps || !obj.updatedAt) obj.updatedAt = Date.now()
   })
@@ -309,7 +335,7 @@ export const MAX_EXAMS_PER_SEMESTER = 10
 
 export const EXAM_COLORS = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#5856d6', '#a2845e', '#8e8e93']
 
-const PROFILE_TABLES = () => [db.semesters, db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.tombstones] as Dexie.Table[]
+const PROFILE_TABLES = () => [db.semesters, db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.homework, db.tombstones] as Dexie.Table[]
 
 /** Löscht ein Profil mit allen zugehörigen Daten auf diesem Gerät. */
 export async function deleteProfile(profileId: string) {
@@ -322,9 +348,9 @@ export async function deleteProfile(profileId: string) {
 
 /** Löscht eine Prüfung mit Karten, Verlauf und Paketen. */
 export async function deleteExam(examId: string) {
-  await db.transaction('rw', [db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.tombstones], async () => {
+  await db.transaction('rw', [db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.homework, db.tombstones], async () => {
     const exam = await db.exams.get(examId)
-    for (const t of [db.cards, db.reviews, db.packages, db.snapshots, db.reports] as Dexie.Table[]) {
+    for (const t of [db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.homework] as Dexie.Table[]) {
       await t.where('examId').equals(examId).delete()
     }
     await db.exams.delete(examId)

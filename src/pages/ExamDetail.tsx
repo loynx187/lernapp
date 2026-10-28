@@ -11,6 +11,8 @@ import { HistoryChart } from '../components/HistoryChart'
 import { OrderButton, OrderSteps } from '../components/OrderButton'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { PageHeader, Progress, Stat, pct } from '../components/ui'
+import { sortOpen } from '../lib/homework'
+import { dueLabel } from './Homework'
 
 /** Bei laufender Vorlesung: Hinweis, wenn so lange kein neues Paket kam. */
 const LECTURE_REMINDER_DAYS = 14
@@ -21,15 +23,16 @@ export function ExamDetail() {
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
     if (!exam) return { exam: undefined }
-    const [cards, deleted, snapshots, packages, reports, study] = await Promise.all([
+    const [cards, deleted, snapshots, packages, reports, study, homework] = await Promise.all([
       db.cards.where('[examId+archived]').equals([id, 0]).toArray(),
       deletedCards(id),
       db.snapshots.where('examId').equals(id).toArray(),
       db.packages.where('examId').equals(id).toArray().then(sortPackages),
       db.reports.where('examId').equals(id).toArray(),
       loadStudyData(profile),
+      db.homework.where('examId').equals(id).toArray(),
     ])
-    return { exam, cards, deleted, snapshots, packages, reports, plan: study.plan.exams.find((p) => p.examId === id) }
+    return { exam, cards, deleted, snapshots, packages, reports, homework: sortOpen(homework), plan: study.plan.exams.find((p) => p.examId === id) }
   }, [id, profile])
 
   if (!data) return null
@@ -42,7 +45,7 @@ export function ExamDetail() {
       </div>
     )
   }
-  const { cards, deleted, snapshots, packages, reports, plan } = data
+  const { cards, deleted, snapshots, packages, reports, homework, plan } = data
   const openReports = reports.filter((r) => !r.resolvedAt && !deleted.some((c) => c.id === r.cardId))
   const stats = examStats(exam, cards, Date.now(), profile.retention, packageBlocks(packages))
   const days = daysUntil(exam.date)
@@ -188,6 +191,26 @@ export function ExamDetail() {
           </p>
         </>
       )}
+
+      <div className="section-title">Hausaufgaben</div>
+      <div className="list">
+        {homework.slice(0, 5).map((h) => (
+          <Link key={h.id} className="list-item" to={`/hausaufgabe/${h.id}`}>
+            <span className="grow">
+              <span className="truncate" style={{ display: 'block', fontWeight: 500 }}>{h.title}</span>
+              <small className="muted">{dueLabel(h)} · ca. {h.minutes} min</small>
+            </span>
+          </Link>
+        ))}
+        {homework.length > 5 && (
+          <Link className="list-item" to={`/hausaufgaben?exam=${exam.id}`}>
+            <span className="grow">Alle {homework.length} offenen Hausaufgaben</span>
+          </Link>
+        )}
+        <Link className="list-item" to={`/hausaufgabe/neu?exam=${exam.id}`}>
+          <span className="grow" style={{ color: 'var(--accent)' }}>Hausaufgabe hinzufügen</span>
+        </Link>
+      </div>
 
       <div className="section-title">Kartenpakete</div>
       <div className="card stack">

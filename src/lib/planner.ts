@@ -343,14 +343,14 @@ export interface SubjectToday {
 }
 
 /**
- * Fächer mit heute offenem Pensum, das empfohlene zuerst: Fächer mit Rückstand (Budget reicht nicht
+ * Fächer mit heute offenem Pensum (`extraDesk`: fällige Hausaufgaben je Prüfung), das empfohlene zuerst: Fächer mit Rückstand (Budget reicht nicht
  * für den Kernstoff) vor den anderen, dann das mit dem meisten offenen Pensum, bei Gleichstand die nähere Klausur.
  */
-export function subjectsToday(plan: DayPlan): SubjectToday[] {
+export function subjectsToday(plan: DayPlan, extraDesk: Map<string, number> = new Map()): SubjectToday[] {
   return plan.exams
     .map((p) => ({
       examId: p.examId,
-      left: { mobile: p.modes.mobile.reviewsDue + p.modes.mobile.newLeft, desk: p.modes.desk.reviewsDue + p.modes.desk.newLeft },
+      left: { mobile: p.modes.mobile.reviewsDue + p.modes.mobile.newLeft, desk: p.modes.desk.reviewsDue + p.modes.desk.newLeft + (extraDesk.get(p.examId) ?? 0) },
       behind: p.behind,
       daysLeft: p.daysLeft,
     }))

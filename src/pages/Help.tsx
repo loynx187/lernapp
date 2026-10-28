@@ -158,6 +158,18 @@ export function Help() {
 
       <div className="card stack">
         <details>
+          <summary>Hausaufgaben</summary>
+          <p style={{ marginTop: 8 }}>
+            Hausaufgaben legst du auf der Seite der Prüfung an – mit Abgabetermin, geschätzter Dauer und optional einem Foto des Aufgabenblatts. Die App verteilt die Dauer bis zur Abgabe auf die Tage und plant entsprechend weniger neue Schreibtischaufgaben ein. Ab drei Tagen vor der Abgabe kommt die Hausaufgabe in der Schreibtisch-Sitzung von selbst vor den Karten dran; früher kannst du sie jederzeit unter „Hausaufgaben“ vorziehen.
+          </p>
+          <p>
+            Beim Abhaken kannst du deine Lösung notieren oder fotografieren und die Aufgabe als Übungsaufgabe behalten – dann wird sie zur Klausurvorbereitung wie eine Karte wiederholt.
+          </p>
+        </details>
+      </div>
+
+      <div className="card stack">
+        <details>
           <summary>Karten teilen und aktualisieren</summary>
           <p style={{ marginTop: 8 }}>
             Auf der Seite einer Prüfung kannst du jedes Kartenpaket über „Teilen“ an Kommilitonen schicken (ohne deinen Lernfortschritt). Bekommst du eine neue Version desselben Pakets, importierst du sie einfach erneut: Neue Karten kommen dazu, geänderte werden aktualisiert und dein Fortschritt bleibt erhalten.
