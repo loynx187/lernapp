@@ -53,6 +53,22 @@ export interface Exam extends Synced {
   ongoingDays?: number
   /** Fachprofil: Vorgaben für Claude bei der Erstellung von Kartenpaketen (siehe profile.ts). */
   profile?: ExamProfile
+  /** Noch fehlende Unterlagen (z. B. Altklausuren), an die die App erinnert (siehe pending.ts). */
+  pendingDocs?: PendingDoc[]
+  /** Pausierte Kapitel (`${packageId}:${chapter}`): Ihre neuen Karten werden noch nicht eingeführt. */
+  pausedChapters?: string[]
+}
+
+export interface PendingDoc {
+  /** Stabil, damit ein Paket-Update eine erledigte Erinnerung nicht erneut anlegt. */
+  id: string
+  title: string
+  note?: string
+  /** Erst ab diesem Tag erinnern (YYYY-MM-DD). */
+  from?: string
+  /** Nach „Später“ erst ab diesem Tag wieder erinnern (YYYY-MM-DD). */
+  snoozedUntil?: string
+  doneAt?: number
 }
 
 export type TaskShare = 'keine' | 'wenig' | 'mittel' | 'hoch'

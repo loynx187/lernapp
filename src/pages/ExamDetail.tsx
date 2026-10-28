@@ -13,6 +13,8 @@ import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { PageHeader, Progress, Stat, pct } from '../components/ui'
 import { sortOpen } from '../lib/homework'
 import { dueLabel } from './Homework'
+import { PendingDocs } from '../components/PendingDocs'
+import { toggleChapterPause } from '../lib/pending'
 
 /** Bei laufender Vorlesung: Hinweis, wenn so lange kein neues Paket kam. */
 const LECTURE_REMINDER_DAYS = 14
@@ -155,17 +157,26 @@ export function ExamDetail() {
             {stats.chapters.map((ch) => {
               const weak = ch.introduced > 0 && ch.recall < 0.8
               return (
-                <div className="chapter-row" key={ch.chapter}>
+                <div className={`chapter-row${ch.paused ? ' paused' : ''}`} key={ch.chapter}>
                   <span>{ch.title}</span>
-                  <small className={weak ? 'badge-warn' : ''}>
+                  <small className={weak && !ch.paused ? 'badge-warn' : ''}>
+                    {ch.paused ? 'pausiert · ' : ''}
                     {ch.introduced}/{ch.total}
                     {ch.introduced > 0 && ` · ${Math.round(ch.recall * 100)} %`}
                   </small>
-                  <Progress value={ch.total ? ch.introduced / ch.total : 0} color={weak ? 'var(--warn)' : exam.color} />
+                  <button
+                    className="chapter-pause"
+                    onClick={() => toggleChapterPause(exam, ch.chapter)}
+                    aria-label={`${ch.title} ${ch.paused ? 'fortsetzen' : 'pausieren'}`}
+                    title={ch.paused ? 'Kapitel fortsetzen' : 'Kapitel pausieren (noch nicht in der Vorlesung)'}
+                  >
+                    {ch.paused ? '▶' : '⏸'}
+                  </button>
+                  <Progress value={ch.total ? ch.introduced / ch.total : 0} color={ch.paused ? 'var(--subtle)' : weak ? 'var(--warn)' : exam.color} />
                 </div>
               )
             })}
-            <small>Zahlen: begonnene Karten / alle · aktuelle Abrufwahrscheinlichkeit. Orange = Schwachstelle.</small>
+            <small>Zahlen: begonnene Karten / alle · aktuelle Abrufwahrscheinlichkeit. Orange = Schwachstelle. ⏸ pausiert ein Kapitel, das in der Vorlesung noch nicht dran war: Seine neuen Karten kommen erst nach dem Fortsetzen, schon gelernte werden weiter wiederholt.</small>
           </div>
         </>
       )}
@@ -216,6 +227,9 @@ export function ExamDetail() {
           <span className="grow" style={{ color: 'var(--accent)' }}>Hausaufgabe hinzufügen</span>
         </Link>
       </div>
+
+      <div className="section-title">Fehlende Unterlagen</div>
+      <PendingDocs exam={exam} />
 
       <div className="section-title">Kartenpakete</div>
       <div className="card stack">

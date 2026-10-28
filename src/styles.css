@@ -411,7 +411,10 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .r4 { background: color-mix(in srgb, var(--easy) 16%, var(--surface)); color: var(--easy); }
 
 .chapters { display: flex; flex-direction: column; gap: 16px; }
-.chapter-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 15px; }
+.chapter-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 12px; font-size: 15px; align-items: center; }
+.chapter-row.paused > span { color: var(--muted); }
+.chapter-pause { border: none; background: color-mix(in srgb, var(--muted) 12%, transparent); color: var(--muted); border-radius: 50%; width: 28px; height: 28px; font-size: 12px; cursor: pointer; padding: 0; }
+.pending-row { display: flex; align-items: center; gap: 10px; }
 .chapter-row .progress { grid-column: 1 / -1; }
 
 .chart { width: 100%; height: auto; display: block; }

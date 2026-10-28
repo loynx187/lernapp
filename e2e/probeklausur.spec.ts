@@ -21,6 +21,20 @@ test('Probeklausur durchführen, auswerten und in den Lernplan übernehmen', asy
     await page.getByRole('button', { name: 'Weiter' }).click()
     if (i === 1) {
       // App wird zwischendurch beendet (z. B. von iOS im Hintergrund) – der Stand bleibt erhalten.
+      // Erst neu laden, wenn der Zwischenstand gespeichert ist (das Speichern läuft nach dem Anzeigen).
+      await expect(page.locator('.session-top small')).toHaveText(`3/${total}`)
+      await page.waitForFunction(
+        () =>
+          new Promise<boolean>((resolve) => {
+            const req = indexedDB.open('lernapp')
+            req.onsuccess = () => {
+              const get = req.result.transaction('meta').objectStore('meta').getAll()
+              get.onsuccess = () => resolve(get.result.some((m: { key: string; value?: { index?: number } }) => m.key.startsWith('mockexam:') && m.value?.index === 2))
+              get.onerror = () => resolve(false)
+            }
+            req.onerror = () => resolve(false)
+          }),
+      )
       await page.reload()
       await expect(page.getByText('Probeklausur fortgesetzt')).toBeVisible()
       await expect(page.locator('.session-top small')).toHaveText(`3/${total}`)
