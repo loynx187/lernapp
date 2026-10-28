@@ -21,6 +21,11 @@ test('Profil als Vorlage ohne Lernfortschritt exportieren und in einem neuen Pro
   await a.getByRole('button', { name: 'Vorlage exportieren' }).click()
   const file = await (await download).path()
   await expect(a.getByText(/Vorlage exportiert: 1 Prüfung, \d+ Karten, 1 offene Meldung/)).toBeVisible()
+  // Abgleich im eigenen Profil: gleicher Stand, nichts wird überschrieben
+  await a.goto('./#/import')
+  await a.locator('input[type=file]').first().setInputFiles(file)
+  await expect(a.locator('.notice', { hasText: 'Abgleich mit deinen Karten' })).toContainText('1 gleich')
+  await a.getByRole('button', { name: 'Abbrechen' }).click()
   expect(errorsA).toEqual([])
 
   // Kommilitonin: ein Schritt direkt beim ersten Start

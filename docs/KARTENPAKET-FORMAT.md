@@ -180,7 +180,7 @@ Export aus der App unter Einstellungen → „Vorlage exportieren“: alle Semes
 }
 ```
 
-Pausierte Kapitel stehen als `later` im Paket. `reports`: offene Meldungen zu Karten – sie gelten für alle, die Karten bleiben auch beim Empfänger pausiert, bis ein Update sie ändert. Semester und Prüfungen werden beim Import über den Namen zugeordnet: vorhandene werden ergänzt (Pakete als Update, Lernfortschritt bleibt, Fachprofil nur in leere Felder), fehlende neu angelegt.
+Pausierte Kapitel stehen als `later` im Paket. `reports`: offene Meldungen zu Karten – sie gelten für alle, die Karten bleiben auch beim Empfänger pausiert, bis ein Update sie ändert. Prüfungen werden beim Import über den Namen (oder `profile.slug`) zugeordnet, bevorzugt im gleichnamigen, sonst im aktiven Semester: vorhandene werden ergänzt (Fachprofil nur in leere Felder), fehlende neu angelegt. Pakete: neuere oder gleiche Version → Update (Lernfortschritt bleibt; im Paket fehlende Karten werden nicht archiviert), ältere Version → übersprungen samt ihrer Meldungen.
 
 ## Karten aus anderen Tools (Text-Import)
 

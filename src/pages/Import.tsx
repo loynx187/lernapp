@@ -7,7 +7,7 @@ import { importPackage, parsePackage, parseTextCards, textToPackage, type CardPa
 import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
 import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
-import { importTemplate, parseTemplate, templateSummary, TEMPLATE_FORMAT, type ProfileTemplate, type TemplateResult } from '../lib/template'
+import { importTemplate, parseTemplate, templateStatus, templateSummary, TEMPLATE_FORMAT, type ProfileTemplate, type TemplateResult } from '../lib/template'
 
 export function Import() {
   const { profile, semester } = useActive()
@@ -25,6 +25,12 @@ export function Import() {
   const [promptCopied, setPromptCopied] = useState(false)
   const [template, setTemplate] = useState<ProfileTemplate | null>(null)
   const [templateDone, setTemplateDone] = useState<TemplateResult | null>(null)
+  const [status, setStatus] = useState<Awaited<ReturnType<typeof templateStatus>> | null>(null)
+
+  useEffect(() => {
+    setStatus(null)
+    if (template) templateStatus(profile.id, template).then(setStatus)
+  }, [template, profile.id])
 
   useEffect(() => {
     if (!examId && exams?.length) setExamId(exams[0].id)
@@ -150,7 +156,9 @@ export function Import() {
           <b>Vorlage übernommen.</b> {templateDone.examsAdded} {templateDone.examsAdded === 1 ? 'Prüfung' : 'Prüfungen'} neu
           {templateDone.examsUpdated > 0 && `, ${templateDone.examsUpdated} vorhandene ergänzt (Lernfortschritt bleibt)`}
           {templateDone.semestersAdded > 0 && `, ${templateDone.semestersAdded} ${templateDone.semestersAdded === 1 ? 'Semester' : 'Semester'} angelegt`}
-          {' '}· {templateDone.packages} {templateDone.packages === 1 ? 'Paket' : 'Pakete'} mit {templateDone.cards} Karten{templateDone.reports > 0 && ` · ${templateDone.reports} ${templateDone.reports === 1 ? 'offene Meldung' : 'offene Meldungen'}`}.
+          {' '}· {templateDone.packages} {templateDone.packages === 1 ? 'Paket' : 'Pakete'} mit {templateDone.cards} Karten
+          {templateDone.cardsChanged > 0 && ` · ${templateDone.cardsChanged} ${templateDone.cardsChanged === 1 ? 'Karte korrigiert' : 'Karten korrigiert'} (Lernfortschritt bleibt)`}{templateDone.reports > 0 && ` · ${templateDone.reports} ${templateDone.reports === 1 ? 'offene Meldung' : 'offene Meldungen'}`}.
+          {templateDone.olderSkipped.length > 0 && ` Nicht übernommen, weil deine Version neuer ist: ${templateDone.olderSkipped.join(', ')}.`}
           {templateDone.skipped.length > 0 && ` Nicht angelegt (höchstens 10 Prüfungen pro Semester): ${templateDone.skipped.join(', ')}.`}{' '}
           <Link to="/pruefungen">Zu den Prüfungen</Link>
         </div>
@@ -181,8 +189,22 @@ export function Import() {
               ))}
             </div>
           ))}
+          {status && status.neu + status.newExams < templateSummary(template).packages + templateSummary(template).exams && (
+            <div className="notice" style={{ margin: 0 }}>
+              <b>Abgleich mit deinen Karten:</b>{' '}
+              {[
+                status.neuer && `${status.neuer} ${status.neuer === 1 ? 'Paket ist neuer' : 'Pakete sind neuer'} – geänderte Karten werden korrigiert`,
+                status.gleich && `${status.gleich} gleich`,
+                status.aelter && `${status.aelter} älter als deine Version – werden nicht übernommen`,
+                status.neu && `${status.neu} neu`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              . Dein Lernfortschritt bleibt, und es werden keine Karten entfernt.
+            </div>
+          )}
           <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-            Semester und Prüfungen mit gleichem Namen werden ergänzt (dein Lernfortschritt bleibt), alle anderen neu angelegt. Lernstand, Hausaufgaben und Einstellungen sind nicht enthalten. Gemeldete Karten bleiben pausiert, bis ein Paket-Update sie korrigiert.
+            Prüfungen mit gleichem Namen werden ergänzt – auch wenn das Semester anders heißt –, alle anderen neu angelegt. Neuere Paketversionen korrigieren geänderte Karten, ältere überschreiben deine nicht. Lernstand, Hausaufgaben und Einstellungen sind nicht enthalten. Gemeldete Karten bleiben pausiert, bis ein Paket-Update sie korrigiert.
           </p>
           <div className="row">
             <button className="btn grow" onClick={() => setTemplate(null)}>Abbrechen</button>

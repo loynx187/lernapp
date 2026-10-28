@@ -136,8 +136,13 @@ export interface TemplateResult {
   semestersAdded: number
   examsAdded: number
   examsUpdated: number
+  /** Übernommene Pakete (neu oder aktualisiert) */
   packages: number
   cards: number
+  /** Karten, deren Inhalt sich durch die Vorlage geändert hat (Lernfortschritt bleibt). */
+  cardsChanged: number
+  /** Pakete, von denen du schon eine neuere Version hast – nicht überschrieben. */
+  olderSkipped: string[]
   /** Übernommene offene Meldungen */
   reports: number
   /** Prüfungen, die wegen des Limits pro Semester nicht angelegt wurden. */
@@ -147,31 +152,67 @@ export interface TemplateResult {
 const norm = (s: string) => s.trim().toLowerCase()
 
 /**
- * Übernimmt eine Vorlage ins Profil. Semester und Prüfungen werden über den Namen zugeordnet und
- * sonst neu angelegt; vorhandene Pakete werden aktualisiert, der Lernfortschritt bleibt erhalten.
+ * Sucht die passende vorhandene Prüfung: gleicher Name (oder gleicher Fach-Slug), bevorzugt im
+ * gleichnamigen, dann im aktiven Semester – Semester heißen bei Kommilitonen oft anders.
+ */
+async function findExam(profileId: string, te: TemplateExam, semesterName: string): Promise<Exam | undefined> {
+  const [exams, semesters, profile] = await Promise.all([
+    db.exams.where('profileId').equals(profileId).toArray(),
+    db.semesters.where('profileId').equals(profileId).toArray(),
+    db.profiles.get(profileId),
+  ])
+  const slug = te.profile?.slug
+  const matches = exams.filter((e) => norm(e.name) === norm(te.name) || (!!slug && e.profile?.slug === slug))
+  const sameSemester = new Set(semesters.filter((s) => norm(s.name) === norm(semesterName)).map((s) => s.id))
+  return matches.find((e) => sameSemester.has(e.semesterId)) ?? matches.find((e) => e.semesterId === profile?.activeSemesterId) ?? matches[0]
+}
+
+export type PackageStatus = 'neu' | 'neuer' | 'gleich' | 'aelter'
+
+/** Abgleich für die Vorschau: Wie verhält sich jedes Paket der Vorlage zum eigenen Stand? */
+export async function templateStatus(profileId: string, t: ProfileTemplate) {
+  const count: Record<PackageStatus, number> = { neu: 0, neuer: 0, gleich: 0, aelter: 0 }
+  let newExams = 0
+  for (const ts of t.semesters)
+    for (const te of ts.exams) {
+      const exam = await findExam(profileId, te, ts.name)
+      if (!exam) newExams++
+      for (const pkg of te.packages) count[await packageStatus(exam, pkg)]++
+    }
+  return { ...count, newExams }
+}
+
+async function packageStatus(exam: Exam | undefined, pkg: CardPackage): Promise<PackageStatus> {
+  const rec = exam && (await db.packages.get(`${exam.id}:${pkg.id}`))
+  if (!rec) return 'neu'
+  return pkg.version > rec.version ? 'neuer' : pkg.version === rec.version ? 'gleich' : 'aelter'
+}
+
+/**
+ * Übernimmt eine Vorlage ins Profil. Vorhandene Prüfungen werden über den Namen zugeordnet und
+ * ergänzt: neuere Paketversionen ersetzen geänderte Karten (Lernfortschritt bleibt), ältere werden
+ * übersprungen, Karten werden dabei nie entfernt. Fehlende Prüfungen und Semester werden angelegt.
  */
 export async function importTemplate(profileId: string, t: ProfileTemplate, now = Date.now()): Promise<TemplateResult> {
-  const result: TemplateResult = { semestersAdded: 0, examsAdded: 0, examsUpdated: 0, packages: 0, cards: 0, reports: 0, skipped: [] }
+  const result: TemplateResult = { semestersAdded: 0, examsAdded: 0, examsUpdated: 0, packages: 0, cards: 0, cardsChanged: 0, olderSkipped: [], reports: 0, skipped: [] }
   let activeId: string | undefined
   let firstId: string | undefined
+  let stamp = 0
   for (const ts of t.semesters) {
-    const semesters = await db.semesters.where('profileId').equals(profileId).toArray()
-    let semester = semesters.find((s) => norm(s.name) === norm(ts.name))
-    if (!semester) {
-      semester = { id: uid(), profileId, name: ts.name, kind: ts.kind, createdAt: now }
-      await db.semesters.add(semester)
-      result.semestersAdded++
-    }
-    if (ts.active) activeId = semester.id
-    firstId ??= semester.id
     for (const te of ts.exams) {
-      const exams = await db.exams.where('semesterId').equals(semester.id).toArray()
-      let exam: Exam | undefined = exams.find((e) => norm(e.name) === norm(te.name))
+      let exam = await findExam(profileId, te, ts.name)
       if (exam) {
         if (te.profile) await applyProfile(exam.id, te.profile, false)
         result.examsUpdated++
       } else {
-        if (exams.length >= MAX_EXAMS_PER_SEMESTER) {
+        const semesters = await db.semesters.where('profileId').equals(profileId).toArray()
+        let semester = semesters.find((s) => norm(s.name) === norm(ts.name))
+        if (!semester) {
+          semester = { id: uid(), profileId, name: ts.name, kind: ts.kind, createdAt: now }
+          await db.semesters.add(semester)
+          result.semestersAdded++
+        }
+        if ((await db.exams.where('semesterId').equals(semester.id).count()) >= MAX_EXAMS_PER_SEMESTER) {
           result.skipped.push(te.name)
           continue
         }
@@ -179,15 +220,26 @@ export async function importTemplate(profileId: string, t: ProfileTemplate, now 
         await db.exams.add(exam)
         result.examsAdded++
       }
+      if (ts.active) activeId ??= exam.semesterId
+      firstId ??= exam.semesterId
       await applyPending(exam.id, te.pending)
+      const stale = new Set<string>()
       for (const pkg of te.packages) {
+        const status = await packageStatus(exam, pkg)
+        if (status === 'aelter') {
+          // Eigene Version ist neuer: nicht zurückdrehen; Meldungen dazu sind womöglich schon erledigt.
+          result.olderSkipped.push(pkg.title)
+          stale.add(pkg.id)
+          continue
+        }
         const current = (await db.exams.get(exam.id))!
         // Je Paket ein eigener Zeitstempel, damit die Reihenfolge der Pakete erhalten bleibt.
-        await importPackage(current, pkg, now + result.packages)
+        const r = await importPackage(current, pkg, now + stamp++, { keepMissing: true })
         result.packages++
         result.cards += pkg.cards.length
+        result.cardsChanged += r.updated
       }
-      result.reports += await importReports(exam, te.reports ?? [], now)
+      result.reports += await importReports(exam, (te.reports ?? []).filter((r) => !stale.has(r.packageId)), now)
     }
   }
   const profile = await db.profiles.get(profileId)

@@ -34,7 +34,8 @@ const contentKey = (c: CardContent) =>
  * entfernte Karten werden archiviert (nicht gelöscht, Fortschritt bleibt). Vom Nutzer gelöschte
  * Karten bleiben gelöscht, erhalten aber den neuen Inhalt (für eine spätere Wiederherstellung).
  */
-export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now()): Promise<ImportResult> {
+/** `keepMissing`: Karten, die im Paket fehlen, nicht archivieren (Vorlagen enthalten keine vom Absender gelöschten Karten). */
+export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now(), { keepMissing = false } = {}): Promise<ImportResult> {
   const chapterTitles = new Map((pkg.chapters ?? []).map((c) => [c.id, c.title]))
   const chapterOrder = new Map((pkg.chapters ?? []).map((c, i) => [c.id, i]))
   const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, deleted: 0, resolvedReports: 0, profileFields: [], pausedChapters: 0, pendingAdded: 0 }
@@ -77,7 +78,7 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
         s: newMemoryState(now),
       }
     })
-    for (const old of existing.values()) {
+    for (const old of keepMissing ? [] : existing.values()) {
       if (!old.archived) {
         result.archived++
         next.push({ ...old, archived: 1 })
