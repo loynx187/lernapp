@@ -10,7 +10,7 @@ import { deletedCards } from '../lib/cards'
 import { HistoryChart } from '../components/HistoryChart'
 import { OrderButton, OrderSteps } from '../components/OrderButton'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
-import { PageHeader, Progress, Stat, pct } from '../components/ui'
+import { Icon, PageHeader, Progress, Stat, pct } from '../components/ui'
 import { sortOpen } from '../lib/homework'
 import { dueLabel } from './Homework'
 import { PendingDocs } from '../components/PendingDocs'
@@ -170,13 +170,13 @@ export function ExamDetail() {
                     aria-label={`${ch.title} ${ch.paused ? 'fortsetzen' : 'pausieren'}`}
                     title={ch.paused ? 'Kapitel fortsetzen' : 'Kapitel pausieren (noch nicht in der Vorlesung)'}
                   >
-                    {ch.paused ? '▶' : '⏸'}
+                    <Icon name={ch.paused ? 'play' : 'pause'} size={16} />
                   </button>
                   <Progress value={ch.total ? ch.introduced / ch.total : 0} color={ch.paused ? 'var(--subtle)' : weak ? 'var(--warn)' : exam.color} />
                 </div>
               )
             })}
-            <small>Zahlen: begonnene Karten / alle · aktuelle Abrufwahrscheinlichkeit. Orange = Schwachstelle. ⏸ pausiert ein Kapitel, das in der Vorlesung noch nicht dran war: Seine neuen Karten kommen erst nach dem Fortsetzen, schon gelernte werden weiter wiederholt.</small>
+            <small>Zahlen: begonnene Karten / alle · aktuelle Abrufwahrscheinlichkeit. Orange = Schwachstelle. Das Pause-Symbol pausiert ein Kapitel, das in der Vorlesung noch nicht dran war: Seine neuen Karten kommen erst nach dem Fortsetzen, schon gelernte werden weiter wiederholt.</small>
           </div>
         </>
       )}

@@ -36,6 +36,9 @@ test('Ganzes Skript importieren, spätere Kapitel pausieren und an fehlende Unte
   // Prüfungsseite: Kapitel 2 ist pausiert und zählt nicht zum Fortschritt
   await widget.click()
   await expect(page.locator('.chapter-row.paused')).toContainText('Laplace-Transformation')
+  // Pause/Play als Symbol, nicht als Emoji
+  await expect(page.locator('.chapter-pause svg')).toHaveCount(2)
+  await expect(page.locator('.chapter-pause').first()).toHaveText('')
   await expect(page.locator('.stats')).toContainText('0 %')
   // Fortsetzen
   await page.getByRole('button', { name: 'Laplace-Transformation fortsetzen' }).click()
