@@ -495,3 +495,15 @@ details.explain > summary::-webkit-details-marker { display: none; }
 details.explain > summary::after { content: '›'; display: inline-block; margin-left: 5px; transition: transform 0.15s ease; }
 details.explain[open] > summary::after { transform: rotate(90deg); }
 .btn.chapters-toggle { align-self: flex-start; color: var(--accent); margin: 2px 0 0 -8px; }
+
+/* Zuordnen: links Begriff, darunter bzw. daneben die Auswahl */
+.match { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.match-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 10px 14px; border-radius: 14px; background: var(--surface-2); border: 2px solid transparent; }
+.match-row.correct { border-color: var(--ok); }
+.match-row.wrong { border-color: var(--again); }
+.match-left { font-weight: 600; font-size: 16px; }
+.match-row select { width: 100%; min-height: 44px; }
+.match-answer { font-size: 15px; display: flex; flex-direction: column; gap: 2px; }
+@media (min-width: 700px) {
+  .match-row { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: center; }
+}

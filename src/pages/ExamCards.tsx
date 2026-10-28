@@ -157,6 +157,15 @@ export function ExamCards() {
                         ))}
                       </ul>
                     )}
+                    {c.type === 'match' && c.pairs && (
+                      <ul style={{ margin: 0 }}>
+                        {c.pairs.map(([l, r], k) => (
+                          <li key={k}>
+                            <b>{plainText(l)}</b> → {plainText(r)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {c.steps?.map((s, k) => (
                       <div className="step" key={k}>
                         <b>Schritt {k + 1}</b>

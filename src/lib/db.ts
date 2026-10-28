@@ -1,7 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 
 export type Mode = 'mobile' | 'desk'
-export type CardType = 'basic' | 'cloze' | 'mc' | 'task'
+export type CardType = 'basic' | 'cloze' | 'mc' | 'match' | 'task'
 
 /** Änderungszeitpunkt für die Synchronisation (neuerer Stand gewinnt). Wird per Hook gesetzt. */
 interface Synced {
@@ -109,6 +109,8 @@ export interface CardContent {
   /** Multiple Choice: Antwortoptionen und Indizes der richtigen. */
   options?: string[]
   correct?: number[]
+  /** Zuordnen: Paare [links, rechts]; die rechten Einträge werden gemischt angeboten. */
+  pairs?: [string, string][]
   /** Rechenaufgabe: Lösungsschritte und Endergebnis. */
   steps?: string[]
   result?: string
