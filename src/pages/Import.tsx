@@ -150,7 +150,7 @@ export function Import() {
           <b>Vorlage übernommen.</b> {templateDone.examsAdded} {templateDone.examsAdded === 1 ? 'Prüfung' : 'Prüfungen'} neu
           {templateDone.examsUpdated > 0 && `, ${templateDone.examsUpdated} vorhandene ergänzt (Lernfortschritt bleibt)`}
           {templateDone.semestersAdded > 0 && `, ${templateDone.semestersAdded} ${templateDone.semestersAdded === 1 ? 'Semester' : 'Semester'} angelegt`}
-          {' '}· {templateDone.packages} {templateDone.packages === 1 ? 'Paket' : 'Pakete'} mit {templateDone.cards} Karten.
+          {' '}· {templateDone.packages} {templateDone.packages === 1 ? 'Paket' : 'Pakete'} mit {templateDone.cards} Karten{templateDone.reports > 0 && ` · ${templateDone.reports} ${templateDone.reports === 1 ? 'offene Meldung' : 'offene Meldungen'}`}.
           {templateDone.skipped.length > 0 && ` Nicht angelegt (höchstens 10 Prüfungen pro Semester): ${templateDone.skipped.join(', ')}.`}{' '}
           <Link to="/pruefungen">Zu den Prüfungen</Link>
         </div>
@@ -163,6 +163,7 @@ export function Import() {
             return (
               <p className="muted" style={{ margin: 0 }}>
                 {sum.semesters} Semester · {sum.exams} {sum.exams === 1 ? 'Prüfung' : 'Prüfungen'} · {sum.packages} {sum.packages === 1 ? 'Paket' : 'Pakete'} · {sum.cards} Karten
+                {sum.reports > 0 && ` · ${sum.reports} ${sum.reports === 1 ? 'offene Meldung' : 'offene Meldungen'}`}
               </p>
             )
           })()}
@@ -181,7 +182,7 @@ export function Import() {
             </div>
           ))}
           <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-            Semester und Prüfungen mit gleichem Namen werden ergänzt (dein Lernfortschritt bleibt), alle anderen neu angelegt. Lernstand, Hausaufgaben und Einstellungen sind nicht enthalten.
+            Semester und Prüfungen mit gleichem Namen werden ergänzt (dein Lernfortschritt bleibt), alle anderen neu angelegt. Lernstand, Hausaufgaben und Einstellungen sind nicht enthalten. Gemeldete Karten bleiben pausiert, bis ein Paket-Update sie korrigiert.
           </p>
           <div className="row">
             <button className="btn grow" onClick={() => setTemplate(null)}>Abbrechen</button>

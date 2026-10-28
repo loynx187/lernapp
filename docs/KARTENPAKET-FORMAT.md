@@ -173,13 +173,14 @@ Export aus der App unter Einstellungen → „Vorlage exportieren“: alle Semes
       { "name": "Regelungstechnik", "date": "2027-02-01", "weight": 2, "color": "#ff9500",
         "profile": { "form": "schriftlich", "duration": 120 },
         "pending": [{ "id": "rt-altklausuren", "title": "Altklausuren" }],
+        "reports": [{ "packageId": "…", "uid": "k3-f012-1", "category": "fehler", "note": "Vorzeichen falsch", "reportedAt": "2026-10-28T12:00:00.000Z" }],
         "packages": [ { "format": "lernapp-paket", "formatVersion": 1, "id": "…", "chapters": [{ "id": "k18", "title": "…", "later": true }], "cards": [] } ] }
     ] }
   ]
 }
 ```
 
-Pausierte Kapitel stehen als `later` im Paket. Semester und Prüfungen werden beim Import über den Namen zugeordnet: vorhandene werden ergänzt (Pakete als Update, Lernfortschritt bleibt, Fachprofil nur in leere Felder), fehlende neu angelegt.
+Pausierte Kapitel stehen als `later` im Paket. `reports`: offene Meldungen zu Karten – sie gelten für alle, die Karten bleiben auch beim Empfänger pausiert, bis ein Update sie ändert. Semester und Prüfungen werden beim Import über den Namen zugeordnet: vorhandene werden ergänzt (Pakete als Update, Lernfortschritt bleibt, Fachprofil nur in leere Felder), fehlende neu angelegt.
 
 ## Karten aus anderen Tools (Text-Import)
 

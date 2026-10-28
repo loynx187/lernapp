@@ -11,12 +11,16 @@ test('Profil als Vorlage ohne Lernfortschritt exportieren und in einem neuen Pro
   await a.goto('./#/lernen/mobile')
   await revealCard(a)
   await rate(a, 'Gut')
+  // eine Karte melden – die Meldung geht mit in die Vorlage
+  await a.getByRole('button', { name: 'Karte melden' }).click()
+  await a.getByRole('button', { name: 'Melden', exact: true }).click()
+  await a.getByRole('button', { name: 'Überspringen' }).click()
 
   await a.goto('./#/einstellungen')
   const download = a.waitForEvent('download')
   await a.getByRole('button', { name: 'Vorlage exportieren' }).click()
   const file = await (await download).path()
-  await expect(a.getByText(/Vorlage exportiert: 1 Prüfung/)).toBeVisible()
+  await expect(a.getByText(/Vorlage exportiert: 1 Prüfung, \d+ Karten, 1 offene Meldung/)).toBeVisible()
   expect(errorsA).toEqual([])
 
   // Kommilitonin: ein Schritt direkt beim ersten Start
@@ -39,7 +43,9 @@ test('Profil als Vorlage ohne Lernfortschritt exportieren und in einem neuen Pro
   await c.locator('input[type=file]').first().setInputFiles(file)
   await expect(c.getByRole('heading', { name: 'Vorlage ohne Lernfortschritt' })).toBeVisible()
   await expect(c.getByText('Regelungstechnik')).toBeVisible()
+  await expect(c.getByText(/1 offene Meldung/)).toBeVisible()
   await c.getByRole('button', { name: 'Übernehmen' }).click()
   await expect(c.locator('.notice', { hasText: 'Vorlage übernommen.' })).toContainText('1 Prüfung neu')
+  await expect(c.locator('.notice', { hasText: 'Vorlage übernommen.' })).toContainText('1 offene Meldung')
   expect(errorsC).toEqual([])
 })

@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.12.0** – Vorlage: offene Meldungen zu Karten werden mit exportiert und beim Übernehmen angelegt (die gemeldeten Karten bleiben auch bei Kommilitonen pausiert, bis ein Paket-Update sie korrigiert).
 - **1.11.0** – Vorlage ohne Lernfortschritt: Einstellungen → „Vorlage exportieren“ speichert alle Semester, Prüfungen (Termin, Fachprofil, offene Erinnerungen, pausierte Kapitel) und Kartenpakete in einer Datei (`lernapp-vorlage`) – ohne Lernstand, Bewertungen, Hausaufgaben und Einstellungen. Kommilitonen übernehmen sie in einem Schritt beim ersten Start („Vorlage von Kommilitonen übernehmen“) – Profil, Semester, Prüfungen und Karten sind dann eingerichtet; in einem bestehenden Profil unter „Karten importieren“ (gleichnamige Prüfungen werden ergänzt).
 - **1.10.2** – Kapitel pausieren und fortsetzen: Pause- und Play-Schaltfläche sind schlichte Symbole statt Emojis.
 - **1.10.1** – Startseite: Widgets schneiden ihren Inhalt nicht mehr ab (z. B. „Budget zu knapp“ oder den Hinweis unter „Unterlagen fehlen“ auf dem iPad). Sie bleiben mindestens quadratisch und wachsen bei Bedarf mit; Wiederholungen und neue Karten stehen kompakt in einer Zeile.
