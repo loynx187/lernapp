@@ -6,9 +6,9 @@ import { db, type Exam, type Homework, type Mode, type ReportCategory, type Stud
 import { isDueSoon } from '../lib/homework'
 import { HomeworkWork } from './Homework'
 import { buildQueue, subjectsToday } from '../lib/planner'
-import { loadStudyData, recordReview, undoReview, type Undo } from '../lib/study'
+import { loadStudyData, planCards, recordReview, undoReview, type Undo } from '../lib/study'
+import type { TaskRecommendation } from '../lib/tasks'
 import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
-import { toPlanCard } from '../lib/stats'
 import { formatInterval } from '../lib/dates'
 import { reportCard } from '../lib/reports'
 import { ReportForm } from '../components/ReportForm'
@@ -52,6 +52,7 @@ export function Session() {
   const [reported, setReported] = useState<Set<string>>(new Set())
   const [answerInputs, setAnswerInputs] = useState<string[]>([])
   const [showSlide, setShowSlide] = useState(false)
+  const [recommendations, setRecommendations] = useState<Map<string, TaskRecommendation>>(new Map())
   const started = useRef(Date.now())
   const sessionStart = useRef(Date.now())
 
@@ -60,7 +61,8 @@ export function Session() {
     loadStudyData(profile).then((d) => {
       if (cancelled) return
       const byId = new Map(d.cards.map((c) => [c.id, c]))
-      const order = buildQueue(d.plan, d.cards.map((c) => toPlanCard(c, d.blocks)), { mode, now: Date.now(), examId: examFilter, extraNew: extra })
+      const order = buildQueue(d.plan, planCards(d), { mode, now: Date.now(), examId: examFilter, extraNew: extra })
+      setRecommendations(d.recommendations)
       setExams(new Map(d.exams.map((e) => [e.id, e])))
       setQueue(order.map((p) => byId.get(p.id)!))
       if (mode === 'desk') {
@@ -264,6 +266,9 @@ export function Session() {
           {isNew && <span className="chip accent">neu</span>}
           {reported.has(card.id) && <span className="chip" style={{ color: 'var(--warn)' }}>gemeldet</span>}
         </div>
+        {isNew && mode === 'desk' && !!recommendations.get(card.id)?.reasons.length && (
+          <p className="recommend-reason">Empfohlen: {recommendations.get(card.id)!.reasons.join(' · ')}</p>
+        )}
 
         <Rich text={card.front} cloze={card.type === 'cloze' ? (revealed ? 'back' : 'front') : 'none'} />
         {card.image && <img className="card-image" src={card.image} alt="" style={{ marginTop: 12 }} />}

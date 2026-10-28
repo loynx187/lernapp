@@ -246,3 +246,35 @@ describe('subjectsToday', () => {
     expect(subjectsToday(p2)[0].examId).toBe('d')
   })
 })
+
+describe('Schreibtischaufgaben als Zusatz', () => {
+  it('erzeugen keinen Rückstand und zählen nicht zur Prognose', () => {
+    const plan = planDay(input({ exams: [{ id: 'a', date: examIn(5), weight: 2 }], cards: [...cards('a', 10), ...cards('a', 200, 'desk')], budgetMinutes: { mobile: 30, desk: 30 } }))
+    const p = plan.exams[0]
+    expect(p.behind).toBe(false)
+    expect(p.modes.desk.quota).toBe(0)
+    // das Schreibtisch-Budget wird mit neuen Aufgaben gefüllt: 30 min / 15 min
+    expect(p.modes.desk.newLeft).toBe(2)
+    expect(p.forecastShare).toBe(1)
+    expect(plan.modes.desk.minutesNeeded).toBe(0)
+  })
+
+  it('stellt erst fällige Wiederholungen, dann neue Aufgaben nach Empfehlung zusammen', () => {
+    const fresh = cards('a', 5, 'desk').map((c, i) => ({ ...c, priority: i === 3 ? 5 : 0 }))
+    const all = [...cards('a', 1, 'desk', 2), ...fresh]
+    const plan = planDay(input({ exams: [{ id: 'a', date: examIn(30), weight: 2 }], cards: all, budgetMinutes: { mobile: 0, desk: 60 } }))
+    const q = buildQueue(plan, all, { mode: 'desk', now: NOW })
+    expect(q.map((c) => c.id)).toEqual(['a-desk-2-0', 'a-desk-0-3', 'a-desk-0-0', 'a-desk-0-1'])
+  })
+})
+
+describe('Empfehlung des Fachs', () => {
+  it('empfiehlt das Fach mit dem meisten nötigen neuen Stoff pro Tag, nicht das mit den meisten Wiederholungen', () => {
+    // a: fast alles gelernt, viele Wiederholungen fällig; b: viel neuer Stoff bis zur Klausur
+    const all = [...cards('a', 80, 'mobile', 2), ...cards('a', 4), ...cards('b', 5, 'mobile', 2), ...cards('b', 60)]
+    const plan = planDay(input({ exams: [{ id: 'a', date: examIn(20), weight: 2 }, { id: 'b', date: examIn(30), weight: 2 }], cards: all, budgetMinutes: { mobile: 120, desk: 0 } }))
+    const s = subjectsToday(plan)
+    expect(s.map((x) => x.examId)).toEqual(['b', 'a'])
+    expect(s[0]).toMatchObject({ perDay: 3, newRemaining: 60, reviewsDue: 5 })
+  })
+})

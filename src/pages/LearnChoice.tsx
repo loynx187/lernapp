@@ -50,6 +50,7 @@ export function LearnChoice() {
             </div>
             <small>
               {count(s.left[mode])} · {s.behind ? <span className="badge-warn">Rückstand</span> : `Klausur ${formatCountdown(s.daysLeft)}`}
+              {mode === 'mobile' && <> · {s.perDay > 0 ? `noch ${s.newRemaining} neue Karten, ${s.perDay} pro Tag nötig` : 'nur Wiederholungen'}</>}
             </small>
           </Link>
         )

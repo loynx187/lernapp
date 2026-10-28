@@ -54,7 +54,7 @@ export function Exams() {
               </span>
               <span className="chip">{formatCountdown(d)}</span>
             </div>
-            <small>{formatDate(e.date)} · {stats.total} Karten</small>
+            <small>{formatDate(e.date)} · {stats.total} Karten{stats.tasks.total > 0 && ` · ${stats.tasks.practiced}/${stats.tasks.total} Aufgaben geübt`}</small>
             <div style={{ marginTop: 10 }}>
               <Progress value={stats.total ? stats.introduced / stats.total : 0} color={e.color} />
             </div>

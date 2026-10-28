@@ -21,7 +21,7 @@ export interface ImportResult {
 }
 
 const contentKey = (c: CardContent) =>
-  JSON.stringify([c.type, c.chapter, c.front, c.back, c.options, c.correct, c.steps, c.result, c.source, c.image, c.tags, c.relevance, c.mode])
+  JSON.stringify([c.type, c.chapter, c.front, c.back, c.options, c.correct, c.steps, c.result, c.source, c.image, c.tags, c.relevance, c.mode, c.topics, c.pastExam])
 
 /**
  * Importiert ein Paket in eine Prüfung. Bei einem Update desselben Pakets bleibt der
@@ -126,7 +126,7 @@ export async function movePackage(examId: string, packageId: string, step: -1 | 
 
 /** Entfernt optionale Inhaltsfelder, damit ein Update gelöschte Felder (z. B. ein Bild) nicht übernimmt. */
 function stripContent(c: StudyCard): StudyCard {
-  const { chapter: _1, options: _2, correct: _3, steps: _4, result: _5, source: _6, image: _7, tags: _8, relevance: _9, mode: _10, ...rest } = c
+  const { chapter: _1, options: _2, correct: _3, steps: _4, result: _5, source: _6, image: _7, tags: _8, relevance: _9, mode: _10, topics: _11, pastExam: _12, ...rest } = c
   return rest as StudyCard
 }
 

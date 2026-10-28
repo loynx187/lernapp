@@ -17,6 +17,7 @@ export interface ChapterStats {
   recall: number
 }
 
+/** Fortschritt, Prognose und „sicher“ zählen nur Karten; Schreibtischaufgaben sind Zusatz und stehen getrennt in `tasks`. */
 export interface ExamStats {
   total: number
   introduced: number
@@ -25,6 +26,8 @@ export interface ExamStats {
   /** Durchschnittliche Abrufwahrscheinlichkeit der begonnenen Karten jetzt. */
   recall: number
   chapters: ChapterStats[]
+  /** Schreibtischaufgaben: insgesamt und davon schon mindestens einmal geübt */
+  tasks: { total: number; practiced: number }
 }
 
 /** Pakete in Lernreihenfolge: festgelegte Position, sonst Reihenfolge des ersten Imports. */
@@ -55,6 +58,8 @@ export function examStats(exam: Exam, cards: StudyCard[], now: number, retention
   let introduced = 0
   let secure = 0
   let recallSum = 0
+  let total = 0
+  const tasks = { total: 0, practiced: 0 }
   const chapters = new Map<string, ChapterStats & { recallSum: number; sort: [number, number] }>()
   for (const c of active) {
     const key = `${c.packageId}:${c.chapter ?? ''}`
@@ -66,16 +71,24 @@ export function examStats(exam: Exam, cards: StudyCard[], now: number, retention
     }
     ch.sort[1] = Math.min(ch.sort[1], c.order)
     ch.total++
+    const isTask = cardMode(c) === 'desk'
+    if (isTask) tasks.total++
+    else total++
     if (c.s.state === 0) continue
-    introduced++
     ch.introduced++
     const r = retrievability(c.s, now, retention)
-    recallSum += r
     ch.recallSum += r
+    if (isTask) {
+      tasks.practiced++
+      continue
+    }
+    introduced++
+    recallSum += r
     if (retrievability(c.s, examAt, retention) >= SECURE_THRESHOLD) secure++
   }
   return {
-    total: active.length,
+    total,
+    tasks,
     introduced,
     secure,
     recall: introduced ? recallSum / introduced : 0,

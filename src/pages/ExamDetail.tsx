@@ -88,7 +88,7 @@ export function ExamDetail() {
         </div>
       )}
 
-      {stats.total === 0 ? (
+      {stats.total + stats.tasks.total === 0 ? (
         <div className="card empty stack">
           <p className="muted">Für diese Prüfung gibt es noch keine Karten.</p>
           <Link className="btn primary" to={`/import?exam=${exam.id}`}>Karten importieren</Link>
@@ -104,9 +104,14 @@ export function ExamDetail() {
               />
               <Stat value={stats.introduced ? `${Math.round(stats.recall * 100)} %` : '–'} label="aktuell abrufbar" />
             </div>
+            {stats.tasks.total > 0 && (
+              <p className="muted" style={{ marginTop: 12, marginBottom: 0, fontSize: 14 }}>
+                Schreibtischaufgaben: {stats.tasks.practiced} von {stats.tasks.total} geübt – sie sind Zusatz und zählen nicht zum Fortschritt.
+              </p>
+            )}
             {plan && days > 0 && (
               <p style={{ marginTop: 12, marginBottom: 0, fontSize: 14 }}>
-                {plan.modes.mobile.newRemaining + plan.modes.desk.newRemaining > 0 ? (
+                {plan.modes.mobile.newRemaining > 0 ? (
                   <>
                     {exam.ongoing ? (
                       <>Vorhandener neuer Stoff wird bis <b>{formatDate(isoDate(addDays(Date.now(), plan.introDeadline - 1)))}</b> begonnen – die Vorlesung läuft noch.{' '}</>
@@ -128,7 +133,7 @@ export function ExamDetail() {
             )}
             {plan && (
               <p className="muted" style={{ marginTop: 8, marginBottom: 0, fontSize: 13 }}>
-                Prognose: Anteil des Stoffs, den du am Klausurtag voraussichtlich abrufen kannst, wenn du täglich dein heutiges Pensum lernst. Zusatzstoff (Relevanz 1) kommt nur dran, wenn Zeit übrig ist.
+                Prognose: Anteil der Karten, die du am Klausurtag voraussichtlich abrufen kannst, wenn du täglich dein heutiges Pensum lernst. Zusatzstoff (Relevanz 1) kommt nur dran, wenn Zeit übrig ist; Schreibtischaufgaben werden nach Empfehlung geübt.
                 {exam.ongoing && ' Vorläufig, weil noch Unterlagen fehlen – sie bezieht sich nur auf den bisherigen Stoff.'}
               </p>
             )}

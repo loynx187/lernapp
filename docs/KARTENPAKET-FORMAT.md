@@ -39,6 +39,8 @@ Gemeinsame Felder:
 | `source` | – | `{ "file": "Skript.pdf", "slide": 42, "page": 40 }` – `slide` = gedruckte Foliennummer, `page` = Seite im PDF (für „Folie ansehen“; fehlt sie, wird `slide` verwendet) |
 | `relevance` | – | 1–3, Klausurrelevanz (z. B. aus Altklausuren). Bei Zeitnot werden relevante Karten zuerst eingeführt. |
 | `tags` | – | Liste von Schlagwörtern |
+| `topics` | – | Themen-Schlagworte (z. B. `["Schwingungsisolierung"]`). Verknüpfen Rechenaufgaben mit Karten desselben Themas – auch über Paketgrenzen. Werden Karten eines Themas oft vergessen, empfiehlt die App die Aufgaben dazu. Ohne `topics` gilt das Kapitel im eigenen Paket als Thema. |
+| `pastExam` | – | `true` bei Aufgaben aus Alt- oder Probeklausuren – sie werden am Schreibtisch zuerst empfohlen. |
 | `image` | – | Bild als Daten-URL (`data:image/png;base64,…`), z. B. eine Skizze von der Folie |
 | `mode` | – | `mobile` oder `desk`; Standard: `task` → `desk`, sonst `mobile` |
 
@@ -47,7 +49,7 @@ Gemeinsame Felder:
 - **`basic`** – Frage vorne, Antwort hinten.
 - **`cloze`** – Lückentext in `front`: `Das Hookesche Gesetz lautet {{$\sigma = E\varepsilon$}}.` `back` ist optional (Zusatzerklärung).
 - **`mc`** – Multiple Choice: `options` (Liste) und `correct` (Indizes ab 0, mehrere möglich). `back` = Erklärung.
-- **`task`** – Rechenaufgabe: `front` = Aufgabenstellung mit Zahlenwerten, `steps` = Lösungsschritte (Liste), `result` = Endergebnis, `back` = Hinweise/typische Fehler.
+- **`task`** – Rechenaufgabe (Zusatz zu den Karten, wird am Schreibtisch nach Empfehlung geübt): `front` = Aufgabenstellung mit Zahlenwerten, `steps` = Lösungsschritte (Liste), `result` = Endergebnis, `back` = Hinweise/typische Fehler.
   Zusätzlich `answers` für die automatische Prüfung der Eingabe in der App:
   `[{ "label": "\\sigma", "value": 159.2, "unit": "MPa", "tolerance": 0.02 }]` – `label` (LaTeX, optional, bei mehreren gesuchten Größen), `value` (Zahl in der angegebenen Einheit), `unit` (optional), `tolerance` (relative Abweichung, Standard 0,02 = 2 %).
   Statt `value` geht auch `text` für Antworten, die keine Zahl sind: `{ "label": "Y", "text": ["01101001"] }` oder `{ "text": ["3E8", "16#3E8"] }` (Liste = alle akzeptierten Schreibweisen). Verglichen wird ohne Groß-/Kleinschreibung und Leerzeichen – nur für eindeutige Kurzantworten verwenden (Zahlencode, Wahrheitstabellen-Spalte, Schlüsselwort), nicht für Funktionsgleichungen, die mehrere richtige Formen haben.

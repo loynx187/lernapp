@@ -81,6 +81,9 @@ export function parsePackage(raw: unknown): CardPackage {
     const tags = strArray(c.tags)
     if (tags) card.tags = tags
     if (typeof c.relevance === 'number') card.relevance = Math.min(3, Math.max(1, Math.round(c.relevance)))
+    const topics = strArray(c.topics)
+    if (topics?.length) card.topics = topics
+    if (c.pastExam === true) card.pastExam = true
     if (MODES.includes(c.mode as Mode)) card.mode = c.mode as Mode
     return card
   })
