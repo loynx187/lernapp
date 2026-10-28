@@ -5,7 +5,7 @@ import { loadStudyData, updateSnapshots } from '../lib/study'
 import { addDays, formatCountdown, isoDate, studyDate, studyDayStart } from '../lib/dates'
 import { cardMode, type Mode } from '../lib/db'
 import { examStats, streak } from '../lib/stats'
-import { DayBars, Icon, PageHeader, Progress, Rings, Widget } from '../components/ui'
+import { DayBars, Icon, PageHeader, Progress, Widget } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
 import { homeworkDueByExam, isDueSoon } from '../lib/homework'
@@ -19,6 +19,10 @@ export const MODE_INFO: Record<Mode, { title: string; unit: string; one: string;
   mobile: { title: 'Unterwegs', unit: 'Karten', one: 'Karte', extra: 10 },
   desk: { title: 'Schreibtisch', unit: 'Aufgaben', one: 'Aufgabe', extra: 1 },
 }
+
+/** So viele Prüfungen passen in das Fortschritts-Widget. */
+const MAX_PROGRESS_ROWS = 5
+const pctOf = (a: number, b: number) => `${b ? Math.round((a / b) * 100) : 0} %`
 
 /** Startseite im Stil des iPadOS-Homescreens: Widgets führen zu den einzelnen Bereichen. */
 export function Dashboard() {
@@ -214,39 +218,47 @@ export function Dashboard() {
           </Widget>
         )}
 
-        {total > 0 && (
-          <Widget size="small" to="/pruefungen" title="Fortschritt" icon="chart">
-            <div className="w-rings">
-              <Rings outer={introduced / total} inner={forecast / total} size={76} />
-              <div className="w-legend">
-                <span><i style={{ background: 'var(--accent)' }} />{Math.round((introduced / total) * 100)} %</span>
-                <span><i style={{ background: 'var(--ok)' }} />{Math.round((forecast / total) * 100)} %</span>
-              </div>
-            </div>
-            <div className="w-foot">begonnen · Prognose{upcoming.some((e) => e.ongoing) && ' (vorläufig)'}</div>
-          </Widget>
-        )}
-
         {upcoming.length > 0 && (
-          <Widget size={upcoming.length > 2 ? 'large' : 'medium'} to="/pruefungen" title="Prüfungen" icon="exams">
+          <Widget size={upcoming.length > 1 ? 'large' : 'medium'} to="/pruefungen" title="Fortschritt" icon="chart" label="Fortschritt der Prüfungen">
+            <div className="w-progress-legend">
+              <span><i style={{ background: 'var(--text)' }} />begonnen</span>
+              <span><i style={{ background: 'var(--ok)' }} />Prognose am Klausurtag{upcoming.some((e) => e.ongoing) && ' (vorläufig)'}</span>
+              {total > 0 && <b>Gesamt {pctOf(introduced, total)} · {pctOf(forecast, total)}</b>}
+            </div>
             <div className="w-list">
-              {upcoming.slice(0, 5).map((e) => {
+              {upcoming.slice(0, MAX_PROGRESS_ROWS).map((e) => {
                 const st = perExam.get(e.id)!
                 const p = plan.exams.find((x) => x.examId === e.id)!
+                const started = st.total ? st.introduced / st.total : 0
+                const expected = p.forecastShare * profile.retention
                 return (
-                  <div key={e.id} className="w-list-item">
+                  <div key={e.id} className="w-list-item" aria-label={`${e.name}: ${pctOf(started, 1)} begonnen, Prognose ${pctOf(expected, 1)}`}>
                     <div className="row between">
-                      <span className="row grow" style={{ gap: 8 }}>
+                      <span className="row grow" style={{ gap: 8, minWidth: 0 }}>
                         <span className="dot" style={{ background: e.color }} />
                         <span className="truncate">{e.name}</span>
                       </span>
-                      <small className={p.behind && st.total ? 'badge-warn' : ''}>{formatCountdown(p.daysLeft)}</small>
+                      <small className={p.behind && st.total ? 'badge-warn' : ''}>{p.behind && st.total ? 'Rückstand · ' : ''}{formatCountdown(p.daysLeft)}</small>
                     </div>
-                    <Progress value={st.total ? st.introduced / st.total : 0} color={e.color} />
+                    {st.total ? (
+                      <div className="w-exam-bar">
+                        <div className="w-exam-track">
+                          <Progress value={started} color={e.color} />
+                          <span className="w-forecast" style={{ left: `${Math.min(100, expected * 100)}%` }} />
+                        </div>
+                        <small className="w-exam-nums">{pctOf(started, 1)} · <span className="ok">{pctOf(expected, 1)}</span></small>
+                      </div>
+                    ) : null}
+                    {st.total > 0 && upcoming.length <= 3 && (
+                      <small className="muted">{st.introduced} von {st.total} Karten begonnen · {st.secure} sicher bis zur Klausur</small>
+                    )}
+                    {!st.total && (
+                      <small className="muted">Noch keine Karten</small>
+                    )}
                   </div>
                 )
               })}
-              {upcoming.length > 5 && <small>+ {upcoming.length - 5} weitere</small>}
+              {upcoming.length > MAX_PROGRESS_ROWS && <small>+ {upcoming.length - MAX_PROGRESS_ROWS} weitere</small>}
             </div>
           </Widget>
         )}

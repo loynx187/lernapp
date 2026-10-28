@@ -11,7 +11,12 @@ test('Unterwegs-Widget führt zur Fachauswahl, empfiehlt ein Fach und lernt nur 
 
   // Startseite: keine Kacheln pro Fach, sondern ein Widget mit Empfehlung
   await page.goto('./#/')
-  await expect(page.locator('section.widget')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /^(Thermodynamik|Werkstoffkunde).*lernen$/ })).toHaveCount(0)
+  // Fortschritt je Prüfung
+  const progress = page.getByRole('link', { name: 'Fortschritt der Prüfungen' })
+  await expect(progress).toContainText('Thermodynamik')
+  await expect(progress).toContainText('Werkstoffkunde')
+  await expect(progress).toContainText('Prognose am Klausurtag')
   const widget = page.getByRole('link', { name: 'Unterwegs lernen', exact: true })
   // Empfohlen ist das Fach mit dem meisten offenen Pensum (die nähere Klausur führt mehr neue Karten ein)
   await expect(widget).toContainText('Empfohlen: Thermodynamik')
