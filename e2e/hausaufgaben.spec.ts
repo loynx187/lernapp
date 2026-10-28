@@ -14,8 +14,9 @@ test('Hausaufgaben anlegen, am Schreibtisch erledigen, vorziehen und als Übung 
   await page.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByRole('heading', { name: 'KV-Diagramm Blatt 2' })).toBeVisible()
 
-  // Noch nicht fällige Hausaufgabe
-  await page.goto('./#/hausaufgabe/neu')
+  // Noch nicht fällige Hausaufgabe direkt von der Startseite aus eintragen
+  await page.goto('./#/')
+  await page.getByRole('link', { name: 'Hausaufgabe eintragen' }).click()
   await page.getByPlaceholder('z. B. Übungsblatt 3, Aufgabe 2').fill('SCL-Ampel')
   await page.locator('input[type=date]').fill(isoIn(14))
   await page.getByRole('button', { name: 'Speichern' }).click()
@@ -23,7 +24,7 @@ test('Hausaufgaben anlegen, am Schreibtisch erledigen, vorziehen und als Übung 
 
   // Startseite: Hausaufgaben-Widget und Schreibtisch
   await page.goto('./#/')
-  await expect(page.locator('.widget', { hasText: 'Hausaufgaben' })).toContainText('2')
+  await expect(page.getByRole('link', { name: 'Hausaufgaben: 2 offen' })).toBeVisible()
   await page.getByRole('link', { name: 'Schreibtisch lernen', exact: true }).click()
 
   // Fällige Hausaufgabe kommt zuerst; abhaken mit Lösung und als Übung behalten

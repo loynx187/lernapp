@@ -160,7 +160,7 @@ export function Help() {
         <details>
           <summary>Hausaufgaben</summary>
           <p style={{ marginTop: 8 }}>
-            Hausaufgaben legst du auf der Seite der Prüfung an – mit Abgabetermin, geschätzter Dauer und optional einem Foto des Aufgabenblatts. Die App verteilt die Dauer bis zur Abgabe auf die Tage und plant entsprechend weniger neue Schreibtischaufgaben ein. Ab drei Tagen vor der Abgabe kommt die Hausaufgabe in der Schreibtisch-Sitzung von selbst vor den Karten dran; früher kannst du sie jederzeit unter „Hausaufgaben“ vorziehen.
+            Hausaufgaben trägst du direkt auf der Startseite ein (Widget „Hausaufgaben“ → „Eintragen“) oder auf der Seite der Prüfung – mit Abgabetermin, geschätzter Dauer und optional einem Foto des Aufgabenblatts. Die App verteilt die Dauer bis zur Abgabe auf die Tage und plant entsprechend weniger neue Schreibtischaufgaben ein. Ab drei Tagen vor der Abgabe kommt die Hausaufgabe in der Schreibtisch-Sitzung von selbst vor den Karten dran; früher kannst du sie jederzeit unter „Hausaufgaben“ vorziehen.
           </p>
           <p>
             Beim Abhaken kannst du deine Lösung notieren oder fotografieren und die Aufgabe als Übungsaufgabe behalten – dann wird sie zur Klausurvorbereitung wie eine Karte wiederholt.

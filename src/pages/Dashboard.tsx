@@ -5,7 +5,8 @@ import { loadStudyData, updateSnapshots } from '../lib/study'
 import { addDays, formatCountdown, isoDate, studyDate, studyDayStart } from '../lib/dates'
 import { cardMode, type Mode } from '../lib/db'
 import { examStats, streak } from '../lib/stats'
-import { DayBars, PageHeader, Progress, Rings, Widget } from '../components/ui'
+import { DayBars, Icon, PageHeader, Progress, Rings, Widget } from '../components/ui'
+import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
 import { homeworkDueByExam, isDueSoon } from '../lib/homework'
 import { dueLabel } from './Homework'
@@ -77,6 +78,12 @@ export function Dashboard() {
   return (
     <>
       <PageHeader
+        action={
+          <span className="header-icons">
+            <Link to="/hilfe" className="icon-btn" aria-label="Hilfe" title="Hilfe"><Icon name="help" size={22} /></Link>
+            <Link to="/einstellungen" className="icon-btn" aria-label="Einstellungen" title="Einstellungen"><Icon name="settings" size={22} /></Link>
+          </span>
+        }
         eyebrow={new Date(now).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
         title={`Hallo ${profile.name}.`}
         subtitle={
@@ -174,11 +181,21 @@ export function Dashboard() {
           </>
         )}
 
-        {homework.length > 0 && (
-          <Widget size="small" to="/hausaufgaben" title="Hausaufgaben" icon="pencil" tint="var(--hard)">
-            <div className="w-number">{homework.length}</div>
-            <div className="w-caption">offen</div>
-            <div className="w-foot truncate">{homework[0].title}: {dueLabel(homework[0], now).replace(/ \(.*\)$/, '')}</div>
+        {exams.length > 0 && (
+          <Widget size="small" title="Hausaufgaben" icon="pencil" tint="var(--hard)">
+            <Link to="/hausaufgaben" className="w-link" aria-label={`Hausaufgaben: ${homework.length} offen`}>
+              {homework.length > 0 ? (
+                <>
+                  <div className="w-number">{homework.length}</div>
+                  <div className="w-caption truncate">offen · {dueLabel(homework[0], now).replace(/ \(.*\)$/, '')}</div>
+                </>
+              ) : (
+                <div className="w-headline">Nichts offen</div>
+              )}
+            </Link>
+            <Link className="w-pill w-add" to="/hausaufgabe/neu" aria-label="Hausaufgabe eintragen">
+              <Icon name="plus" size={16} /> Eintragen
+            </Link>
           </Widget>
         )}
 
@@ -245,16 +262,7 @@ export function Dashboard() {
           <div className="w-foot">Neu oder Update</div>
         </Widget>
 
-        <Widget size="small" to="/einstellungen" title="Einstellungen" icon="settings" tint="var(--subtle)">
-          <div className="w-headline">{profile.minutesMobile + profile.minutesDesk} min</div>
-          <div className="w-caption">Lernzeit pro Tag</div>
-          <div className="w-foot">Profil, Semester, Sicherung</div>
-        </Widget>
 
-        <Widget size="small" to="/hilfe" title="Hilfe" icon="help" tint="var(--subtle)">
-          <div className="w-headline">So funktioniert’s</div>
-          <div className="w-foot">Installation, Erinnerung, Lernmethode</div>
-        </Widget>
       </div>
       </div>
     </>
