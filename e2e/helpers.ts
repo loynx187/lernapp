@@ -117,12 +117,14 @@ export async function importPackage(page: Page, file?: string, exam?: string) {
 /** Deckt die aktuelle Karte auf (beantwortet Multiple Choice mit der ersten Option). */
 export async function revealCard(page: Page) {
   await expect(page.locator('.flashcard')).toBeVisible()
-  if (await page.locator('.option').count()) {
+  // Nach dem Knopf entscheiden, nicht nach der Zahl der Optionen: Die zählt sonst womöglich noch die vorige Karte.
+  const button = page.locator('.actions .btn.primary')
+  await expect(button).toBeVisible()
+  if ((await button.innerText()).trim() === 'Prüfen') {
     await page.locator('.option').first().click()
-    await page.getByRole('button', { name: 'Prüfen' }).click()
-  } else {
-    await page.locator('.actions .btn.primary').click()
+    await expect(button).toBeEnabled()
   }
+  await button.click()
   await expect(page.locator('.ratings')).toBeVisible()
 }
 
