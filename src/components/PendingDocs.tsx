@@ -46,7 +46,9 @@ export function PendingDocs({ exam }: { exam: Exam }) {
           </div>
         </div>
       ))}
-      <form className="row" style={{ gap: 6, flexWrap: 'wrap' }} onSubmit={add}>
+      <details className="explain" open={open.length === 0}>
+      <summary>Unterlage eintragen</summary>
+      <form className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 8 }} onSubmit={add}>
         <input type="text" className="grow" style={{ minWidth: 160 }} placeholder="z. B. Altklausuren, Musterlösung Blatt 3" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Fehlende Unterlage" />
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Erinnern ab" title="Erinnern ab (optional)" />
         <button className="btn small" type="submit" disabled={!title.trim()}>Eintragen</button>
@@ -54,6 +56,7 @@ export function PendingDocs({ exam }: { exam: Exam }) {
       <small className="muted">
         Die App erinnert auf der Startseite (und in der Dropbox-Erinnerung), bis du die Unterlage abhakst. „Später“ stellt die Erinnerung eine Woche zurück. Offene Unterlagen stehen auch im Auftrag für Claude.
       </small>
+      </details>
       {done.length > 0 && (
         <details>
           <summary className="muted" style={{ fontSize: 14 }}>Erledigt ({done.length})</summary>

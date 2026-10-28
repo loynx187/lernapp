@@ -47,6 +47,7 @@ test('Ganzes Skript importieren, spätere Kapitel pausieren und an fehlende Unte
   // Erinnerung zurückstellen, eigene Unterlage eintragen und abhaken
   await page.getByRole('button', { name: 'Altklausuren später erinnern' }).click()
   await expect(page.getByText(/zurückgestellt bis/)).toBeVisible()
+  await page.getByText('Unterlage eintragen').click()
   await page.getByLabel('Fehlende Unterlage').fill('Musterlösung Übungsblatt 3')
   await page.getByRole('button', { name: 'Eintragen' }).click()
   await page.getByRole('button', { name: 'Musterlösung Übungsblatt 3 erledigt' }).click()
