@@ -3,6 +3,7 @@ import { AppStateProvider, useAppState } from './state'
 import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
 import { Session } from './pages/Session'
+import { LearnChoice } from './pages/LearnChoice'
 import { Exams } from './pages/Exams'
 import { ExamDetail } from './pages/ExamDetail'
 import { ExamCards } from './pages/ExamCards'
@@ -51,6 +52,7 @@ function Shell() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/lernen/:mode" element={<SessionRoute />} />
+        <Route path="/lernen/:mode/auswahl" element={<LearnChoice />} />
         <Route path="/pruefungen" element={<Exams />} />
         <Route path="/pruefung/neu" element={<ExamForm />} />
         <Route path="/pruefung/:id" element={<ExamDetail />} />

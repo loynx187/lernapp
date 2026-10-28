@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { collectErrors, createExam, importPackage, onboard, rate, revealCard } from './helpers'
 
-test('Startseite zeigt Fächer getrennt, empfiehlt eines und lernt nur dieses Fach', async ({ page }) => {
+test('Unterwegs-Widget führt zur Fachauswahl, empfiehlt ein Fach und lernt nur dieses', async ({ page }) => {
   const errors = collectErrors(page)
   await onboard(page)
   await createExam(page, 'Thermodynamik', 20)
@@ -9,16 +9,22 @@ test('Startseite zeigt Fächer getrennt, empfiehlt eines und lernt nur dieses Fa
   await createExam(page, 'Werkstoffkunde', 50)
   await importPackage(page, undefined, 'Werkstoffkunde')
 
+  // Startseite: keine Kacheln pro Fach, sondern ein Widget mit Empfehlung
   await page.goto('./#/')
-  const subjects = page.locator('section.widget')
-  await expect(subjects).toHaveCount(2)
+  await expect(page.locator('section.widget')).toHaveCount(0)
+  const widget = page.getByRole('link', { name: 'Unterwegs lernen', exact: true })
   // Empfohlen ist das Fach mit dem meisten offenen Pensum (die nähere Klausur führt mehr neue Karten ein)
-  await expect(subjects.first()).toContainText('Thermodynamik')
-  await expect(subjects.first()).toContainText('Empfohlen')
-  await expect(page.getByRole('link', { name: 'Unterwegs lernen', exact: true })).toContainText('alle Fächer')
+  await expect(widget).toContainText('Empfohlen: Thermodynamik')
+  await widget.click()
+
+  // Auswahl: alle Fächer oder ein einzelnes
+  await expect(page.getByRole('heading', { name: 'Unterwegs lernen' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Alle Fächer lernen' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Thermodynamik lernen' })).toContainText('Empfohlen')
+  await expect(page.getByRole('link', { name: 'Werkstoffkunde lernen' })).not.toContainText('Empfohlen')
 
   // Nur Werkstoffkunde lernen
-  await page.getByRole('link', { name: 'Werkstoffkunde: Unterwegs lernen' }).click()
+  await page.getByRole('link', { name: 'Werkstoffkunde lernen' }).click()
   const meta = page.locator('.flashcard .meta')
   for (let i = 0; i < 2; i++) {
     await expect(meta).toContainText('Werkstoffkunde')

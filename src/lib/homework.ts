@@ -13,6 +13,13 @@ export const isOpen = (h: Homework) => !h.doneAt
 /** Fällig = offen und Abgabe in höchstens HOMEWORK_DUE_SOON_DAYS Tagen (oder überfällig). */
 export const isDueSoon = (h: Homework, now = Date.now()) => isOpen(h) && daysUntil(h.due, now) <= HOMEWORK_DUE_SOON_DAYS
 
+/** Anzahl fälliger Hausaufgaben je Prüfung – zählen am Schreibtisch zum Pensum des Fachs. */
+export function homeworkDueByExam(list: Homework[], now = Date.now()) {
+  const map = new Map<string, number>()
+  for (const h of list) if (isDueSoon(h, now)) map.set(h.examId, (map.get(h.examId) ?? 0) + 1)
+  return map
+}
+
 /** Offene Hausaufgaben, die nächste Abgabe zuerst. */
 export const sortOpen = (list: Homework[]) => list.filter(isOpen).sort((a, b) => a.due.localeCompare(b.due) || a.createdAt - b.createdAt)
 
@@ -68,7 +75,7 @@ function taskCard(h: Homework) {
  */
 export async function keepAsTask(h: Homework, exam: Exam, now = Date.now()) {
   await db.homework.update(h.id, { keptAt: now })
-  const kept = (await db.homework.where('examId').equals(exam.id).toArray()).filter((x) => x.keptAt).sort((a, b) => a.createdAt - b.createdAt)
+  const kept = (await db.homework.where('examId').equals(exam.id).toArray()).filter((x) => x.keptAt).sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id))
   const pkg: CardPackage = {
     format: PACKAGE_FORMAT,
     formatVersion: 1,

@@ -31,13 +31,13 @@ describe('Hausaufgaben planen', () => {
 describe('Hausaufgaben speichern', () => {
   it('übernimmt erledigte Hausaufgaben als Übungsaufgaben, ohne frühere zu verlieren', async () => {
     await db.exams.add(exam)
-    const a = await saveHomework({ profileId: 'p1', examId: 'e1', title: 'Blatt 1', description: 'KV', due: inDays(2), minutes: 30 })
-    const b = await saveHomework({ profileId: 'p1', examId: 'e1', title: 'Blatt 2', description: '', due: inDays(9), minutes: 30 })
+    const a = await saveHomework({ profileId: 'p1', examId: 'e1', title: 'Blatt 1', description: 'KV', due: inDays(2), minutes: 30, createdAt: 1 })
+    const b = await saveHomework({ profileId: 'p1', examId: 'e1', title: 'Blatt 2', description: '', due: inDays(9), minutes: 30, createdAt: 2 })
     await completeHomework(a, { text: 'Y = X1' })
     await keepAsTask({ ...a, solution: 'Y = X1' }, exam)
     await completeHomework(b)
     await keepAsTask(b, exam)
-    const cards = await db.cards.where('packageId').equals(HOMEWORK_PACKAGE_ID).toArray()
+    const cards = (await db.cards.where('packageId').equals(HOMEWORK_PACKAGE_ID).toArray()).sort((x, y) => x.order - y.order)
     expect(cards.filter((c) => !c.archived).map((c) => c.front)).toEqual(['**Blatt 1**\n\nKV', '**Blatt 2**'])
     expect(cards[0]).toMatchObject({ type: 'task', mode: 'desk', result: 'Y = X1' })
   })
