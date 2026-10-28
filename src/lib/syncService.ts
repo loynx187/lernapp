@@ -1,3 +1,4 @@
+import { duePending } from './pending'
 import { db, type Profile } from './db'
 import { addDays, daysUntil, isoWeek, studyDayStart } from './dates'
 import { adoptPendingTokens, deleteFile, download, DropboxError, getRev, listFolder, upload } from './dropbox'
@@ -158,6 +159,8 @@ export function reminderText(profile: Profile, today: StudyData, tomorrow: Study
   if (m.reviewsLeft + m.newLeft) lines.push(`Unterwegs: ${plural(m.reviewsLeft + m.newLeft, 'Karte', 'Karten')} · ca. ${m.minutesLeft} min`)
   if (k.reviewsLeft + k.newLeft) lines.push(`Schreibtisch: ${plural(k.reviewsLeft + k.newLeft, 'Aufgabe', 'Aufgaben')} · ca. ${k.minutesLeft} min`)
   if (lines.length === 1) lines.push('Nichts fällig – gut gemacht!')
+  const missing = d.exams.flatMap((e) => duePending(e, now).map((p) => `${e.name}: ${p.title}`))
+  if (missing.length) lines.push(`Unterlagen fehlen: ${missing.join(', ')}`)
   const next = d.exams.find((e) => daysUntil(e.date, day) >= 0)
   if (next) lines.push(`Nächste Klausur: ${next.name} in ${plural(daysUntil(next.date, day), 'Tag', 'Tagen')}`)
   if (profile.name) lines[0] = `${lines[0]} (${profile.name})`

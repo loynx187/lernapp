@@ -22,7 +22,8 @@ Ein Kartenpaket enthält die Karten zu einer Prüfung bzw. einem Skript. Es enth
 |---|---|
 | `id` | Stabile Paket-ID. Gleiche ID = Update desselben Pakets. |
 | `version` | Bei jedem Update erhöhen. |
-| `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. Mehrere Pakete einer Prüfung kommen nacheinander in der Reihenfolge ihres ersten Imports (auf der Prüfungsseite mit ↑/↓ änderbar); in den letzten 14 Tagen vor der Klausur werden sie gemischt. Zusammenhängende Themen deshalb im selben Kapitel bzw. in aufeinanderfolgenden Kapiteln anordnen. |
+| `chapters` | Reihenfolge der Kapitel = Reihenfolge, in der neuer Stoff eingeführt wird. Mehrere Pakete einer Prüfung kommen nacheinander in der Reihenfolge ihres ersten Imports (auf der Prüfungsseite mit ↑/↓ änderbar); in den letzten 14 Tagen vor der Klausur werden sie gemischt. Zusammenhängende Themen deshalb im selben Kapitel bzw. in aufeinanderfolgenden Kapiteln anordnen. Mit `"later": true` ist ein Kapitel in der Vorlesung noch nicht dran: Die App pausiert es beim ersten Import (seine neuen Karten werden nicht eingeführt und zählen nicht zum Fortschritt), der Nutzer setzt es auf der Prüfungsseite fort. So kann ein ganzes Skript auf einmal importiert werden. |
+| `pending` | Optional: noch fehlende Unterlagen, an die die App erinnern soll, z. B. `[{ "id": "altklausuren", "title": "Altklausuren", "note": "kommen im Laufe der Vorlesung", "from": "2026-12-01" }]`. `id` stabil halten – eine abgehakte Erinnerung legt ein Update nicht erneut an. `from` (optional): erst ab diesem Tag erinnern. |
 | `profile` | Optional: Vorschläge für das Fachprofil der Prüfung (siehe unten). Die App übernimmt sie nur in leere oder noch unbestätigte Felder. |
 
 ## Karten

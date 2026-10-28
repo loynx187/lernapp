@@ -152,6 +152,12 @@ export function Import() {
               <Link to={`/pruefung/${examId}`}>Zur Prüfung</Link>
             </div>
           )}
+          {result && (result.pausedChapters > 0 || result.pendingAdded > 0) && (
+            <div className="notice">
+              {result.pausedChapters > 0 && <>{result.pausedChapters === 1 ? '1 Kapitel ist' : `${result.pausedChapters} Kapitel sind`} in der Vorlesung noch nicht dran und pausiert – fortsetzen auf der Prüfungsseite unter „Kapitel“. </>}
+              {result.pendingAdded > 0 && <>{result.pendingAdded === 1 ? '1 fehlende Unterlage' : `${result.pendingAdded} fehlende Unterlagen`} eingetragen – die App erinnert dich daran.</>}
+            </div>
+          )}
           {result && result.profileFields.length > 0 && (
             <div className="notice">
               Claude hat fürs Fachprofil vorgeschlagen: {result.profileFields.map(fieldLabel).join(', ')}. <Link to={`/pruefung/${examId}/profil`}>Prüfen</Link>

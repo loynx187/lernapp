@@ -15,6 +15,8 @@ export interface ChapterStats {
   introduced: number
   /** Durchschnittliche aktuelle Abrufwahrscheinlichkeit der begonnenen Karten. */
   recall: number
+  /** Kapitel pausiert: neue Karten werden noch nicht eingeführt und zählen nicht zum Fortschritt. */
+  paused?: boolean
 }
 
 /** Fortschritt, Prognose und „sicher“ zählen nur Karten; Schreibtischaufgaben sind Zusatz und stehen getrennt in `tasks`. */
@@ -60,17 +62,20 @@ export function examStats(exam: Exam, cards: StudyCard[], now: number, retention
   let recallSum = 0
   let total = 0
   const tasks = { total: 0, practiced: 0 }
+  const pausedKeys = new Set(exam.pausedChapters ?? [])
   const chapters = new Map<string, ChapterStats & { recallSum: number; sort: [number, number] }>()
   for (const c of active) {
     const key = `${c.packageId}:${c.chapter ?? ''}`
     let ch = chapters.get(key)
     if (!ch) {
       const title = c.chapterTitle ?? (c.chapter || 'Ohne Kapitel')
-      ch = { chapter: key, title, total: 0, introduced: 0, recall: 0, recallSum: 0, sort: [blockOf(c, blocks), c.order] }
+      ch = { chapter: key, title, total: 0, introduced: 0, recall: 0, recallSum: 0, sort: [blockOf(c, blocks), c.order], paused: pausedKeys.has(key) || undefined }
       chapters.set(key, ch)
     }
     ch.sort[1] = Math.min(ch.sort[1], c.order)
     ch.total++
+    // Neue Karten pausierter Kapitel sind noch nicht dran: nicht im Fortschritt, nicht in der Prognose.
+    if (c.s.state === 0 && pausedKeys.has(key)) continue
     const isTask = cardMode(c) === 'desk'
     if (isTask) tasks.total++
     else total++

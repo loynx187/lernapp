@@ -2,6 +2,7 @@ import { db, type CardContent, type Exam, type PackageRecord, type ProfileField,
 import { mergeProfile } from './profile'
 import { sortPackages } from './stats'
 import { newMemoryState } from './scheduler'
+import { chapterKey, mergePending } from './pending'
 import { PACKAGE_FORMAT, type CardPackage } from './package-format'
 
 export { BACKUP_FORMAT, PACKAGE_FORMAT, parsePackage, type CardPackage } from './package-format'
@@ -18,6 +19,10 @@ export interface ImportResult {
   resolvedReports: number
   /** Vom Paket vorgeschlagene und ins Fachprofil übernommene Felder. */
   profileFields: ProfileField[]
+  /** Kapitel, die laut Paket noch nicht dran sind und deshalb pausiert wurden. */
+  pausedChapters: number
+  /** Neu angelegte Erinnerungen an fehlende Unterlagen. */
+  pendingAdded: number
 }
 
 const contentKey = (c: CardContent) =>
@@ -32,13 +37,14 @@ const contentKey = (c: CardContent) =>
 export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now()): Promise<ImportResult> {
   const chapterTitles = new Map((pkg.chapters ?? []).map((c) => [c.id, c.title]))
   const chapterOrder = new Map((pkg.chapters ?? []).map((c, i) => [c.id, i]))
-  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, deleted: 0, resolvedReports: 0, profileFields: [] }
+  const result: ImportResult = { added: 0, updated: 0, unchanged: 0, archived: 0, restored: 0, deleted: 0, resolvedReports: 0, profileFields: [], pausedChapters: 0, pendingAdded: 0 }
 
   await db.transaction('rw', db.cards, db.packages, db.reports, db.exams, async () => {
     const changed: string[] = []
     const existing = new Map(
       (await db.cards.where('packageId').equals(pkg.id).filter((c) => c.examId === exam.id).toArray()).map((c) => [c.uid, c]),
     )
+    const knownChapters = new Set([...existing.values()].map((c) => c.chapter ?? ''))
     const next: StudyCard[] = pkg.cards.map((content, i) => {
       // Reihenfolge: Kapitel laut Kapitelliste, innerhalb des Kapitels wie im Paket.
       const order = (chapterOrder.get(content.chapter ?? '') ?? chapterOrder.size) * 100_000 + i
@@ -102,6 +108,23 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       const { profile, changed } = mergeProfile(current.profile, pkg.profile, false)
       if (changed.length || profile.slug !== current.profile?.slug) await db.exams.update(exam.id, { profile })
       result.profileFields = changed
+    }
+    if (current) {
+      const updates: Partial<Exam> = {}
+      const pending = mergePending(current.pendingDocs, pkg.pending)
+      if (pending) {
+        updates.pendingDocs = pending
+        result.pendingAdded = pending.length - (current.pendingDocs?.length ?? 0)
+      }
+      // Kapitel, die in der Vorlesung noch nicht dran sind, beim ersten Import pausieren – danach entscheidet der Nutzer.
+      const later = (pkg.chapters ?? []).filter((c) => c.later && !knownChapters.has(c.id)).map((c) => chapterKey({ packageId: pkg.id, chapter: c.id }))
+      const paused = new Set(current.pausedChapters ?? [])
+      const newlyPaused = later.filter((k) => !paused.has(k))
+      if (newlyPaused.length) {
+        updates.pausedChapters = [...paused, ...newlyPaused]
+        result.pausedChapters = newlyPaused.length
+      }
+      if (Object.keys(updates).length) await db.exams.update(exam.id, updates)
     }
   })
   return result

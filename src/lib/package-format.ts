@@ -1,6 +1,6 @@
 // Kartenpaket-Format und Validierung. Bewusst ohne Laufzeit-Imports, damit
 // scripts/validate-paket.ts die Prüfung auch außerhalb der App nutzen kann.
-import type { CardContent, CardType, ExamProfile, Mode, NumericAnswer, TaskShare } from './db'
+import type { CardContent, CardType, ExamProfile, Mode, NumericAnswer, PendingDoc, TaskShare } from './db'
 
 export const PACKAGE_FORMAT = 'lernapp-paket'
 export const BACKUP_FORMAT = 'lernapp-backup'
@@ -14,9 +14,12 @@ export interface CardPackage {
   version: number
   created?: string
   sources?: { file: string; pages?: number }[]
-  chapters?: { id: string; title: string }[]
+  /** `later`: Kapitel ist in der Vorlesung noch nicht dran – wird beim ersten Import pausiert. */
+  chapters?: { id: string; title: string; later?: boolean }[]
   /** Vorschläge für das Fachprofil der Prüfung; die App übernimmt sie nur in leere Felder. */
   profile?: ExamProfile
+  /** Noch fehlende Unterlagen, an die die App erinnern soll (z. B. Altklausuren). */
+  pending?: Pick<PendingDoc, 'id' | 'title' | 'note' | 'from'>[]
   cards: CardContent[]
 }
 
@@ -89,7 +92,19 @@ export function parsePackage(raw: unknown): CardPackage {
   })
 
   const chapters = Array.isArray(p.chapters)
-    ? p.chapters.filter((c): c is { id: string; title: string } => !!c && isStr(c.id) && isStr(c.title))
+    ? p.chapters
+        .filter((c): c is { id: string; title: string; later?: unknown } => !!c && isStr(c.id) && isStr(c.title))
+        .map((c) => (c.later === true ? { id: c.id, title: c.title, later: true } : { id: c.id, title: c.title }))
+    : undefined
+  const pending = Array.isArray(p.pending)
+    ? p.pending
+        .filter((d): d is Record<string, unknown> & { id: string; title: string } => !!d && isStr(d.id) && isStr(d.title) && !!d.title.trim())
+        .map((d) => ({
+          id: d.id,
+          title: d.title.trim(),
+          note: isStr(d.note) && d.note.trim() ? d.note.trim() : undefined,
+          from: isStr(d.from) && /^\d{4}-\d{2}-\d{2}$/.test(d.from) ? d.from : undefined,
+        }))
     : undefined
   return {
     format: PACKAGE_FORMAT,
@@ -101,6 +116,7 @@ export function parsePackage(raw: unknown): CardPackage {
     created: isStr(p.created) ? p.created : undefined,
     chapters,
     profile: parseProfile(p.profile),
+    pending: pending?.length ? pending : undefined,
     cards,
   }
 }

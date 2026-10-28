@@ -3,6 +3,7 @@ import { isoDate } from './dates'
 import { parseProfile, slugify } from './package-format'
 import { deletedCards } from './cards'
 import { openReportEntries } from './reports'
+import { openPending } from './pending'
 import { semesterKind } from './semesters'
 
 export { slugify } from './package-format'
@@ -84,6 +85,9 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
             return { id: p.packageId, title: p.title, version: p.version, cards: p.cardCount, deleted: del.length ? del : undefined }
           }),
           reports: reports.length ? reports : undefined,
+          // Noch fehlende Unterlagen – Claude erinnert daran bzw. trägt neue als `pending` im Paket ein.
+          pending: openPending(e).length ? openPending(e).map((d) => ({ id: d.id, title: d.title, note: d.note })) : undefined,
+          pausedChapters: e.pausedChapters?.length ? e.pausedChapters : undefined,
         }
       }),
     ),

@@ -9,6 +9,7 @@ import { DayBars, Icon, PageHeader, Progress, Widget } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
 import { homeworkDueByExam, isDueSoon } from '../lib/homework'
+import { duePending } from '../lib/pending'
 import { dueLabel } from './Homework'
 import { useSync } from '../sync-state'
 import { BACKUP_REMINDER_DAYS, lastBackup } from '../lib/backup'
@@ -57,6 +58,7 @@ export function Dashboard() {
   const hwDue = homework.filter((h) => isDueSoon(h, now))
   const subjects = subjectsToday(plan, homeworkDueByExam(homework, now))
   const examById = new Map(exams.map((e) => [e.id, e]))
+  const missingDocs = upcoming.flatMap((e) => duePending(e, now).map((doc) => ({ exam: e, doc })))
 
   // Gesamtfortschritt über alle anstehenden Prüfungen
   let total = 0
@@ -183,6 +185,21 @@ export function Dashboard() {
             )
           })}
           </>
+        )}
+
+        {missingDocs.length > 0 && (
+          <Widget size="medium" to={`/pruefung/${missingDocs[0].exam.id}`} title="Unterlagen fehlen" icon="download" tint="var(--warn)" label="Fehlende Unterlagen">
+            <div className="w-list" style={{ gap: 6 }}>
+              {missingDocs.slice(0, 3).map(({ exam: e, doc }) => (
+                <div key={`${e.id}:${doc.id}`} className="row" style={{ gap: 8, minWidth: 0 }}>
+                  <span className="dot" style={{ background: e.color }} />
+                  <span className="truncate"><b>{e.name}:</b> {doc.title}</span>
+                </div>
+              ))}
+              {missingDocs.length > 3 && <small>+ {missingDocs.length - 3} weitere</small>}
+            </div>
+            <p className="w-caption" style={{ marginTop: 'auto' }}>Hochladen nicht vergessen – tippen, um abzuhaken oder zurückzustellen.</p>
+          </Widget>
         )}
 
         {exams.length > 0 && (

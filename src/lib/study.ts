@@ -7,6 +7,7 @@ import { review, type Grade } from './scheduler'
 import { doneToday, estimateCosts, examStats, packageBlocks, toPlanCard } from './stats'
 import { budgetInfo, type BudgetInfo } from './budget'
 import { rankTasks, type TaskRecommendation } from './tasks'
+import { chapterKey } from './pending'
 import { daysUntil } from './dates'
 import type { PlanCard } from './planner'
 
@@ -44,9 +45,11 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
   exams.sort((a, b) => a.date.localeCompare(b.date))
   // Karten mit offener Meldung sind pausiert, bis die Meldung erledigt ist (Korrektur per Paket-Update oder abgehakt).
   const paused = await pausedCardIds(exams.map((e) => e.id))
+  // Neue Karten pausierter Kapitel werden noch nicht eingeführt; begonnene Karten werden weiter wiederholt.
+  const pausedChapters = new Map(exams.map((e) => [e.id, new Set(e.pausedChapters ?? [])]))
   const cards = (await Promise.all(exams.map((e) => db.cards.where('[examId+archived]').equals([e.id, 0]).toArray())))
     .flat()
-    .filter((c) => !paused.has(c.id))
+    .filter((c) => !paused.has(c.id) && !(c.s.state === 0 && pausedChapters.get(c.examId)?.has(chapterKey(c))))
   const examIds = new Set(exams.map((e) => e.id))
   const blocks = packageBlocks((await Promise.all(exams.map((e) => db.packages.where('examId').equals(e.id).toArray()))).flat())
   const logs = await db.reviews
