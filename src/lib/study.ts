@@ -1,4 +1,5 @@
-import { db, tombstone, uid, type Exam, type Mode, type Profile, type ReviewLog, type StudyCard } from './db'
+import { db, tombstone, uid, type Exam, type Homework, type Mode, type Profile, type ReviewLog, type StudyCard } from './db'
+import { homeworkMinutesToday, sortOpen } from './homework'
 import { DAY, studyDate } from './dates'
 import { planDay, type DayPlan } from './planner'
 import { planExams, semesterKind, SEMESTER_KINDS } from './semesters'
@@ -12,6 +13,10 @@ export interface StudyData {
   plan: DayPlan
   /** Reihenfolge der Pakete je Prüfung, für toPlanCard und examStats. */
   blocks: Map<string, number>
+  /** Offene Hausaufgaben, nächste Abgabe zuerst */
+  homework: Homework[]
+  /** Heute für Hausaufgaben eingeplante Minuten (gehen vom Schreibtisch-Budget ab) */
+  homeworkMinutes: number
 }
 
 /** IDs der Karten mit offener Meldung. */
@@ -37,6 +42,8 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
     .filter((l) => l.profileId === profile.id)
     .toArray()
   const semester = profile.activeSemesterId ? await db.semesters.get(profile.activeSemesterId) : undefined
+  const homework = sortOpen((await Promise.all(exams.map((e) => db.homework.where('examId').equals(e.id).toArray()))).flat())
+  const homeworkMinutes = Math.round(homeworkMinutesToday(homework, now))
   const plan = planDay({
     now,
     exams: planExams(exams, semester),
@@ -46,10 +53,11 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
       logs.filter((l) => examIds.has(l.examId)),
       now,
     ),
-    budgetMinutes: { mobile: profile.minutesMobile, desk: profile.minutesDesk },
+    // Hausaufgaben haben am Schreibtisch Vorrang: ihr Tagesanteil geht vom Budget ab.
+    budgetMinutes: { mobile: profile.minutesMobile, desk: Math.max(0, profile.minutesDesk - homeworkMinutes) },
     costs: estimateCosts(logs),
   })
-  return { exams, cards, logs, plan, blocks }
+  return { exams, cards, logs, plan, blocks, homework, homeworkMinutes }
 }
 
 export interface Undo {

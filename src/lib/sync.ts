@@ -1,5 +1,5 @@
 import Dexie from 'dexie'
-import { db, withSyncedTimestamps, type CardReport, type Exam, type PackageRecord, type Profile, type ReviewLog, type Semester, type Snapshot, type StudyCard, type Tombstone } from './db'
+import { db, withSyncedTimestamps, type CardReport, type Exam, type Homework, type PackageRecord, type Profile, type ReviewLog, type Semester, type Snapshot, type StudyCard, type Tombstone } from './db'
 
 /**
  * Synchronisationsstand eines Profils. Jedes Gerät speichert seinen Stand als ein Dokument;
@@ -18,10 +18,11 @@ export interface SyncDoc {
   packages: PackageRecord[]
   snapshots: Snapshot[]
   reports: CardReport[]
+  homework: Homework[]
   tombstones: Tombstone[]
 }
 
-const TABLES = ['semesters', 'exams', 'cards', 'reviews', 'packages', 'snapshots', 'reports'] as const
+const TABLES = ['semesters', 'exams', 'cards', 'reviews', 'packages', 'snapshots', 'reports', 'homework'] as const
 type TableName = (typeof TABLES)[number]
 type Rec = { id: string; updatedAt?: number }
 
@@ -93,6 +94,7 @@ export function mergeDocs(a: SyncDoc, b: SyncDoc): SyncDoc {
     packages: ofExam([...byId(a.packages, b.packages).values()]),
     snapshots: ofExam([...byId(a.snapshots, b.snapshots).values()]),
     reports: ofExam([...byId(a.reports, b.reports).values()].filter((r) => !deleted('reports', r))),
+    homework: ofExam([...byId(a.homework, b.homework).values()].filter((h) => !deleted('homework', h))),
     tombstones: [...tombs.values()],
   }
 }

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useActive } from '../state'
-import { db, type Exam, type Mode, type ReportCategory, type StudyCard } from '../lib/db'
+import { db, type Exam, type Homework, type Mode, type ReportCategory, type StudyCard } from '../lib/db'
+import { isDueSoon } from '../lib/homework'
+import { HomeworkWork } from './Homework'
 import { buildQueue, subjectsToday } from '../lib/planner'
 import { loadStudyData, recordReview, undoReview, type Undo } from '../lib/study'
 import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
@@ -36,6 +38,9 @@ export function Session() {
   const extra = Number(search.get('extra') ?? 0) || 0
 
   const [queue, setQueue] = useState<StudyCard[] | null>(null)
+  /** Am Schreibtisch: fällige Hausaufgaben vor den Karten; `later` = offene, noch nicht fällige zum Vorziehen */
+  const [homework, setHomework] = useState<Homework[]>([])
+  const [laterHomework, setLaterHomework] = useState(0)
   const [exams, setExams] = useState<Map<string, Exam>>(new Map())
   const [reviewed, setReviewed] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -58,6 +63,11 @@ export function Session() {
       const order = buildQueue(d.plan, d.cards.map((c) => toPlanCard(c, d.blocks)), { mode, now: Date.now(), examId: examFilter, extraNew: extra })
       setExams(new Map(d.exams.map((e) => [e.id, e])))
       setQueue(order.map((p) => byId.get(p.id)!))
+      if (mode === 'desk') {
+        const own = d.homework.filter((h) => !examFilter || h.examId === examFilter)
+        setHomework(own.filter((h) => isDueSoon(h)))
+        setLaterHomework(own.filter((h) => !isDueSoon(h)).length)
+      }
       started.current = Date.now()
     })
     return () => {
@@ -199,6 +209,23 @@ export function Session() {
     </div>
   )
 
+  const hw = homework[0]
+  if (hw) {
+    const next = () => setHomework((list) => list.slice(1))
+    return (
+      <>
+        {top}
+        <HomeworkWork key={hw.id} h={hw} exam={exams.get(hw.examId)} onFinished={next} onSkip={next} />
+      </>
+    )
+  }
+
+  const moreHomework = laterHomework > 0 && (
+    <Link className="btn block" to={`/hausaufgaben${examFilter ? `?exam=${examFilter}` : ''}`}>
+      Hausaufgabe vorziehen ({laterHomework})
+    </Link>
+  )
+
   if (!card) {
     const minutes = Math.max(1, Math.round((Date.now() - sessionStart.current) / 60000))
     return (
@@ -212,6 +239,7 @@ export function Session() {
               : 'Für diesen Modus ist gerade nichts geplant.'}
           </p>
           {examFilter && <NextSubject current={examFilter} mode={mode} />}
+          {moreHomework}
           <Link className={`btn block${examFilter ? '' : ' primary'}`} to="/">Zur Übersicht</Link>
         </div>
       </>

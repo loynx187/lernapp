@@ -8,6 +8,8 @@ import { examStats, streak } from '../lib/stats'
 import { DayBars, PageHeader, Progress, Rings, Widget } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
+import { isDueSoon } from '../lib/homework'
+import { dueLabel } from './Homework'
 import { useSync } from '../sync-state'
 import { BACKUP_REMINDER_DAYS, lastBackup } from '../lib/backup'
 import { db } from '../lib/db'
@@ -32,7 +34,7 @@ export function Dashboard() {
   }, [data === undefined])
 
   if (!data) return null
-  const { exams, cards, plan, logs } = data
+  const { exams, cards, plan, logs, homework } = data
   const now = Date.now()
   const upcoming = exams.filter((e) => plan.exams.some((p) => p.examId === e.id))
   const next = upcoming[0]
@@ -46,9 +48,12 @@ export function Dashboard() {
         ? Math.floor((now - backupAt) / 864e5)
         : 0
       : null
-  const modes = (['mobile', 'desk'] as Mode[]).filter((m) => cards.some((c) => cardMode(c) === m))
+  const modes = (['mobile', 'desk'] as Mode[]).filter((m) => cards.some((c) => cardMode(c) === m) || (m === 'desk' && data.homework.length > 0))
   // Nach Fach getrennt lernen: das Fach mit dem größten Rückstand zuerst
-  const subjects = subjectsToday(plan)
+  const hwDue = homework.filter((h) => isDueSoon(h, now))
+  const hwDueByExam = new Map<string, number>()
+  for (const h of hwDue) hwDueByExam.set(h.examId, (hwDueByExam.get(h.examId) ?? 0) + 1)
+  const subjects = subjectsToday(plan, hwDueByExam)
   const examById = new Map(exams.map((e) => [e.id, e]))
 
   // Gesamtfortschritt über alle anstehenden Prüfungen
@@ -113,7 +118,7 @@ export function Dashboard() {
             <div className="w-headline">Erste Prüfung anlegen</div>
             <p className="w-caption">Mit Termin und Wichtigkeit – danach Karten importieren und die App plant dein Lernen.</p>
           </Widget>
-        ) : cards.length === 0 ? (
+        ) : cards.length === 0 && homework.length === 0 ? (
           <Widget size="medium" to="/import" title="Loslegen" icon="download">
             <div className="w-headline">Karten importieren</div>
             <p className="w-caption">Lade ein Kartenpaket für eine deiner Prüfungen – oder probiere das Beispielpaket aus.</p>
@@ -153,7 +158,8 @@ export function Dashboard() {
             })}
           {modes.map((m) => {
             const t = plan.modes[m]
-            const left = t.reviewsLeft + t.newLeft
+            const hwCount = m === 'desk' ? hwDue.length : 0
+            const left = t.reviewsLeft + t.newLeft + hwCount
             const info = MODE_INFO[m]
             const budget = m === 'mobile' ? profile.minutesMobile : profile.minutesDesk
             return (
@@ -182,6 +188,7 @@ export function Dashboard() {
                   <div className="w-side">
                     {left > 0 ? (
                       <>
+                        {hwCount > 0 && <span>{hwCount} {hwCount === 1 ? 'Hausaufgabe' : 'Hausaufgaben'}</span>}
                         <span>{t.reviewsLeft} Wiederholungen</span>
                         <span>{t.newLeft} neu</span>
                         <span className="w-pill">ca. {t.minutesLeft} min · Start</span>
@@ -196,6 +203,14 @@ export function Dashboard() {
             )
           })}
           </>
+        )}
+
+        {homework.length > 0 && (
+          <Widget size="small" to="/hausaufgaben" title="Hausaufgaben" icon="pencil" tint="var(--hard)">
+            <div className="w-number">{homework.length}</div>
+            <div className="w-caption">offen</div>
+            <div className="w-foot truncate">{homework[0].title}: {dueLabel(homework[0], now).replace(/ \(.*\)$/, '')}</div>
+          </Widget>
         )}
 
         {next && nextPlan && (
