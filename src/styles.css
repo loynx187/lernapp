@@ -185,6 +185,9 @@ pre code { display: block; background: none; padding: 0; font-size: inherit; lin
 .w-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 3px; font-size: 14px; color: var(--muted); text-align: right; }
 .w-pill { margin-top: 8px; background: var(--accent); color: var(--on-accent); border-radius: 980px; padding: 7px 14px; font-weight: 600; font-size: 14px; white-space: nowrap; }
 .w-warn { color: var(--warn); font-weight: 600; font-size: 13px; }
+.w-badge { margin-left: auto; flex-shrink: 0; background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); border-radius: 980px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.widget-title .truncate { min-width: 0; }
+a.w-pill { text-decoration: none; }
 .w-rings { display: flex; align-items: center; gap: 10px; flex: 1; }
 .w-legend { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 16px; }
 .w-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }

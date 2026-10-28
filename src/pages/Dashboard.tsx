@@ -6,14 +6,16 @@ import { addDays, formatCountdown, isoDate, studyDate, studyDayStart } from '../
 import { cardMode, type Mode } from '../lib/db'
 import { examStats, streak } from '../lib/stats'
 import { DayBars, PageHeader, Progress, Rings, Widget } from '../components/ui'
+import { Link } from 'react-router-dom'
+import { subjectsToday } from '../lib/planner'
 import { useSync } from '../sync-state'
 import { BACKUP_REMINDER_DAYS, lastBackup } from '../lib/backup'
 import { db } from '../lib/db'
 import { FSRS_HINT_REVIEWS } from './FsrsSettings'
 
-const MODE_INFO: Record<Mode, { title: string; unit: string; extra: number }> = {
-  mobile: { title: 'Unterwegs', unit: 'Karten', extra: 10 },
-  desk: { title: 'Schreibtisch', unit: 'Aufgaben', extra: 1 },
+const MODE_INFO: Record<Mode, { title: string; unit: string; one: string; extra: number }> = {
+  mobile: { title: 'Unterwegs', unit: 'Karten', one: 'Karte', extra: 10 },
+  desk: { title: 'Schreibtisch', unit: 'Aufgaben', one: 'Aufgabe', extra: 1 },
 }
 
 /** Startseite im Stil des iPadOS-Homescreens: Widgets führen zu den einzelnen Bereichen. */
@@ -45,6 +47,9 @@ export function Dashboard() {
         : 0
       : null
   const modes = (['mobile', 'desk'] as Mode[]).filter((m) => cards.some((c) => cardMode(c) === m))
+  // Nach Fach getrennt lernen: das Fach mit dem größten Rückstand zuerst
+  const subjects = subjectsToday(plan)
+  const examById = new Map(exams.map((e) => [e.id, e]))
 
   // Gesamtfortschritt über alle anstehenden Prüfungen
   let total = 0
@@ -114,7 +119,39 @@ export function Dashboard() {
             <p className="w-caption">Lade ein Kartenpaket für eine deiner Prüfungen – oder probiere das Beispielpaket aus.</p>
           </Widget>
         ) : (
-          modes.map((m) => {
+          <>
+          {subjects.length > 1 &&
+            subjects.map((s, i) => {
+              const e = examById.get(s.examId)!
+              return (
+                <Widget
+                  key={s.examId}
+                  size="medium"
+                  title={e.name}
+                  icon="exams"
+                  tint={e.color}
+                  label={`${e.name} lernen`}
+                  badge={i === 0 && <span className="w-badge">Empfohlen</span>}
+                >
+                  <div className="w-split">
+                    <div>
+                      <div className="w-number">{s.left.mobile + s.left.desk}</div>
+                      <div className="w-caption">{s.behind ? <span className="w-warn">Rückstand</span> : 'heute offen'}</div>
+                    </div>
+                    <div className="w-side">
+                      {(['mobile', 'desk'] as Mode[])
+                        .filter((m) => s.left[m] > 0)
+                        .map((m) => (
+                          <Link key={m} className="w-pill" to={`/lernen/${m}?exam=${s.examId}`} aria-label={`${e.name}: ${MODE_INFO[m].title} lernen`}>
+                            {s.left[m]} {s.left[m] === 1 ? MODE_INFO[m].one : MODE_INFO[m].unit} · {MODE_INFO[m].title}
+                          </Link>
+                        ))}
+                    </div>
+                  </div>
+                </Widget>
+              )
+            })}
+          {modes.map((m) => {
             const t = plan.modes[m]
             const left = t.reviewsLeft + t.newLeft
             const info = MODE_INFO[m]
@@ -124,7 +161,7 @@ export function Dashboard() {
                 key={m}
                 size="medium"
                 to={left > 0 ? `/lernen/${m}` : `/lernen/${m}?extra=${info.extra}`}
-                title={info.title}
+                title={subjects.length > 1 ? `${info.title} · alle Fächer` : info.title}
                 icon={m === 'mobile' ? 'cards' : 'pencil'}
                 label={`${info.title} lernen`}
               >
@@ -157,7 +194,8 @@ export function Dashboard() {
                 </div>
               </Widget>
             )
-          })
+          })}
+          </>
         )}
 
         {next && nextPlan && (

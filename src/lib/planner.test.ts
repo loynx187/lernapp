@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildQueue, distribute, introductionDays, MIX_WITHIN_DAYS, orderNew, planDay, type PlanCard, type PlanInput } from './planner'
+import { buildQueue, distribute, introductionDays, MIX_WITHIN_DAYS, orderNew, planDay, subjectsToday, type PlanCard, type PlanInput } from './planner'
 import { addDays, isoDate } from './dates'
 
 const NOW = new Date(2026, 9, 27, 9, 0).getTime()
@@ -230,5 +230,19 @@ describe('Semesterarten und Kernstoff', () => {
     // kurz vor der Klausur gilt weiterhin der normale, kürzere Stichtag
     const late = planDay(input({ exams: planExams([{ ...base, date: examIn(6), ongoing: true }]), cards: cards('a', 40) }))
     expect(late.exams[0].introDeadline).toBe(4)
+  })
+})
+
+describe('subjectsToday', () => {
+  it('empfiehlt das Fach mit Rückstand bzw. dem meisten offenen Pensum', () => {
+    const all = [...cards('a', 5, 'mobile', 2), ...cards('b', 12, 'mobile', 2), ...cards('c', 3, 'desk', 2)]
+    const plan = planDay(input({ exams: [{ id: 'a', date: examIn(10), weight: 2 }, { id: 'b', date: examIn(30), weight: 2 }, { id: 'c', date: examIn(20), weight: 2 }, { id: 'd', date: examIn(5), weight: 2 }], cards: all }))
+    const s = subjectsToday(plan)
+    expect(s.map((x) => x.examId)).toEqual(['b', 'a', 'c'])
+    expect(s[2].left).toEqual({ mobile: 0, desk: 3 })
+    // Rückstand geht vor: viele neue Karten bei knappem Budget
+    const behind = [...all, ...cards('d', 300)]
+    const p2 = planDay(input({ exams: [{ id: 'b', date: examIn(30), weight: 2 }, { id: 'd', date: examIn(5), weight: 2 }], cards: behind, budgetMinutes: { mobile: 5, desk: 5 } }))
+    expect(subjectsToday(p2)[0].examId).toBe('d')
   })
 })

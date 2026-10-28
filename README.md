@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.4.0** – Lernen nach Fach: Die Startseite zeigt das heutige Pensum je Prüfung mit eigenem Start für Unterwegs und Schreibtisch; das Fach mit Rückstand bzw. dem meisten offenen Pensum ist als „Empfohlen“ markiert. Nach einer Fach-Sitzung wird das nächste Fach angeboten. „Alle Fächer“ bleibt möglich.
 - **1.3.1** – Gemeldete Karten lassen sich in der Lernsitzung ohne Bewertung überspringen und sind pausiert, bis die Meldung erledigt ist (Paket-Update oder abgehakt). Eine fehlerhafte Karte verfälscht so nicht mehr den Lernplan.
 - **1.3.0** – Aufgaben können statt Zahlen auch Textantworten prüfen (z. B. Hexadezimalzahl, Ausgangsspalte einer Wahrheitstabelle, SCL-Schlüsselwort; Groß-/Kleinschreibung und Leerzeichen zählen nicht). Code-Blöcke (z. B. SCL) erscheinen in fester Schrift mit Einrückung; Lückentexte funktionieren auch im Code.
 - **1.2.0** – Neue Seite „Karten und Meldungen“ je Prüfung: alle Karten in Lernreihenfolge nachlesen, durchsuchen, melden, löschen und wiederherstellen; offene Meldungen dort abhaken und exportieren. Reihenfolge der Kartenpakete auf der Prüfungsseite mit ↑/↓ änderbar. Neue Karten bleiben auch bei Rückstand chronologisch (nur Zusatzstoff kommt nach hinten); erst in den letzten 14 Tagen wird gemischt. Karten aus anderen Tools importieren (ChatGPT, NotebookLM, Anki, Quizlet, CSV, Markdown-Tabellen, JSON) samt Vorlage für andere KI-Tools; `## Überschriften` werden Kapitel, ein erneuter Import mit gleichem Titel aktualisiert das Paket.
