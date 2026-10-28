@@ -33,7 +33,7 @@ Gemeinsame Felder:
 | Feld | Pflicht | Bedeutung |
 |---|---|---|
 | `uid` | ja | **Stabil und eindeutig im Paket.** Über die uid bleibt der Lernfortschritt bei Updates erhalten. Nie wiederverwenden. |
-| `type` | – | `basic` (Standard), `cloze`, `mc`, `task` |
+| `type` | – | `basic` (Standard), `cloze`, `mc`, `match`, `task` |
 | `chapter` | – | ID aus `chapters` |
 | `front` | ja | Frage / Aufgabenstellung |
 | `back` | – | Antwort bzw. Erklärung |
@@ -50,6 +50,7 @@ Gemeinsame Felder:
 - **`basic`** – Frage vorne, Antwort hinten.
 - **`cloze`** – Lückentext in `front`: `Das Hookesche Gesetz lautet {{$\sigma = E\varepsilon$}}.` `back` ist optional (Zusatzerklärung).
 - **`mc`** – Multiple Choice: `options` (Liste) und `correct` (Indizes ab 0, mehrere möglich). `back` = Erklärung.
+- **`match`** – Zuordnen: `pairs` = Liste von Paaren `["links", "rechts"]` (mindestens 2, die rechten Einträge verschieden). Die App bietet zu jedem linken Begriff die rechten Einträge gemischt zur Auswahl an und zeigt nach „Prüfen“, wie viele stimmen. Rechte Einträge kurz halten (sie stehen in einer Auswahlliste, Formeln dort nur als Text). `back` = Erklärung. Beispiel: `{"uid": "k1-f011-1", "type": "match", "front": "Ordne jeder Norm ihre Aufgabe zu.", "pairs": [["ISO 9001", "Anforderungen an ein QMS"], ["ISO 19011", "Leitfaden für Audits"]], "back": ""}`
 - **`task`** – Rechenaufgabe (Zusatz zu den Karten, wird am Schreibtisch nach Empfehlung geübt): `front` = Aufgabenstellung mit Zahlenwerten, `steps` = Lösungsschritte (Liste), `result` = Endergebnis, `back` = Hinweise/typische Fehler.
   Zusätzlich `answers` für die automatische Prüfung der Eingabe in der App:
   `[{ "label": "\\sigma", "value": 159.2, "unit": "MPa", "tolerance": 0.02 }]` – `label` (LaTeX, optional, bei mehreren gesuchten Größen), `value` (Zahl in der angegebenen Einheit), `unit` (optional), `tolerance` (relative Abweichung, Standard 0,02 = 2 %).

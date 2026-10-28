@@ -15,6 +15,7 @@ import { ReportForm } from '../components/ReportForm'
 import { deleteCard } from '../lib/cards'
 import { checkAnswer, formatAnswer } from '../lib/answers'
 import { SlideViewer } from '../components/SlideViewer'
+import { MatchQuestion, matchScore } from '../components/MatchQuestion'
 import { Rich } from '../components/Rich'
 import { Icon, Progress } from '../components/ui'
 
@@ -45,6 +46,7 @@ export function Session() {
   const [reviewed, setReviewed] = useState(0)
   const [revealed, setRevealed] = useState(false)
   const [selected, setSelected] = useState<number[]>([])
+  const [matchSel, setMatchSel] = useState<number[]>([])
   const [stepsShown, setStepsShown] = useState(0)
   const [undo, setUndo] = useState<Undo | null>(null)
   const [busy, setBusy] = useState(false)
@@ -86,6 +88,7 @@ export function Session() {
     setAnswerInputs([])
     setRevealed(false)
     setSelected([])
+    setMatchSel([])
     setStepsShown(0)
     started.current = Date.now()
   }
@@ -96,6 +99,9 @@ export function Session() {
   )
 
   const mcCorrect = card?.type === 'mc' && revealed ? sameSet(selected, card.correct ?? []) : null
+  const matchCount = card?.type === 'match' ? card.pairs?.length ?? 0 : 0
+  const matchRight = matchCount ? matchScore(matchSel, matchCount) : 0
+  const matchComplete = matchCount > 0 && Array.from({ length: matchCount }, (_, i) => (matchSel[i] ?? -1) >= 0).every(Boolean)
   const answers = card?.answers ?? []
   const answerResults = answers.map((a, i) => checkAnswer(answerInputs[i] ?? '', a))
   const answersTried = answerInputs.some((x) => x?.trim())
@@ -165,7 +171,7 @@ export function Session() {
   }
 
   const reveal = () => {
-    if (!card) return
+    if (!card || (card.type === 'match' && !matchComplete)) return
     if (card.type === 'task') setStepsShown(card.steps?.length ?? 0)
     setRevealed(true)
   }
@@ -173,7 +179,7 @@ export function Session() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
-      if (!card || reporting || showSlide || tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (!card || reporting || showSlide || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (!revealed && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault()
         reveal()
@@ -299,6 +305,10 @@ export function Session() {
           </div>
         )}
 
+        {card.type === 'match' && card.pairs && (
+          <MatchQuestion pairs={card.pairs} value={matchSel} onChange={setMatchSel} revealed={revealed} seed={card.id} />
+        )}
+
         {card.type === 'task' && stepsShown > 0 && (
           <div className="steps">
             {steps.slice(0, stepsShown).map((s, i) => (
@@ -355,6 +365,11 @@ export function Session() {
             {card.type === 'mc' && (
               <p className={mcCorrect ? 'badge-good' : 'badge-warn'} style={{ marginTop: 12 }}>
                 {mcCorrect ? 'Richtig!' : 'Leider nicht ganz – „Nochmal“ empfohlen.'}
+              </p>
+            )}
+            {card.type === 'match' && (
+              <p className={matchRight === matchCount ? 'badge-good' : 'badge-warn'} style={{ marginTop: 12 }}>
+                {matchRight === matchCount ? 'Alles richtig zugeordnet!' : `${matchRight} von ${matchCount} richtig – „Nochmal“ oder „Schwer“ empfohlen.`}
               </p>
             )}
             {card.type === 'task' && card.result && (
@@ -415,8 +430,8 @@ export function Session() {
               <button className="btn primary grow" onClick={reveal}>Lösung</button>
             </div>
           ) : (
-            <button className="btn primary block" onClick={reveal} disabled={card.type === 'mc' && selected.length === 0}>
-              {card.type === 'mc' ? 'Prüfen' : card.type === 'task' ? 'Lösung' : 'Antwort zeigen'}
+            <button className="btn primary block" onClick={reveal} disabled={(card.type === 'mc' && selected.length === 0) || (card.type === 'match' && !matchComplete)}>
+              {card.type === 'mc' || card.type === 'match' ? 'Prüfen' : card.type === 'task' ? 'Lösung' : 'Antwort zeigen'}
             </button>
           )
         ) : (

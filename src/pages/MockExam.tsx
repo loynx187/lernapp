@@ -7,6 +7,7 @@ import { composeMockExam, itemMinutes, scoreMockExam, type Grade } from '../lib/
 import { checkAnswer, formatAnswer } from '../lib/answers'
 import { recordReview } from '../lib/study'
 import { Rating } from '../lib/scheduler'
+import { MatchQuestion, matchScore } from '../components/MatchQuestion'
 import { Rich } from '../components/Rich'
 import { Icon, PageHeader, Progress } from '../components/ui'
 
@@ -120,7 +121,10 @@ export function MockExam() {
   function submit() {
     const auto: Record<string, Grade | undefined> = {}
     for (const c of items) {
-      if (c.type === 'mc') {
+      if (c.type === 'match' && c.pairs) {
+        const right = matchScore(selected[c.id] ?? [], c.pairs.length)
+        auto[c.id] = right === c.pairs.length ? 'richtig' : right > 0 ? 'teilweise' : 'falsch'
+      } else if (c.type === 'mc') {
         const sel = selected[c.id] ?? []
         const right = c.correct ?? []
         auto[c.id] = sel.length === right.length && sel.every((x) => right.includes(x)) ? 'richtig' : 'falsch'
@@ -283,6 +287,10 @@ export function MockExam() {
               )
             })}
           </div>
+        )}
+
+        {c.type === 'match' && c.pairs && (
+          <MatchQuestion pairs={c.pairs} value={sel} onChange={(v) => setSelected((s) => ({ ...s, [c.id]: v }))} revealed={reviewing} seed={c.id} />
         )}
 
         {answers.length > 0 && (

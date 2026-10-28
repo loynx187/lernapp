@@ -41,7 +41,7 @@ export interface CardPackage {
   cards: CardContent[]
 }
 
-const TYPES: CardType[] = ['basic', 'cloze', 'mc', 'task']
+const TYPES: CardType[] = ['basic', 'cloze', 'mc', 'match', 'task']
 const MODES: Mode[] = ['mobile', 'desk']
 
 const isStr = (v: unknown): v is string => typeof v === 'string'
@@ -75,6 +75,12 @@ export function parsePackage(raw: unknown): CardPackage {
       if (!correct.length || correct.some((n) => n < 0 || n >= options.length)) throw new Error(`${where}: ungültige richtige Antwort(en).`)
       card.options = options
       card.correct = correct
+    }
+    if (type === 'match') {
+      const pairs = Array.isArray(c.pairs) ? c.pairs.filter((p): p is [string, string] => Array.isArray(p) && p.length === 2 && isStr(p[0]) && isStr(p[1])) : []
+      if (pairs.length < 2) throw new Error(`${where}: Zuordnen braucht mindestens zwei Paare [links, rechts].`)
+      if (new Set(pairs.map((p) => p[1].trim())).size !== pairs.length) throw new Error(`${where}: Zuordnen – die rechten Einträge müssen verschieden sein.`)
+      card.pairs = pairs.map(([l, r]) => [l, r])
     }
     const steps = strArray(c.steps)
     if (steps) card.steps = steps

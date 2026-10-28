@@ -30,6 +30,12 @@ describe('parsePackage', () => {
     expect(p.cards[0].answers).toEqual([{ text: ['3E8'] }, { label: 'Y', text: ['01', '1'] }, { value: 2.5, unit: 'V' }])
     expect(() => parsePackage({ ...sample, cards: [{ uid: 'a', type: 'task', front: 'x', answers: [{ label: 'Y' }] }] })).toThrow(/Text/)
   })
+  it('liest Zuordnen-Karten und lehnt doppelte rechte Einträge ab', () => {
+    const p = parsePackage({ ...sample, cards: [{ uid: 'a', type: 'match', front: 'Ordne zu', pairs: [['ISO 9001', 'Anforderungen'], ['ISO 19011', 'Audits']] }] })
+    expect(p.cards[0].pairs).toEqual([['ISO 9001', 'Anforderungen'], ['ISO 19011', 'Audits']])
+    expect(() => parsePackage({ ...sample, cards: [{ uid: 'a', type: 'match', front: 'x', pairs: [['a', 'b']] }] })).toThrow(/mindestens zwei/)
+    expect(() => parsePackage({ ...sample, cards: [{ uid: 'a', type: 'match', front: 'x', pairs: [['a', 'b'], ['c', 'b']] }] })).toThrow(/verschieden/)
+  })
   it('verwirft Bilder, die keine Daten-URL sind', () => {
     const p = parsePackage({ ...sample, cards: [{ uid: 'a', front: 'x', image: 'https://example.com/x.png' }] })
     expect(p.cards[0].image).toBeUndefined()
