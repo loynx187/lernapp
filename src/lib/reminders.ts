@@ -6,12 +6,40 @@ import { slugify } from './package-format'
 import { matchExam } from './profile'
 
 export const REMINDERS_FORMAT = 'lernapp-erinnerungen'
+/** So lange bleiben erledigte Erinnerungen (ausgegraut, mit „Rückgängig“) sichtbar, danach werden sie gelöscht. */
+export const KEEP_DONE_DAYS = 7
 
 /** Offen = nicht abgehakt und die verknüpfte Hausaufgabe (falls vorhanden) nicht erledigt. */
 export function isOpenReminder(r: Reminder, homework: Map<string, Homework>) {
   if (r.doneAt) return false
   const h = r.homeworkId ? homework.get(r.homeworkId) : undefined
   return !h?.doneAt
+}
+
+/** Zeitpunkt, zu dem die Erinnerung erledigt wurde – abgehakt oder über die verknüpfte Hausaufgabe. */
+export function doneTime(r: Reminder, homework: Map<string, Homework>): number | undefined {
+  return r.doneAt ?? (r.homeworkId ? homework.get(r.homeworkId)?.doneAt : undefined)
+}
+
+/** Erledigt, aber noch keine KEEP_DONE_DAYS her – wird ausgegraut angezeigt. */
+export function isRecentlyDone(r: Reminder, homework: Map<string, Homework>, now = Date.now()) {
+  const t = doneTime(r, homework)
+  return t !== undefined && now - t < KEEP_DONE_DAYS * 864e5
+}
+
+/** Löscht Erinnerungen, die seit mehr als KEEP_DONE_DAYS erledigt sind (mit Löschmarke für den Abgleich). */
+export async function purgeDoneReminders(profileId: string, now = Date.now()) {
+  const [list, hw] = await Promise.all([
+    db.reminders.where('profileId').equals(profileId).toArray(),
+    db.homework.where('profileId').equals(profileId).toArray(),
+  ])
+  const homework = new Map(hw.map((h) => [h.id, h]))
+  const old = list.filter((r) => {
+    const t = doneTime(r, homework)
+    return t !== undefined && now - t >= KEEP_DONE_DAYS * 864e5
+  })
+  for (const r of old) await deleteReminder(r)
+  return old.length
 }
 
 /** Fällig = offen und der Tag ist erreicht. */

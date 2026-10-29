@@ -4,7 +4,7 @@ import { db, type Exam, type Homework, type Reminder } from './db'
 import { applyDoc, exportDoc, mergeDocs, parseSyncDoc, type SyncDoc } from './sync'
 import { addDays, isoDate } from './dates'
 import {
-  completeReminder, deleteReminder, homeworkReminderDate, importReminders, isDueReminder, isOpenReminder, parseRemindersFile, postponeReminder, REMINDERS_FORMAT, saveReminder,
+  completeReminder, deleteReminder, homeworkReminderDate, importReminders, isDueReminder, isOpenReminder, isRecentlyDone, parseRemindersFile, postponeReminder, purgeDoneReminders, reopenReminder, REMINDERS_FORMAT, saveReminder,
 } from './reminders'
 
 const P = 'p1'
@@ -86,5 +86,30 @@ describe('Erinnerungen', () => {
     expect(await importReminders(P, entries, [exam])).toBe(0)
     await deleteReminder(r)
     expect(await importReminders(P, entries, [exam])).toBe(0)
+  })
+
+  it('bleiben erledigt eine Woche sichtbar, lassen sich rückgängig machen und werden danach gelöscht', async () => {
+    const day = 864e5
+    await db.homework.add({ ...hw, doneAt: NOW - 8 * day })
+    const a = await saveReminder({ profileId: P, title: 'Gerade erledigt', date: '2026-10-29' })
+    const b = await saveReminder({ profileId: P, title: 'Vor 8 Tagen erledigt', date: '2026-10-20' })
+    const c = await saveReminder({ profileId: P, title: 'Über Hausaufgabe erledigt', date: '2026-10-20', homeworkId: 'h1' })
+    const d = await saveReminder({ profileId: P, title: 'Offen', date: '2026-10-20' })
+    await completeReminder(a, NOW - 6 * day)
+    await completeReminder(b, NOW - 8 * day)
+    const homework = new Map([[hw.id, { ...hw, doneAt: NOW - 8 * day }]])
+    expect(isRecentlyDone((await db.reminders.get(a.id))!, homework, NOW)).toBe(true)
+    expect(isRecentlyDone((await db.reminders.get(b.id))!, homework, NOW)).toBe(false)
+
+    // Versehentlich abgehakt → rückgängig
+    await reopenReminder((await db.reminders.get(a.id))!)
+    expect(isOpenReminder((await db.reminders.get(a.id))!, homework)).toBe(true)
+    await completeReminder((await db.reminders.get(a.id))!, NOW - 6 * day)
+
+    expect(await purgeDoneReminders(P, NOW)).toBe(2)
+    expect((await db.reminders.toArray()).map((r) => r.title).sort()).toEqual(['Gerade erledigt', 'Offen'])
+    expect(await db.tombstones.get(`reminders:${b.id}`)).toBeTruthy()
+    expect(await db.tombstones.get(`reminders:${c.id}`)).toBeTruthy()
+    expect(d.id).toBeTruthy()
   })
 })

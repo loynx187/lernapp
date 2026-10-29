@@ -20,8 +20,13 @@ test('Erinnerungen: frei anlegen, zu einer Hausaufgabe setzen, auf der Startseit
   const widget = page.getByRole('region', { name: /Erinnerungen: 1 fällig/ })
   await expect(widget).toContainText('Altklausur beim Dozenten anfragen')
   await widget.getByRole('button', { name: 'Erledigt: Altklausur beim Dozenten anfragen' }).click()
-  await expect(page.getByRole('region', { name: /fällig/ })).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Erinnerungen: 0 offen' })).toBeVisible()
+  // Bleibt heute ausgegraut stehen – versehentlich abgehakt lässt sich rückgängig machen
+  const done = page.getByRole('region', { name: 'Erinnerungen: 0 fällig' })
+  await expect(done.locator('.reminder-row.done')).toContainText('Altklausur beim Dozenten anfragen')
+  await done.getByRole('button', { name: 'Rückgängig: Altklausur beim Dozenten anfragen' }).click()
+  await expect(page.getByRole('region', { name: 'Erinnerungen: 1 fällig' }).locator('.reminder-row.done')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Erledigt: Altklausur beim Dozenten anfragen' }).click()
+  await expect(page.getByRole('region', { name: 'Erinnerungen: 0 fällig' })).toBeVisible()
 
   // Hausaufgabe früher bearbeiten: Erinnerung von der Hausaufgabe aus
   await page.goto('./#/hausaufgabe/neu')
@@ -43,6 +48,12 @@ test('Erinnerungen: frei anlegen, zu einer Hausaufgabe setzen, auf der Startseit
   await page.goto('./#/erinnerungen')
   await expect(page.locator('.section-title', { hasText: 'Später' })).toHaveCount(0)
   await expect(page.locator('.reminder-row', { hasText: 'Übungsblatt 3' })).toContainText('Hausaufgabe erledigt')
+  // Erledigt-Liste: ausgegraut mit „Rückgängig“
+  const altklausur = page.locator('.reminder-row.done', { hasText: 'Altklausur beim Dozenten anfragen' })
+  await expect(altklausur).toContainText('erledigt heute')
+  await altklausur.getByRole('button', { name: /Rückgängig/ }).click()
+  await expect(page.locator('.section-title', { hasText: 'Fällig' })).toBeVisible()
+  await page.getByRole('button', { name: 'Erledigt: Altklausur beim Dozenten anfragen' }).click()
 
   // Erinnerung per Datei (z. B. von Claude)
   const file = { format: 'lernapp-erinnerungen', formatVersion: 1, reminders: [{ id: 'pilot-feedback', title: 'Feedback zum Pilot geben', note: 'Tipps zu leicht oder zu schwer?', date: isoIn(0), exam: 'maschinendynamik' }] }

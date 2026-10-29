@@ -535,4 +535,6 @@ details.explain[open] > summary::after { transform: rotate(90deg); }
 .reminder-row.compact .dot { margin-top: 0; }
 .reminder-row.compact .reminder-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .reminder-row.compact .btn { flex-shrink: 0; }
+.reminder-row.done .reminder-title, .reminder-row.done .dot { opacity: 0.45; }
+.reminder-row.done .reminder-title { text-decoration: line-through; }
 .w-reminders { display: flex; flex-direction: column; margin-bottom: 8px; }

@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { db, type Exam, type Homework, type Reminder } from '../lib/db'
 import { addDays, daysUntil, formatDate, isoDate } from '../lib/dates'
-import { completeReminder, deleteReminder, homeworkReminderDate, isDueReminder, isOpenReminder, postponeReminder, reopenReminder, saveReminder, sortReminders } from '../lib/reminders'
+import { completeReminder, deleteReminder, doneTime, homeworkReminderDate, isDueReminder, isOpenReminder, isRecentlyDone, KEEP_DONE_DAYS, postponeReminder, purgeDoneReminders, reopenReminder, saveReminder, sortReminders } from '../lib/reminders'
 import { PageHeader } from '../components/ui'
 
 /** „heute“, „morgen“, „in 3 Tagen (03.11.2026)“, „seit 2 Tagen“ */
@@ -29,46 +29,67 @@ export function useReminders() {
   }, [profile.id])
 }
 
-/** Eine Erinnerung in einer Liste – mit „Erledigt“ (und auf der Übersicht „Morgen“), solange sie offen ist. */
+/** Räumt seit über einer Woche erledigte Erinnerungen weg (einmal je Aufruf der Seite). */
+export function usePurgeDoneReminders() {
+  const { profile } = useActive()
+  useEffect(() => {
+    purgeDoneReminders(profile.id).catch(() => {})
+  }, [profile.id])
+}
+
+/**
+ * Eine Erinnerung in einer Liste. Offen: „Erledigt“ (auf der Übersicht auch „Auf morgen“).
+ * Erledigt: ausgegraut mit „Rückgängig“ – über eine Hausaufgabe erledigte öffnet man über die Hausaufgabe wieder.
+ */
 export function ReminderRow({ r, exam, hw, compact }: { r: Reminder; exam?: Exam; hw?: Homework; compact?: boolean }) {
   const open = !r.doneAt && !hw?.doneAt
   const due = open && daysUntil(r.date) <= 0
-  const meta = [open ? reminderLabel(r) : r.doneAt ? `erledigt am ${new Date(r.doneAt).toLocaleDateString('de-DE')}` : 'Hausaufgabe erledigt', exam?.name, hw && `zu „${hw.title}“`].filter(Boolean).join(' · ')
-  const done = (
+  const meta = [open ? reminderLabel(r) : r.doneAt ? `erledigt ${doneLabel(r.doneAt)}` : 'Hausaufgabe erledigt', exam?.name, hw && `zu „${hw.title}“`].filter(Boolean).join(' · ')
+  const action = open ? (
     <button className="btn small" onClick={() => completeReminder(r)} aria-label={`Erledigt: ${r.title}`}>Erledigt</button>
-  )
+  ) : r.doneAt ? (
+    <button className="btn small ghost" style={{ color: 'var(--accent)' }} onClick={() => reopenReminder(r)} aria-label={`Rückgängig: ${r.title}`}>Rückgängig</button>
+  ) : null
   return (
-    <div className={`reminder-row${compact ? ' compact' : ''}`}>
+    <div className={`reminder-row${compact ? ' compact' : ''}${open ? '' : ' done'}`}>
       <span className="dot" style={{ background: exam?.color ?? 'var(--muted)' }} />
       <div className="reminder-main">
         <Link to={`/erinnerung/${r.id}`} className="reminder-title">{r.title}</Link>
         <small className={due && daysUntil(r.date) < 0 ? 'badge-warn' : 'muted'}>{meta}</small>
-        {open && !compact && (
+        {action && !compact && (
           <span className="row" style={{ gap: 8, marginTop: 6 }}>
-            {done}
+            {action}
             {due && <button className="btn small ghost" style={{ color: 'var(--accent)' }} onClick={() => postponeReminder(r)}>Auf morgen</button>}
           </span>
         )}
       </div>
-      {open && compact && done}
+      {compact && action}
     </div>
   )
+}
+
+/** „heute“, „gestern“, „am 27.10.“ */
+function doneLabel(t: number) {
+  const d = -daysUntil(isoDate(t))
+  return d <= 0 ? 'heute' : d === 1 ? 'gestern' : `am ${new Date(t).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`
 }
 
 /** Übersicht: fällige, spätere und erledigte Erinnerungen. */
 export function RemindersList() {
   const data = useReminders()
+  usePurgeDoneReminders()
   if (!data) return null
   const { reminders, exams, homework } = data
   const open = reminders.filter((r) => isOpenReminder(r, homework))
   const due = open.filter((r) => isDueReminder(r, homework))
   const later = open.filter((r) => !isDueReminder(r, homework))
-  const done = reminders.filter((r) => !isOpenReminder(r, homework)).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0)).slice(0, 20)
+  const done = reminders.filter((r) => isRecentlyDone(r, homework)).sort((a, b) => (doneTime(b, homework) ?? 0) - (doneTime(a, homework) ?? 0))
 
-  const section = (title: string, items: Reminder[]) =>
+  const section = (title: string, items: Reminder[], hint?: string) =>
     items.length > 0 && (
       <>
         <div className="section-title">{title}</div>
+        {hint && <p className="muted" style={{ fontSize: 14, margin: '-4px 0 8px' }}>{hint}</p>}
         <div className="card reminder-list">
           {items.map((r) => (
             <ReminderRow key={r.id} r={r} exam={r.examId ? exams.get(r.examId) : undefined} hw={r.homeworkId ? homework.get(r.homeworkId) : undefined} />
@@ -80,7 +101,7 @@ export function RemindersList() {
   return (
     <>
       <PageHeader back title="Erinnerungen" action={<Link className="btn small" to="/erinnerung/neu">Neu</Link>} />
-      {reminders.length === 0 && (
+      {open.length === 0 && done.length === 0 && (
         <div className="card empty stack">
           <p className="muted">Noch keine Erinnerungen. Erinnerungen erscheinen ab ihrem Tag auf der Startseite – z. B. „Übungsblatt 3 schon am Wochenende bearbeiten“ oder „Altklausur beim Dozenten anfragen“.</p>
           <Link className="btn primary" to="/erinnerung/neu">Erinnerung hinzufügen</Link>
@@ -88,7 +109,7 @@ export function RemindersList() {
       )}
       {section('Fällig', due)}
       {section('Später', later)}
-      {section('Erledigt', done)}
+      {section('Erledigt', done, `Bleiben ${KEEP_DONE_DAYS} Tage sichtbar und lassen sich rückgängig machen, danach werden sie gelöscht.`)}
     </>
   )
 }
