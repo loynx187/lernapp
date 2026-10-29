@@ -199,7 +199,7 @@ Mehrere Kartenpakete für verschiedene Prüfungen in einer Datei – z. B. alle 
 }
 ```
 
-Zuordnung wie bei Fachprofilen: über `slug` (Archiv-Ordner, wie im Auftrag), sonst über `name`, sonst über die Prüfung, in der ein Paket mit gleicher ID schon importiert ist; Prüfungen des aktiven Semesters haben Vorrang. Jedes neue oder neuere Paket wird wie ein einzelner Import übernommen (Lernfortschritt bleibt, im Paket fehlende Karten werden archiviert, Meldungen zu geänderten Karten gelten als erledigt, `later`/`pending`/`profile` wirken wie gewohnt). Gleiche und ältere Versionen bleiben unverändert. Erzeugen: `npm run sammlung -- --out <datei> <archiv>/faecher/<slug>/pakete/<paket>.lernpaket.json …` (Slug aus dem Archivpfad oder als `<slug>=<datei>`).
+Zuordnung wie bei Fachprofilen: über `slug` (Archiv-Ordner, wie im Auftrag), sonst über `name`, sonst über die Prüfung, in der ein Paket mit gleicher ID schon importiert ist; Prüfungen des aktiven Semesters haben Vorrang. Jedes neue oder neuere Paket wird wie ein einzelner Import übernommen (Lernfortschritt bleibt, im Paket fehlende Karten werden archiviert, Meldungen zu geänderten oder entfernten Karten gelten als erledigt, `later`/`pending`/`profile` wirken wie gewohnt). Gleiche und ältere Versionen bleiben unverändert. Erzeugen: `npm run sammlung -- --out <datei> <archiv>/faecher/<slug>/pakete/<paket>.lernpaket.json …` (Slug aus dem Archivpfad oder als `<slug>=<datei>`).
 
 ## Karten aus anderen Tools (Text-Import)
 

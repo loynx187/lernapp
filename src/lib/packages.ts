@@ -79,13 +79,15 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       }
     })
     for (const old of keepMissing ? [] : existing.values()) {
+      // Nicht mehr im Paket: Die Meldung dazu ist mit dem Update ebenfalls erledigt.
+      changed.push(old.id)
       if (!old.archived) {
         result.archived++
         next.push({ ...old, archived: 1 })
       }
     }
     await db.cards.bulkPut(next)
-    // Meldungen zu Karten, die das Update geändert hat, gelten als bearbeitet.
+    // Meldungen zu Karten, die das Update geändert oder entfernt hat, gelten als bearbeitet.
     const open = (await db.reports.where('cardId').anyOf(changed).toArray()).filter((r) => !r.resolvedAt)
     for (const r of open) await db.reports.update(r.id, { resolvedAt: now })
     result.resolvedReports = open.length
