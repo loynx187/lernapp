@@ -3,7 +3,7 @@ import { mergeProfile } from './profile'
 import { sortPackages } from './stats'
 import { newMemoryState } from './scheduler'
 import { chapterKey, mergePending } from './pending'
-import { PACKAGE_FORMAT, type CardPackage } from './package-format'
+import { PACKAGE_FORMAT, requiredApp, type CardPackage } from './package-format'
 
 export { BACKUP_FORMAT, PACKAGE_FORMAT, parsePackage, type CardPackage } from './package-format'
 export { parseTextCards, textToPackage, type TextCard } from './textCards'
@@ -174,6 +174,7 @@ export async function exportPackage(exam: Exam, packageId: string): Promise<Card
     version: rec?.version ?? 1,
     created: new Date().toISOString().slice(0, 10),
     chapters: [...chapters].map(([id, title]) => ({ id, title })),
+    minApp: requiredApp(cards),
     cards: cards.map((c) => {
       const { id: _1, profileId: _2, examId: _3, packageId: _4, chapterTitle: _5, order: _6, archived: _7, addedAt: _8, s: _9, ...content } = c
       return content

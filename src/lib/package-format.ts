@@ -151,6 +151,12 @@ export function compareVersions(a: string, b: string) {
   return 0
 }
 
+/** Mindest-App-Version für die Kartentypen und Felder eines Pakets – damit ältere Apps warnen statt Felder still zu verwerfen. */
+export function requiredApp(cards: Pick<CardContent, 'type' | 'prompts' | 'keyPoints'>[]): string | undefined {
+  if (cards.some((c) => c.prompts?.length || c.keyPoints?.length)) return '1.19.0'
+  if (cards.some((c) => c.type === 'match')) return '1.15.0'
+}
+
 /** Fehlermeldung, wenn ein Paket eine neuere App braucht – sonst gingen neue Felder beim Import still verloren. */
 export function appTooOld(pkg: Pick<CardPackage, 'minApp' | 'title'>, appVersion: string): string | undefined {
   if (pkg.minApp && compareVersions(appVersion, pkg.minApp) < 0)
