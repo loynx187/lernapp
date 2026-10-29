@@ -20,7 +20,7 @@ export function Ideas() {
 
   return (
     <>
-      <PageHeader back title="Ideen für Version 2" subtitle="Wird nach der Testphase umgesetzt" />
+      <PageHeader back title="Ideen für Version 2" subtitle="Gesammelt während der Testphase" />
 
       <div className="section-title">Eigene Notizen</div>
       <div className="card stack">
@@ -44,7 +44,10 @@ export function Ideas() {
             {g.intro && <p className="muted" style={{ margin: 0, fontSize: 14 }}>{g.intro}</p>}
             {g.ideas.map((i) => (
               <details key={i.title} className="explain">
-                <summary>{i.title}</summary>
+                <summary>
+                  {i.title}
+                  {i.status && <span className="chip" style={{ marginLeft: 8, fontSize: 12 }}>{i.status}</span>}
+                </summary>
                 <p style={{ fontSize: 15 }}>{i.text}</p>
               </details>
             ))}

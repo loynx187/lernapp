@@ -38,6 +38,8 @@ export interface CardPackage {
   profile?: ExamProfile
   /** Noch fehlende Unterlagen, an die die App erinnern soll (z. B. Altklausuren). */
   pending?: PendingInput[]
+  /** Mindestens nötige App-Version (z. B. „1.19.0“), wenn das Paket neue Felder nutzt. */
+  minApp?: string
   cards: CardContent[]
 }
 
@@ -112,6 +114,10 @@ export function parsePackage(raw: unknown): CardPackage {
     if (topics?.length) card.topics = topics
     if (c.pastExam === true) card.pastExam = true
     if (MODES.includes(c.mode as Mode)) card.mode = c.mode as Mode
+    const prompts = strArray(c.prompts)?.map((x) => x.trim()).filter(Boolean)
+    if (prompts?.length) card.prompts = prompts
+    const keyPoints = strArray(c.keyPoints)?.map((x) => x.trim()).filter(Boolean)
+    if (keyPoints?.length) card.keyPoints = keyPoints
     return card
   })
 
@@ -132,8 +138,23 @@ export function parsePackage(raw: unknown): CardPackage {
     chapters,
     profile: parseProfile(p.profile),
     pending,
+    minApp: isStr(p.minApp) && /^\d+\.\d+\.\d+$/.test(p.minApp) ? p.minApp : undefined,
     cards,
   }
+}
+
+/** Vergleicht Versionsnummern „x.y.z“; negativ, wenn a älter ist. */
+export function compareVersions(a: string, b: string) {
+  const pa = a.split('.').map(Number)
+  const pb = b.split('.').map(Number)
+  for (let i = 0; i < 3; i++) if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0)
+  return 0
+}
+
+/** Fehlermeldung, wenn ein Paket eine neuere App braucht – sonst gingen neue Felder beim Import still verloren. */
+export function appTooOld(pkg: Pick<CardPackage, 'minApp' | 'title'>, appVersion: string): string | undefined {
+  if (pkg.minApp && compareVersions(appVersion, pkg.minApp) < 0)
+    return `„${pkg.title}“ braucht App-Version ${pkg.minApp} (installiert: ${appVersion}). Bitte zuerst die App aktualisieren (neu laden), dann erneut importieren.`
 }
 
 const TASK_SHARES: TaskShare[] = ['keine', 'wenig', 'mittel', 'hoch']

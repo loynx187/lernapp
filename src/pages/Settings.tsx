@@ -133,6 +133,13 @@ export function Settings() {
           <input type="checkbox" checked={profile.budgetAuto !== false} onChange={(e) => update({ budgetAuto: e.target.checked })} />
           <span style={{ fontSize: 15 }}>Budget an die gemessene Lernzeit anpassen</span>
         </label>
+        <label className="row" style={{ gap: 10, marginBottom: 4, alignItems: 'flex-start' }}>
+          <input type="checkbox" checked={!!profile.socratic} onChange={(e) => update({ socratic: e.target.checked })} style={{ marginTop: 3 }} />
+          <span style={{ fontSize: 15 }}>Sokratisches Lernen (Test)</span>
+        </label>
+        <small style={{ display: 'block', marginBottom: 14 }}>
+          Bei Karten mit Leitfragen gibt es vor dem Aufdecken „Tipp“-Fragen, danach Kernpunkte zum Abhaken und einen Bewertungsvorschlag. Ausgeschaltet läuft das Lernen wie bisher.
+        </small>
         <label className="field" style={{ marginBottom: 0 }}>
           <span>Zielsicherheit: {Math.round(profile.retention * 100)} %</span>
           <input type="range" min={0.8} max={0.95} step={0.01} value={profile.retention} onChange={(e) => update({ retention: Number(e.target.value) })} />

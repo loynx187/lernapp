@@ -64,6 +64,11 @@ Allgemeine Regeln (gelten für jedes Fach):
 - **Aufbauende Reihenfolge:** Karten in Skriptreihenfolge; bei ungeordneten Unterlagen (ganzes Skript, Sammlung) so ordnen, dass Grundlagen vor darauf aufbauenden Themen kommen, und zusammenhängende Themen als eigenes Kapitel bündeln.
 - Fachliche Aussagen müssen durch die Unterlagen gedeckt sein. Wo du ergänzt (z. B. Erklärung, Beispielrechnung), muss es fachlich korrekt und klar als Erklärung erkennbar sein.
 
+**Sokratisches Lernen (`prompts`, `keyPoints`):** nur wenn das Fachprofil (archiv `profil.md`) es für das Fach vorsieht oder der Nutzer es verlangt; nur für Erklär- und Verständnisfragen (Fragenkataloge, „Warum/Erkläre“-Karten), nicht für Fakten, Lückentexte, MC oder Zuordnen.
+- `prompts`: 2–4 Leitfragen in aufsteigender Hilfe – erst den Ansatzpunkt („Was passiert mit der Energie, wenn …?“), dann den nächsten Denkschritt. Fragen, keine Aussagen; sie dürfen die Antwort nicht vorwegnehmen und nichts behaupten, was nicht im Skript steht.
+- `keyPoints`: 2–5 kurze Kernaussagen, die eine vollständige Klausurantwort enthalten muss – jede steht inhaltlich in `back` (gleiche Begriffe), Formeln nur, wenn die Frage danach fragt.
+- Paket bekommt `"minApp": "1.19.0"`; `npm run validate` prüft Anzahl, Wortlaut-Übernahmen und ob die Kernpunkte in der Antwort stehen. Dem Nutzer sagen: erst App aktualisieren, dann importieren.
+
 **Meldungen bearbeiten:** Für jede Meldung die Karte (über `packageId` + `uid`) gegen die Folie prüfen und korrigieren, aufteilen oder – falls unbegründet – unverändert lassen. Jede Meldung bekommt in der Zusammenfassung eine Zeile „geändert / aufgeteilt / unverändert, weil …“.
 
 Dann die **Schwerpunkte aus dem Fachprofil** anwenden (Anteil Rechenaufgaben, Fokus-Themen, Notation, was weggelassen wird).

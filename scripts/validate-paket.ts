@@ -1,7 +1,7 @@
 // Prüft ein Kartenpaket vor der Übergabe an den Nutzer.
 // Aufruf: node scripts/validate-paket.ts <paket.json> [--alt <vorherige-version.json>] [--folien 1-25]
 import { readFileSync } from 'node:fs'
-import { parsePackage, type CardPackage } from '../src/lib/package-format.ts'
+import { compareVersions, parsePackage, type CardPackage } from '../src/lib/package-format.ts'
 
 const args = process.argv.slice(2)
 const opt = (name: string) => {
@@ -50,6 +50,37 @@ for (const c of pkg.cards) {
   else fronts.set(key, c.uid)
   if (!/^k\d+-f\d{3}-\d+$/.test(c.uid)) warnings.push(`${where}: uid folgt nicht dem Schema k<Kapitel>-f<Folie>-<n>.`)
 }
+// Sokratisches Lernen: Leitfragen und Kernpunkte
+const SOCRATIC_APP = '1.19.0'
+const words = (s: string) => norm(s.replace(/\$[^$]*\$/g, ' ')).split(' ').filter((w) => w.length >= 5)
+const socratic = pkg.cards.filter((c) => c.prompts?.length || c.keyPoints?.length)
+if (socratic.length && (!pkg.minApp || compareVersions(pkg.minApp, SOCRATIC_APP) < 0))
+  errors.push(`Leitfragen/Kernpunkte brauchen "minApp": "${SOCRATIC_APP}" – ältere Apps verwerfen sie sonst still.`)
+for (const c of socratic) {
+  const where = `Karte ${c.uid}`
+  const answer = new Set(words(c.back))
+  if (c.prompts && (c.prompts.length < 2 || c.prompts.length > 4)) warnings.push(`${where}: ${c.prompts.length} Leitfragen (empfohlen 2–4).`)
+  if (c.keyPoints && (c.keyPoints.length < 2 || c.keyPoints.length > 5)) warnings.push(`${where}: ${c.keyPoints.length} Kernpunkte (empfohlen 2–5).`)
+  for (const p of c.prompts ?? []) {
+    if (!p.trim().endsWith('?')) warnings.push(`${where}: Leitfrage ohne Fragezeichen: „${p.slice(0, 60)}“`)
+    // Eine Leitfrage soll hinführen, nicht die Antwort vorwegnehmen.
+    const back = norm(c.back)
+    const seq = norm(p).split(' ')
+    for (let i = 0; i + 6 <= seq.length; i++) {
+      if (back.includes(seq.slice(i, i + 6).join(' '))) {
+        warnings.push(`${where}: Leitfrage übernimmt Wortlaut der Antwort: „${p.slice(0, 60)}“`)
+        break
+      }
+    }
+  }
+  for (const k of c.keyPoints ?? []) {
+    // Jeder Kernpunkt muss sich in der Antwort wiederfinden – sonst prüft er etwas, das nicht auf der Karte steht.
+    const w = words(k)
+    const hit = w.filter((x) => answer.has(x)).length
+    if (w.length && hit / w.length < 0.4) warnings.push(`${where}: Kernpunkt kaum in der Antwort zu finden: „${k.slice(0, 60)}“`)
+  }
+}
+
 const noPage = pkg.cards.filter((c) => c.source && c.source.page === undefined).length
 if (noPage) warnings.push(`${noPage} Karten ohne source.page – „Folie ansehen“ nutzt dann die Foliennummer als PDF-Seite.`)
 const used = count(pkg.cards.map((c) => c.chapter ?? ''))
@@ -81,6 +112,7 @@ console.log(`${pkg.cards.length} Karten · ${chapters.size} Kapitel`)
 console.log('Typen:', Object.fromEntries(count(pkg.cards.map((c) => c.type))))
 console.log('Relevanz:', Object.fromEntries(count(pkg.cards.map((c) => c.relevance ?? 2))))
 const tasks = pkg.cards.filter((c) => c.type === 'task')
+if (socratic.length) console.log(`Sokratisch: ${socratic.length} Karten mit Leitfragen/Kernpunkten (minApp ${pkg.minApp ?? '–'})`)
 if (tasks.length) console.log(`Aufgaben: ${tasks.length}, davon aus Probe-/Altklausuren: ${tasks.filter((c) => c.pastExam).length}, mit Themen: ${tasks.filter((c) => c.topics?.length).length}`)
 for (const [id, title] of chapters) console.log(`  ${title}: ${used.get(id) ?? 0}`)
 for (const w of warnings) console.log(`WARNUNG: ${w}`)
