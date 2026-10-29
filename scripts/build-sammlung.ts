@@ -1,7 +1,7 @@
 // Fasst mehrere Kartenpakete zu einer Paket-Sammlung zusammen (ein Import in der App).
 // Aufruf: node scripts/build-sammlung.ts --out <datei.lernsammlung.json> <paket.json> [<slug>=<paket.json> …]
 // Ohne `<slug>=` wird der Slug aus dem Archivpfad faecher/<slug>/pakete/… gelesen.
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { parsePackage, slugify, type CardPackage } from '../src/lib/package-format.ts'
 
 const args = process.argv.slice(2)
@@ -14,6 +14,8 @@ if (!out || !inputs.length) {
 }
 
 const exams = new Map<string, CardPackage[]>()
+// Fachname aus faecher/<slug>/profil.md (erste Überschrift) – damit die Vorschau lesbar ist.
+const names = new Map<string, string>()
 for (const input of inputs) {
   const [given, file] = input.includes('=') ? input.split('=', 2) : [undefined, input]
   const slug = given ?? file.match(/faecher\/([^/]+)\/pakete\//)?.[1]
@@ -34,13 +36,16 @@ for (const input of inputs) {
     process.exit(1)
   }
   exams.set(slugify(slug), [...list, pkg])
+  const profile = file.replace(/pakete\/[^/]+$/, 'profil.md')
+  const name = profile !== file && existsSync(profile) ? readFileSync(profile, 'utf8').match(/^# (.+)$/m)?.[1].trim() : undefined
+  if (name) names.set(slugify(slug), name)
 }
 
 const bundle = {
   format: 'lernapp-sammlung',
   formatVersion: 1,
   created: new Date().toISOString().slice(0, 10),
-  exams: [...exams].map(([slug, packages]) => ({ slug, packages })),
+  exams: [...exams].map(([slug, packages]) => ({ slug, name: names.get(slug), packages })),
 }
 writeFileSync(out, JSON.stringify(bundle, null, 1))
 for (const [slug, packages] of exams) for (const p of packages) console.log(`${slug}: ${p.title} (${p.id}, Version ${p.version}, ${p.cards.length} Karten)`)

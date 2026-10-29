@@ -26,7 +26,8 @@ test('Paket-Sammlung aktualisiert mehrere Prüfungen in einem Schritt', async ({
   await page.locator('input[type=file]').first().setInputFiles({ name: 'updates.lernsammlung.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) })
   await expect(page.getByRole('heading', { name: 'Paket-Sammlung' })).toBeVisible()
   await expect(page.getByText(`Update ${sample.version} → ${sample.version + 1}`)).toBeVisible()
-  await expect(page.getByText('→ Qualitätsmanagement')).toBeVisible()
+  await expect(page.locator('.bundle-exam b')).toHaveText(['Regelungstechnik', 'Qualitätsmanagement', 'Thermodynamik'])
+  await expect(page.locator('.bundle-exam').nth(1)).toContainText('QM Grundlagen')
   await expect(page.getByText('keine passende Prüfung')).toBeVisible()
   await page.getByRole('button', { name: 'Übernehmen' }).click()
 
