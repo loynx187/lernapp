@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.16.3** – Meldungen zu Karten, die nicht mehr im Paket sind, tauchen nicht mehr als offen auf („x Meldungen exportieren“, Prüfungsseite, Auftrag für Claude) – auch solche aus der Zeit vor 1.16.2, die sich nicht abhaken ließen.
 - **1.16.2** – Meldungen zu Karten, die ein Paket-Update entfernt (archiviert), gelten jetzt ebenfalls als erledigt – bisher nur Meldungen zu geänderten Karten.
 - **1.16.1** – Vorschau der Paket-Sammlung übersichtlicher: Prüfungen mit ihrem Namen statt des Archiv-Kürzels, Paketnamen ohne den wiederholten Fachnamen und vollständig lesbar statt abgeschnitten.
 - **1.16.0** – Paket-Sammlung: Mehrere Kartenpakete für verschiedene Prüfungen kommen von Claude als eine Datei (`lernapp-sammlung`) und werden unter „Karten importieren“ in einem Schritt übernommen. Die Vorschau zeigt je Paket, ob es ein Update, neu, schon aktuell oder älter als die eigene Version ist; Updates verhalten sich wie einzelne Paket-Importe (Lernfortschritt bleibt, entfernte Karten werden archiviert, Meldungen zu geänderten Karten erledigt).

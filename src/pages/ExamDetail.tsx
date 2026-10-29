@@ -55,7 +55,8 @@ export function ExamDetail() {
     )
   }
   const { cards, deleted, snapshots, packages, reports, homework, plan } = data
-  const openReports = reports.filter((r) => !r.resolvedAt && !deleted.some((c) => c.id === r.cardId))
+  const cardIds = new Set(cards.map((c) => c.id))
+  const openReports = reports.filter((r) => !r.resolvedAt && cardIds.has(r.cardId))
   const stats = examStats(exam, cards, Date.now(), profile.retention, packageBlocks(packages))
   const days = daysUntil(exam.date)
   const hasDesk = cards.some((c) => cardMode(c) === 'desk')
