@@ -2,6 +2,7 @@ import { HashRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AppStateProvider, useAppState } from './state'
 import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
+import { Ideas } from './pages/Ideas'
 import { Session } from './pages/Session'
 import { LearnChoice } from './pages/LearnChoice'
 import { Exams } from './pages/Exams'
@@ -66,6 +67,7 @@ function Shell() {
         <Route path="/import" element={<Import />} />
         <Route path="/einstellungen" element={<Settings />} />
         <Route path="/hilfe" element={<Help />} />
+        <Route path="/ideen" element={<Ideas />} />
         <Route path="/semester/neu" element={<SemesterForm />} />
         <Route path="/probeklausur/:id" element={<MockExam />} />
         <Route path="/lernalgorithmus" element={<FsrsSettings />} />

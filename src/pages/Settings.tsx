@@ -281,6 +281,12 @@ export function Settings() {
       <div className="card">
         <Link to="/hilfe">Installation, Erinnerungen & Lernmethode</Link>
       </div>
+      <div className="card">
+        <Link to="/ideen" className="row between">
+          <span>Ideen für Version 2</span>
+          <small>{profile.ideas?.length ? `${profile.ideas.length} eigene ›` : '›'}</small>
+        </Link>
+      </div>
       <p className="muted" style={{ textAlign: 'center', fontSize: 13 }}>
         Lernapp {__APP_VERSION__}
         <br />
