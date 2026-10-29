@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.16.1** – Vorschau der Paket-Sammlung übersichtlicher: Prüfungen mit ihrem Namen statt des Archiv-Kürzels, Paketnamen ohne den wiederholten Fachnamen und vollständig lesbar statt abgeschnitten.
 - **1.16.0** – Paket-Sammlung: Mehrere Kartenpakete für verschiedene Prüfungen kommen von Claude als eine Datei (`lernapp-sammlung`) und werden unter „Karten importieren“ in einem Schritt übernommen. Die Vorschau zeigt je Paket, ob es ein Update, neu, schon aktuell oder älter als die eigene Version ist; Updates verhalten sich wie einzelne Paket-Importe (Lernfortschritt bleibt, entfernte Karten werden archiviert, Meldungen zu geänderten Karten erledigt).
 - **1.15.0** – Neuer Kartentyp „Zuordnen“ (`match`): zu jedem Begriff den passenden Eintrag aus einer gemischten Liste wählen, z. B. Norm → Aufgabe oder Abkürzung → Bedeutung; automatische Auswertung in Lernsitzung und Probeklausur.
 - **1.14.0** – Prüfungsseite übersichtlicher: Bei vielen Kapiteln zeigt die Liste nur Schwachstellen und die nächsten offenen Kapitel („Alle Kapitel anzeigen“ klappt den Rest auf); Erklärungen zur Prognose, das Eintragen fehlender Unterlagen und die Claude-Anleitung sind einklappbar. Auf dem iPad zweispaltig: Lernen links, Karten, Hausaufgaben, Unterlagen und Pakete rechts. Kennzahlen klarer: Die Prognose nennt die Zielsicherheit („Ziel 90 %“), „aktuell abrufbar“ erscheint erst ab 10 begonnenen Karten.

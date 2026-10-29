@@ -10,6 +10,13 @@ import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, P
 import { importTemplate, parseTemplate, templateStatus, templateSummary, TEMPLATE_FORMAT, type ProfileTemplate, type TemplateResult } from '../lib/template'
 import { BUNDLE_FORMAT, bundlePlan, bundleTotals, importBundle, parseBundle, type BundlePlanEntry, type BundleResult, type PackageBundle } from '../lib/bundle'
 
+/** Paketname ohne vorangestellten Prüfungsnamen („Maschinendynamik – Fragenkatalog“ → „Fragenkatalog“). */
+const shortTitle = (title: string, exam?: string) => {
+  const prefix = exam?.trim().toLowerCase()
+  const m = title.match(/^(.+?)\s+[–-]\s+(.+)$/)
+  return prefix && m && m[1].trim().toLowerCase() === prefix ? m[2] : title
+}
+
 export function Import() {
   const { profile, semester } = useActive()
   const [search] = useSearchParams()
@@ -222,14 +229,14 @@ export function Import() {
             <>
               {plan.map(({ entry, exam, packages }, i) => (
                 <div key={i} className="stack bundle-exam" style={{ gap: 4 }}>
-                  <div className="row between">
-                    <b className="truncate">{entry.name ?? entry.slug}</b>
-                    <small className={exam ? 'muted' : 'badge-warn'}>{exam ? `→ ${exam.name}` : 'keine passende Prüfung'}</small>
+                  <div className="row between" style={{ gap: 8 }}>
+                    <b className="truncate">{exam?.name ?? entry.name ?? entry.slug}</b>
+                    {!exam && <small className="badge-warn" style={{ flexShrink: 0 }}>keine passende Prüfung</small>}
                   </div>
                   {packages.map(({ pkg, status, installed }) => (
-                    <div key={pkg.id} className="row between" style={{ gap: 8 }}>
-                      <span className="truncate">{pkg.title}</span>
-                      <small className={status === 'neuer' || status === 'neu' ? '' : 'muted'} style={{ flexShrink: 0 }}>
+                    <div key={pkg.id} className="row between" style={{ gap: 8, alignItems: 'flex-start' }}>
+                      <span style={{ minWidth: 0 }}>{shortTitle(pkg.title, exam?.name ?? entry.name)}</span>
+                      <small className={status === 'neuer' || status === 'neu' ? '' : 'muted'} style={{ flexShrink: 0, paddingTop: 2 }}>
                         {!exam
                           ? `Version ${pkg.version}`
                           : status === 'neuer'
@@ -244,7 +251,7 @@ export function Import() {
                   ))}
                 </div>
               ))}
-              <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+              <p className="muted" style={{ margin: '8px 0 0', fontSize: 14 }}>
                 Jedes Paket wird wie ein einzelnes Update übernommen: geänderte Karten werden korrigiert, neue kommen dazu, entfernte werden archiviert. Dein Lernfortschritt bleibt. Pakete, die schon aktuell sind oder von denen du eine neuere Version hast, bleiben unverändert.
               </p>
             </>
