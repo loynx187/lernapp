@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.19.1** – Paket-Updates übernehmen geänderte oder entfernte Ergebnisprüfungen bei Rechenaufgaben (`answers`) zuverlässig: Bisher blieben entfernte Ergebnisse stehen, und eine Änderung nur an den Ergebnissen zählte nicht als geänderte Karte.
 - **1.19.0** – Sokratisches Lernen, Stufe 1 (Test, unter Einstellungen → Lernplan einschaltbar, Standard aus): Karten mit Leitfragen bieten vor dem Aufdecken „Tipp“-Fragen, nach dem Aufdecken Kernpunkte zum Abhaken und einen Bewertungsvorschlag (bewertet wird weiter von Hand). Die Kartenliste zeigt Leitfragen und Kernpunkte. Pakete können eine Mindest-Version der App verlangen (`minApp`); ist die App älter, warnt der Import, statt neue Felder still zu verwerfen. Die Ideenseite enthält die Einschätzung und die Stufen.
 - **1.18.0** – Seite „Ideen für Version 2“ (Einstellungen → Hilfe): gesammelte Ideen für die nächste Hauptversion, u. a. sokratisches Lernen mit Leitfragen, „Warum?“-Nachfragen und Hinweisleitern, dazu eigene Notizen, die mit dem Profil abgeglichen werden. Umsetzung nach der Testphase (siehe `docs/IDEEN-2.0.md`).
 - **1.17.0** – Scriptable-Widget immer aktuell: Unter Einstellungen → Synchronisation gibt es einen „Widget-Schlüssel“. In Scriptable eingefügt, lädt das Widget den Fortschritt direkt aus Dropbox statt über die Dateien-App, die die Datei im Hintergrund oft nicht aktualisiert. Ohne Netz zeigt es den zuletzt geladenen Stand. Das Widget-Skript bitte neu kopieren.
