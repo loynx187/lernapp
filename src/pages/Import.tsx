@@ -5,6 +5,7 @@ import { useActive } from '../state'
 import { db } from '../lib/db'
 import { importPackage, parsePackage, parseTextCards, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
 import { appTooOld } from '../lib/package-format'
+import { importReminders, parseRemindersFile, REMINDERS_FORMAT, type ReminderEntry } from '../lib/reminders'
 import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
 import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
@@ -38,6 +39,8 @@ export function Import() {
   const [bundle, setBundle] = useState<PackageBundle | null>(null)
   const [plan, setPlan] = useState<BundlePlanEntry[] | null>(null)
   const [bundleDone, setBundleDone] = useState<BundleResult | null>(null)
+  const [reminders, setReminders] = useState<ReminderEntry[] | null>(null)
+  const [remindersDone, setRemindersDone] = useState<number | null>(null)
   // Alle Prüfungen des Profils, die des aktiven Semesters zuerst – für die Zuordnung einer Paket-Sammlung.
   const allExams = useLiveQuery(
     async () => (await db.exams.where('profileId').equals(profile.id).sortBy('date')).sort((a, b) => Number(b.semesterId === semester.id) - Number(a.semesterId === semester.id)),
@@ -72,7 +75,16 @@ export function Import() {
     setTemplateDone(null)
     setBundleDone(null)
     setBundle(null)
+    setReminders(null)
+    setRemindersDone(null)
     try {
+      if ((raw as { format?: unknown })?.format === REMINDERS_FORMAT) {
+        setPkg(null)
+        setProfiles(null)
+        setTemplate(null)
+        setReminders(parseRemindersFile(raw))
+        return
+      }
       if ((raw as { format?: unknown })?.format === BUNDLE_FORMAT) {
         setPkg(null)
         setProfiles(null)
@@ -226,7 +238,38 @@ export function Import() {
           </div>
         )
       })()}
-      {bundle ? (
+      {remindersDone !== null && (
+        <div className="notice">
+          <b>{remindersDone === 1 ? '1 Erinnerung angelegt.' : `${remindersDone} Erinnerungen angelegt.`}</b> {remindersDone === 0 && 'Sie waren schon vorhanden. '}
+          <Link to="/erinnerungen">Zu den Erinnerungen</Link>
+        </div>
+      )}
+      {reminders ? (
+        <div className="card stack">
+          <h2>Erinnerungen</h2>
+          {reminders.map((r) => (
+            <div key={r.id} className="stack" style={{ gap: 2 }}>
+              <b>{r.title}</b>
+              <small className="muted">ab {new Date(`${r.date}T12:00:00`).toLocaleDateString('de-DE')}{r.exam && ` · ${r.exam}`}</small>
+              {r.note && <small>{r.note}</small>}
+            </div>
+          ))}
+          <div className="row">
+            <button className="btn grow" onClick={() => setReminders(null)}>Abbrechen</button>
+            <button
+              className="btn primary grow"
+              disabled={!reminders.length}
+              onClick={async () => {
+                const all = await db.exams.where('profileId').equals(profile.id).toArray()
+                setRemindersDone(await importReminders(profile.id, reminders, all))
+                setReminders(null)
+              }}
+            >
+              Übernehmen
+            </button>
+          </div>
+        </div>
+      ) : bundle ? (
         <div className="card stack">
           <h2>Paket-Sammlung</h2>
           {error && <div className="notice warn" style={{ margin: 0 }}>{error}</div>}

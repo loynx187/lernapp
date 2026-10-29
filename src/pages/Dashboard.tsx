@@ -11,6 +11,8 @@ import { subjectsToday } from '../lib/planner'
 import { homeworkDueByExam, isDueSoon } from '../lib/homework'
 import { duePending } from '../lib/pending'
 import { shortDue } from './Homework'
+import { ReminderRow, usePurgeDoneReminders, useReminders } from './Reminders'
+import { isDueReminder, isOpenReminder } from '../lib/reminders'
 import { useSync } from '../sync-state'
 import { BACKUP_REMINDER_DAYS, lastBackup } from '../lib/backup'
 import { db } from '../lib/db'
@@ -32,6 +34,8 @@ export function Dashboard() {
   const data = useLiveQuery(() => loadStudyData(profile), [profile])
   const reviewCount = useLiveQuery(() => db.reviews.where('profileId').equals(profile.id).count(), [profile.id])
   const backupAt = useLiveQuery(async () => (await lastBackup(profile.id)) ?? 0, [profile.id])
+  const rem = useReminders()
+  usePurgeDoneReminders()
 
   useEffect(() => {
     if (data) updateSnapshots(profile, data.exams, data.cards).catch(() => {})
@@ -59,6 +63,11 @@ export function Dashboard() {
   const subjects = subjectsToday(plan, homeworkDueByExam(homework, now))
   const examById = new Map(exams.map((e) => [e.id, e]))
   const missingDocs = upcoming.flatMap((e) => duePending(e, now).map((doc) => ({ exam: e, doc })))
+  const openReminders = rem ? rem.reminders.filter((r) => isOpenReminder(r, rem.homework)) : []
+  const dueReminders = rem ? openReminders.filter((r) => isDueReminder(r, rem.homework, now)) : []
+  // Heute abgehakte bleiben bis zum Abend ausgegraut im Widget – zum Rückgängigmachen.
+  const doneToday = rem ? rem.reminders.filter((r) => r.doneAt && studyDate(r.doneAt) === studyDate(now)) : []
+  const reminderRows = [...dueReminders, ...doneToday]
 
   // Gesamtfortschritt über alle anstehenden Prüfungen
   let total = 0
@@ -201,6 +210,19 @@ export function Dashboard() {
           </Widget>
         )}
 
+        {rem && reminderRows.length > 0 && (
+          <Widget size="medium" title="Erinnerungen" icon="bell" tint="var(--accent)" label={`Erinnerungen: ${dueReminders.length} fällig`}>
+            <div className="w-reminders">
+              {reminderRows.slice(0, 3).map((r) => (
+                <ReminderRow key={r.id} r={r} exam={r.examId ? rem.exams.get(r.examId) : undefined} hw={r.homeworkId ? rem.homework.get(r.homeworkId) : undefined} compact />
+              ))}
+            </div>
+            <Link className="w-caption" to="/erinnerungen" style={{ marginTop: 'auto' }}>
+              {reminderRows.length > 3 ? `+ ${reminderRows.length - 3} weitere – alle Erinnerungen` : 'Alle Erinnerungen'}
+            </Link>
+          </Widget>
+        )}
+
         {exams.length > 0 && (
           <Widget size="small" title="Hausaufgaben" icon="pencil" tint="var(--hard)">
             <Link to="/hausaufgaben" className="w-link" aria-label={`Hausaufgaben: ${homework.length} offen`}>
@@ -214,6 +236,24 @@ export function Dashboard() {
               )}
             </Link>
             <Link className="w-pill w-add" to="/hausaufgabe/neu" aria-label="Hausaufgabe eintragen">
+              <Icon name="plus" size={16} /> Eintragen
+            </Link>
+          </Widget>
+        )}
+
+        {rem && reminderRows.length === 0 && (
+          <Widget size="small" title="Erinnerungen" icon="bell">
+            <Link to="/erinnerungen" className="w-link" aria-label={`Erinnerungen: ${openReminders.length} offen`}>
+              {openReminders.length > 0 ? (
+                <>
+                  <div className="w-number">{openReminders.length}</div>
+                  <div className="w-caption truncate">offen · nächste {new Date(`${openReminders[0].date}T12:00:00`).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</div>
+                </>
+              ) : (
+                <div className="w-headline">Keine offen</div>
+              )}
+            </Link>
+            <Link className="w-pill w-add" to="/erinnerung/neu" aria-label="Erinnerung eintragen">
               <Icon name="plus" size={16} /> Eintragen
             </Link>
           </Widget>

@@ -205,6 +205,22 @@ Mehrere Kartenpakete für verschiedene Prüfungen in einer Datei – z. B. alle 
 
 Zuordnung wie bei Fachprofilen: über `slug` (Archiv-Ordner, wie im Auftrag), sonst über `name`, sonst über die Prüfung, in der ein Paket mit gleicher ID schon importiert ist; Prüfungen des aktiven Semesters haben Vorrang. Jedes neue oder neuere Paket wird wie ein einzelner Import übernommen (Lernfortschritt bleibt, im Paket fehlende Karten werden archiviert, Meldungen zu geänderten oder entfernten Karten gelten als erledigt, `later`/`pending`/`profile` wirken wie gewohnt). Gleiche und ältere Versionen bleiben unverändert. Erzeugen: `npm run sammlung -- --out <datei> <archiv>/faecher/<slug>/pakete/<paket>.lernpaket.json …` (Slug aus dem Archivpfad oder als `<slug>=<datei>`).
 
+## Erinnerungen (`Erinnerungen_<Datum>.json`)
+
+Freie Erinnerungen, die Claude dem Nutzer mitgeben kann (z. B. „Feedback zum Pilot geben“, „Altklausuren anfragen“). Import unter „Karten importieren“; sie erscheinen ab `date` auf der Startseite und in `Erinnerung.txt`.
+
+```json
+{
+  "format": "lernapp-erinnerungen",
+  "formatVersion": 1,
+  "reminders": [
+    { "id": "md-pilot-feedback", "title": "Feedback zum Pilot geben", "note": "Tipps zu leicht oder zu schwer?", "date": "2026-11-05", "exam": "maschinendynamik" }
+  ]
+}
+```
+
+`id` ist stabil: Dieselbe Erinnerung wird nie doppelt angelegt, auch nicht, wenn der Nutzer sie gelöscht hat. `exam` (optional) ordnet sie einer Prüfung zu – über den Archiv-Ordner (`slug`) oder den Namen. Für fehlende Unterlagen (Skripte, Altklausuren) weiter `pending` im Paket bzw. in der Fachprofil-Datei verwenden.
+
 ## Karten aus anderen Tools (Text-Import)
 
 Wer kein Claude nutzt, importiert Karten unter „Karten importieren“ → „Karten aus anderen Tools“ (Datei oder eingefügter Text). Erkannt werden:

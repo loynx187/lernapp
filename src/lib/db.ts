@@ -261,12 +261,28 @@ export interface Homework {
   updatedAt?: number
 }
 
+/** Freie Erinnerung („an etwas denken“) – optional mit einer Prüfung oder Hausaufgabe verknüpft. */
+export interface Reminder {
+  id: string
+  profileId: string
+  title: string
+  note?: string
+  /** Fällig ab diesem Tag (ISO-Datum) */
+  date: string
+  examId?: string
+  /** Verknüpfte Hausaufgabe, z. B. um sie vor der Abgabe zu bearbeiten – ist sie erledigt, gilt die Erinnerung als erledigt. */
+  homeworkId?: string
+  createdAt: number
+  doneAt?: number
+  updatedAt?: number
+}
+
 /** Merkt sich Löschungen, damit sie bei der Synchronisation nicht wieder auftauchen. */
 export interface Tombstone {
   /** `${table}:${key}` */
   id: string
   profileId: string
-  table: 'profiles' | 'semesters' | 'exams' | 'reviews' | 'reports' | 'homework'
+  table: 'profiles' | 'semesters' | 'exams' | 'reviews' | 'reports' | 'homework' | 'reminders'
   key: string
   deletedAt: number
 }
@@ -299,6 +315,7 @@ export const db = new Dexie('lernapp') as Dexie & {
   reports: EntityTable<CardReport, 'id'>
   pdfs: EntityTable<StoredPdf, 'name'>
   homework: EntityTable<Homework, 'id'>
+  reminders: EntityTable<Reminder, 'id'>
 }
 
 export const uid = () =>
@@ -335,6 +352,8 @@ db.version(5).stores({ pdfs: 'name' })
 
 db.version(6).stores({ homework: 'id, profileId, examId' })
 
+db.version(7).stores({ reminders: 'id, profileId' })
+
 /** Solange aktiv, übernehmen Schreibzugriffe den mitgelieferten Änderungszeitpunkt (Sync). */
 let keepTimestamps = false
 
@@ -347,7 +366,7 @@ export async function withSyncedTimestamps<T>(fn: () => Promise<T>): Promise<T> 
   }
 }
 
-for (const table of [db.profiles, db.semesters, db.exams, db.cards, db.packages, db.snapshots, db.reports, db.homework] as Dexie.Table<Synced>[]) {
+for (const table of [db.profiles, db.semesters, db.exams, db.cards, db.packages, db.snapshots, db.reports, db.homework, db.reminders] as Dexie.Table<Synced>[]) {
   table.hook('creating', (_key, obj) => {
     if (!keepTimestamps || !obj.updatedAt) obj.updatedAt = Date.now()
   })
@@ -369,7 +388,7 @@ export const MAX_EXAMS_PER_SEMESTER = 10
 
 export const EXAM_COLORS = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#5856d6', '#a2845e', '#8e8e93']
 
-const PROFILE_TABLES = () => [db.semesters, db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.homework, db.tombstones] as Dexie.Table[]
+const PROFILE_TABLES = () => [db.semesters, db.exams, db.cards, db.reviews, db.packages, db.snapshots, db.reports, db.homework, db.reminders, db.tombstones] as Dexie.Table[]
 
 /** Löscht ein Profil mit allen zugehörigen Daten auf diesem Gerät. */
 export async function deleteProfile(profileId: string) {

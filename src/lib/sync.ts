@@ -1,5 +1,5 @@
 import Dexie from 'dexie'
-import { db, withSyncedTimestamps, type CardReport, type Exam, type Homework, type PackageRecord, type Profile, type ReviewLog, type Semester, type Snapshot, type StudyCard, type Tombstone } from './db'
+import { db, withSyncedTimestamps, type CardReport, type Exam, type Homework, type PackageRecord, type Profile, type Reminder, type ReviewLog, type Semester, type Snapshot, type StudyCard, type Tombstone } from './db'
 
 /**
  * Synchronisationsstand eines Profils. Jedes Gerät speichert seinen Stand als ein Dokument;
@@ -19,10 +19,12 @@ export interface SyncDoc {
   snapshots: Snapshot[]
   reports: CardReport[]
   homework: Homework[]
+  /** Fehlt in Ständen älterer App-Versionen. */
+  reminders?: Reminder[]
   tombstones: Tombstone[]
 }
 
-const TABLES = ['semesters', 'exams', 'cards', 'reviews', 'packages', 'snapshots', 'reports', 'homework'] as const
+const TABLES = ['semesters', 'exams', 'cards', 'reviews', 'packages', 'snapshots', 'reports', 'homework', 'reminders'] as const
 type TableName = (typeof TABLES)[number]
 type Rec = { id: string; updatedAt?: number }
 
@@ -95,6 +97,7 @@ export function mergeDocs(a: SyncDoc, b: SyncDoc): SyncDoc {
     snapshots: ofExam([...byId(a.snapshots, b.snapshots).values()]),
     reports: ofExam([...byId(a.reports, b.reports).values()].filter((r) => !deleted('reports', r))),
     homework: ofExam([...byId(a.homework, b.homework).values()].filter((h) => !deleted('homework', h))),
+    reminders: [...byId(a.reminders ?? [], b.reminders ?? []).values()].filter((r) => !deleted('reminders', r)),
     tombstones: [...tombs.values()],
   }
 }
@@ -104,7 +107,7 @@ export function docSignature(d: SyncDoc): string {
   const part = (list: Rec[]) => `${list.length}:${list.reduce((s, r) => s + (r.updatedAt ?? 0), 0)}`
   return [
     `${d.profile.updatedAt ?? 0}:${d.profile.activeSemesterId ?? ''}`,
-    ...TABLES.map((t) => part(d[t] as Rec[])),
+    ...TABLES.map((t) => part((d[t] ?? []) as Rec[])),
     `${d.tombstones.length}:${d.tombstones.reduce((s, t) => s + t.deletedAt, 0)}`,
   ].join('|')
 }
@@ -123,13 +126,13 @@ export async function applyDoc(merged: SyncDoc, base: SyncDoc) {
       }
       for (const name of TABLES) {
         const t = table(name)
-        const incoming = merged[name] as Rec[]
+        const incoming = (merged[name] ?? []) as Rec[]
         const current = await t.bulkGet(incoming.map((r) => r.id))
         const puts = incoming.filter((r, i) => !current[i] || (r.updatedAt ?? 0) > (current[i]!.updatedAt ?? 0))
         if (puts.length) await t.bulkPut(puts)
 
         const keep = new Set(incoming.map((r) => r.id))
-        const gone = (base[name] as Rec[]).filter((r) => !keep.has(r.id))
+        const gone = ((base[name] ?? []) as Rec[]).filter((r) => !keep.has(r.id))
         const now = await t.bulkGet(gone.map((r) => r.id))
         const removable = gone.filter((r, i) => now[i] && (now[i]!.updatedAt ?? 0) <= (r.updatedAt ?? 0)).map((r) => r.id)
         if (removable.length) await t.bulkDelete(removable)
@@ -146,7 +149,7 @@ export async function replaceProfile(doc: SyncDoc, keepTimestamps: boolean) {
     const write = async () => {
       for (const name of TABLES) await table(name).where('profileId').equals(pid).delete()
       await db.profiles.put(doc.profile)
-      for (const name of TABLES) await table(name).bulkPut(doc[name] as Rec[])
+      for (const name of TABLES) await table(name).bulkPut((doc[name] ?? []) as Rec[])
       await db.tombstones.bulkPut(doc.tombstones)
     }
     await (keepTimestamps ? withSyncedTimestamps(write) : write())

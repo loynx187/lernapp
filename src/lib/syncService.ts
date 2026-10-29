@@ -5,6 +5,7 @@ import { adoptPendingTokens, deleteFile, download, DropboxError, DROPBOX_APP_KEY
 import { loadStudyData, type StudyData } from './study'
 import { examStats, streak } from './stats'
 import { applyDoc, docSignature, exportDoc, mergeDocs, parseSyncDoc, replaceProfile, type SyncDoc } from './sync'
+import { isDueReminder, sortReminders } from './reminders'
 
 const syncPath = (profileId: string) => `/sync/${profileId}.lernsync`
 const backupFolder = (profileId: string) => `/backups/${profileId}`
@@ -148,7 +149,7 @@ export async function restoreBackup(profileId: string, entry: BackupEntry) {
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 /** Text für die tägliche Erinnerung (Kurzbefehle-Automation liest die Datei aus Dropbox). */
-export function reminderText(profile: Profile, today: StudyData, tomorrow: StudyData, now: number): string {
+export function reminderText(profile: Profile, today: StudyData, tomorrow: StudyData, now: number, dueReminders: string[] = []): string {
   const left = (d: StudyData) => d.plan.modes.mobile.reviewsLeft + d.plan.modes.mobile.newLeft + d.plan.modes.desk.reviewsLeft + d.plan.modes.desk.newLeft
   const useToday = left(today) > 0
   const d = useToday ? today : tomorrow
@@ -161,6 +162,7 @@ export function reminderText(profile: Profile, today: StudyData, tomorrow: Study
   if (lines.length === 1) lines.push('Nichts fällig – gut gemacht!')
   const missing = d.exams.flatMap((e) => duePending(e, now).map((p) => `${e.name}: ${p.title}`))
   if (missing.length) lines.push(`Unterlagen fehlen: ${missing.join(', ')}`)
+  if (dueReminders.length) lines.push(`Erinnerungen: ${dueReminders.join(', ')}`)
   const next = d.exams.find((e) => daysUntil(e.date, day) >= 0)
   if (next) lines.push(`Nächste Klausur: ${next.name} in ${plural(daysUntil(next.date, day), 'Tag', 'Tagen')}`)
   if (profile.name) lines[0] = `${lines[0]} (${profile.name})`
@@ -217,7 +219,11 @@ async function writeReminder(profileId: string, now: number, last: SyncStatus): 
   if (!profile) return last
   const today = await loadStudyData(profile, now)
   const tomorrow = await loadStudyData(profile, addDays(studyDayStart(now), 1) + 3 * 3600_000)
-  const text = reminderText(profile, today, tomorrow, now)
+  const homework = new Map((await db.homework.where('profileId').equals(profileId).toArray()).map((h) => [h.id, h]))
+  const dueReminders = sortReminders(await db.reminders.where('profileId').equals(profileId).toArray())
+    .filter((r) => isDueReminder(r, homework, now))
+    .map((r) => r.title)
+  const text = reminderText(profile, today, tomorrow, now, dueReminders)
   if (text !== last.reminder) await upload(profileId, REMINDER_PATH, text)
   const semester = profile.activeSemesterId ? await db.semesters.get(profile.activeSemesterId) : undefined
   const { stand: _stand, ...summary } = progressSummary(profile, today, now, semester?.name)
