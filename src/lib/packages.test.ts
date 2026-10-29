@@ -155,6 +155,17 @@ describe('Meldungen', () => {
     expect(r.resolvedReports).toBe(1)
     expect((await exportReports(exam)).reports.map((x) => x.uid)).toEqual(['k1-02'])
   })
+
+  it('werden erledigt, wenn ein Update die gemeldete Karte entfernt', async () => {
+    const { reportCard, exportReports } = await import('./reports')
+    const v1 = parsePackage(sample)
+    await importPackage(exam, v1)
+    await reportCard((await db.cards.get(`e1:${v1.id}:k1-02`))!, 'sonstiges', 'Karte nicht nötig')
+    const v2 = parsePackage({ ...sample, version: 2, cards: sample.cards.filter((c: { uid: string }) => c.uid !== 'k1-02') })
+    const r = await importPackage(exam, v2)
+    expect(r).toMatchObject({ archived: 1, resolvedReports: 1 })
+    expect((await exportReports(exam)).reports).toEqual([])
+  })
 })
 
 describe('Gemeldete Karten', () => {

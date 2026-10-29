@@ -1,6 +1,6 @@
 // Paket-Sammlung: mehrere Kartenpakete für verschiedene Prüfungen in einer Datei – z. B. alle
 // Updates von Claude auf einmal. Jedes Paket wird wie ein einzelner Import übernommen (Lernfortschritt
-// bleibt, entfernte Karten werden archiviert, Meldungen zu geänderten Karten erledigt).
+// bleibt, entfernte Karten werden archiviert, Meldungen zu geänderten oder entfernten Karten erledigt).
 import { db, type Exam } from './db'
 import { importPackage, type ImportResult } from './packages'
 import { parsePackage, slugify, type CardPackage } from './package-format'
