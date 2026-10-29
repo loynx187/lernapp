@@ -12,6 +12,8 @@ test('Ideen für Version 2: gesammelte Ideen lesen und eigene notieren', async (
 
   await page.getByPlaceholder('Was fehlt dir beim Testen?').fill('Dunkelmodus für Formeln prüfen')
   await page.getByRole('button', { name: 'Notieren' }).click()
+  // Erst wenn das Eingabefeld geleert ist, ist die Notiz gespeichert (sonst steht der Text zweimal auf der Seite).
+  await expect(page.getByPlaceholder('Was fehlt dir beim Testen?')).toHaveValue('')
   await expect(page.getByText('Dunkelmodus für Formeln prüfen')).toBeVisible()
   // Gespeichert im Profil: auch nach dem Verlassen der Seite noch da
   await page.goto('./#/einstellungen')
