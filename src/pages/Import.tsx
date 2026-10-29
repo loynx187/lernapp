@@ -8,6 +8,7 @@ import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
 import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
 import { importTemplate, parseTemplate, templateStatus, templateSummary, TEMPLATE_FORMAT, type ProfileTemplate, type TemplateResult } from '../lib/template'
+import { BUNDLE_FORMAT, bundlePlan, bundleTotals, importBundle, parseBundle, type BundlePlanEntry, type BundleResult, type PackageBundle } from '../lib/bundle'
 
 export function Import() {
   const { profile, semester } = useActive()
@@ -26,6 +27,19 @@ export function Import() {
   const [template, setTemplate] = useState<ProfileTemplate | null>(null)
   const [templateDone, setTemplateDone] = useState<TemplateResult | null>(null)
   const [status, setStatus] = useState<Awaited<ReturnType<typeof templateStatus>> | null>(null)
+  const [bundle, setBundle] = useState<PackageBundle | null>(null)
+  const [plan, setPlan] = useState<BundlePlanEntry[] | null>(null)
+  const [bundleDone, setBundleDone] = useState<BundleResult | null>(null)
+  // Alle Prüfungen des Profils, die des aktiven Semesters zuerst – für die Zuordnung einer Paket-Sammlung.
+  const allExams = useLiveQuery(
+    async () => (await db.exams.where('profileId').equals(profile.id).sortBy('date')).sort((a, b) => Number(b.semesterId === semester.id) - Number(a.semesterId === semester.id)),
+    [profile.id, semester.id],
+  )
+
+  useEffect(() => {
+    setPlan(null)
+    if (bundle && allExams) bundlePlan(allExams, bundle).then(setPlan)
+  }, [bundle, allExams])
 
   useEffect(() => {
     setStatus(null)
@@ -48,7 +62,16 @@ export function Import() {
     setResult(null)
     setProfilesDone(null)
     setTemplateDone(null)
+    setBundleDone(null)
+    setBundle(null)
     try {
+      if ((raw as { format?: unknown })?.format === BUNDLE_FORMAT) {
+        setPkg(null)
+        setProfiles(null)
+        setTemplate(null)
+        setBundle(parseBundle(raw))
+        return
+      }
       if ((raw as { format?: unknown })?.format === TEMPLATE_FORMAT) {
         setPkg(null)
         setProfiles(null)
@@ -135,6 +158,15 @@ export function Import() {
     }
   }
 
+  async function doBundle(p: BundlePlanEntry[]) {
+    try {
+      setBundleDone(await importBundle(p))
+      setBundle(null)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }
+
   async function doImport(p: CardPackage) {
     const exam = exams!.find((e) => e.id === examId)
     if (!exam) return setError('Bitte wähle eine Prüfung.')
@@ -163,7 +195,72 @@ export function Import() {
           <Link to="/pruefungen">Zu den Prüfungen</Link>
         </div>
       )}
-      {template ? (
+      {bundleDone && (() => {
+        const t = bundleTotals(bundleDone)
+        const n = bundleDone.imported.length
+        return (
+          <div className="notice">
+            <b>Paket-Sammlung übernommen.</b> {n} {n === 1 ? 'Paket' : 'Pakete'} importiert
+            {n > 0 && ` · ${t.updated} ${t.updated === 1 ? 'Karte geändert' : 'Karten geändert'}, ${t.added} neu`}
+            {t.archived > 0 && `, ${t.archived} archiviert (nicht mehr im Paket)`}
+            {t.resolvedReports > 0 && ` · ${t.resolvedReports} ${t.resolvedReports === 1 ? 'Meldung' : 'Meldungen'} erledigt`}
+            {t.pausedChapters > 0 && ` · ${t.pausedChapters} Kapitel noch nicht dran (pausiert)`}. Dein Lernfortschritt bleibt.
+            {bundleDone.same.length > 0 && ` Schon aktuell: ${bundleDone.same.join(', ')}.`}
+            {bundleDone.older.length > 0 && ` Nicht übernommen, weil deine Version neuer ist: ${bundleDone.older.join(', ')}.`}
+            {bundleDone.unmatched.length > 0 && ` Keine passende Prüfung: ${bundleDone.unmatched.join(', ')}.`}{' '}
+            <Link to="/pruefungen">Zu den Prüfungen</Link>
+          </div>
+        )
+      })()}
+      {bundle ? (
+        <div className="card stack">
+          <h2>Paket-Sammlung</h2>
+          {error && <div className="notice warn" style={{ margin: 0 }}>{error}</div>}
+          {!plan ? (
+            <p className="muted" style={{ margin: 0 }}>Abgleich mit deinen Karten …</p>
+          ) : (
+            <>
+              {plan.map(({ entry, exam, packages }, i) => (
+                <div key={i} className="stack bundle-exam" style={{ gap: 4 }}>
+                  <div className="row between">
+                    <b className="truncate">{entry.name ?? entry.slug}</b>
+                    <small className={exam ? 'muted' : 'badge-warn'}>{exam ? `→ ${exam.name}` : 'keine passende Prüfung'}</small>
+                  </div>
+                  {packages.map(({ pkg, status, installed }) => (
+                    <div key={pkg.id} className="row between" style={{ gap: 8 }}>
+                      <span className="truncate">{pkg.title}</span>
+                      <small className={status === 'neuer' || status === 'neu' ? '' : 'muted'} style={{ flexShrink: 0 }}>
+                        {!exam
+                          ? `Version ${pkg.version}`
+                          : status === 'neuer'
+                            ? `Update ${installed} → ${pkg.version}`
+                            : status === 'neu'
+                              ? `neu (Version ${pkg.version})`
+                              : status === 'gleich'
+                                ? 'schon aktuell'
+                                : `deine Version ${installed} ist neuer`}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+                Jedes Paket wird wie ein einzelnes Update übernommen: geänderte Karten werden korrigiert, neue kommen dazu, entfernte werden archiviert. Dein Lernfortschritt bleibt. Pakete, die schon aktuell sind oder von denen du eine neuere Version hast, bleiben unverändert.
+              </p>
+            </>
+          )}
+          <div className="row">
+            <button className="btn grow" onClick={() => setBundle(null)}>Abbrechen</button>
+            <button
+              className="btn primary grow"
+              disabled={!plan?.some((e) => e.exam && e.packages.some((p) => p.status === 'neu' || p.status === 'neuer'))}
+              onClick={() => plan && doBundle(plan)}
+            >
+              Übernehmen
+            </button>
+          </div>
+        </div>
+      ) : template ? (
         <div className="card stack">
           <h2>Vorlage ohne Lernfortschritt</h2>
           {(() => {
@@ -307,7 +404,7 @@ export function Import() {
             <>
               <div className="section-title">Kartenpaket</div>
               <div className="card stack">
-                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt, eine Datei mit Fachprofilen von Claude, eine Vorlage mit allen Prüfungen ohne Lernfortschritt – oder Karten aus ChatGPT, Anki, Quizlet &amp; Co. (.txt, .csv, .md, siehe unten).</p>
+                <p className="muted" style={{ margin: 0 }}>Eine <code>.lernpaket.json</code>-Datei, z. B. von Claude erstellt oder von Kommilitonen geteilt, eine Paket-Sammlung mit mehreren Updates, eine Datei mit Fachprofilen von Claude, eine Vorlage mit allen Prüfungen ohne Lernfortschritt – oder Karten aus ChatGPT, Anki, Quizlet &amp; Co. (.txt, .csv, .md, siehe unten).</p>
                 <label className="btn primary block">
                   Datei auswählen
                   <input type="file" accept=".json,.txt,.csv,.tsv,.md,application/json,text/plain,text/csv,text/markdown" hidden onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = '' }} />
@@ -321,7 +418,7 @@ export function Import() {
                   <ol className="help" style={{ marginTop: 8 }}>
                     <li>Auf der Seite der Prüfung unter „Karten mit Claude erstellen“ auf „Auftrag für Claude kopieren“ tippen. Der Auftrag enthält Fach, Klausurtermin, dein Fachprofil, die vorhandenen Pakete und offene Meldungen.</li>
                     <li>In der Claude-App eine neue Claude-Code-Sitzung mit dem Repository <code>lernapp</code> starten, den Auftrag einfügen und die PDFs anhängen – Skript, Übungsaufgaben und Altklausuren, soweit vorhanden.</li>
-                    <li>Die fertige <code>.lernpaket.json</code> sichern und hier über „Datei auswählen“ importieren. Updates behalten deinen Lernfortschritt; die Vorversion holt Claude aus deinem privaten Archiv.</li>
+                    <li>Die fertige <code>.lernpaket.json</code> sichern und hier über „Datei auswählen“ importieren. Updates behalten deinen Lernfortschritt; die Vorversion holt Claude aus deinem privaten Archiv. Betrifft ein Auftrag mehrere Pakete, kommt alles als eine Paket-Sammlung (<code>.lernsammlung.json</code>) – ein Import aktualisiert dann alle Prüfungen.</li>
                   </ol>
                   <p className="muted" style={{ marginBottom: 0 }}>
                     Claude arbeitet dabei immer dieselbe Checkliste ab und berücksichtigt die Schwerpunkte des jeweiligen Fachs. Unterlagen und Pakete werden nicht im (öffentlichen) Repository gespeichert.

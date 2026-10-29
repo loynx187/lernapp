@@ -507,3 +507,6 @@ details.explain[open] > summary::after { transform: rotate(90deg); }
 @media (min-width: 700px) {
   .match-row { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); align-items: center; }
 }
+
+/* Paket-Sammlung: Prüfungen in der Vorschau trennen */
+.bundle-exam + .bundle-exam { border-top: 1px solid var(--glass-border); padding-top: 10px; }
