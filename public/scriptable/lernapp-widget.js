@@ -2,13 +2,20 @@
 //
 // Zeigt den Lernfortschritt aus Fortschritt.json, die die Lernapp bei jedem
 // Dropbox-Abgleich in ihren App-Ordner schreibt.
-// Einrichtung: Scriptable → Einstellungen → File Bookmarks → „+“ → Pick File →
-// Dropbox → Apps → (App-Ordner) → Fortschritt.json, Name: Lernapp-Fortschritt
+// Einrichtung (empfohlen): Lernapp → Einstellungen → Synchronisation →
+// „Widget-Schlüssel kopieren“, dann dieses Skript in Scriptable starten →
+// „Widget-Schlüssel einfügen“. Das Widget lädt die Datei dann direkt aus Dropbox.
+// Alternative ohne Schlüssel (oft veraltet, weil die Dateien-App die Datei nicht
+// im Hintergrund aktualisiert): Scriptable → Einstellungen → File Bookmarks → „+“ →
+// Pick File → Dropbox → Apps → (App-Ordner) → Fortschritt.json, Name: Lernapp-Fortschritt
 //
 // Hintergrund: Widget bearbeiten → Parameter „weiß“ (Standard) oder „schwarz“.
 // Größen: klein, mittel, groß sowie Sperrbildschirm (rund und rechteckig).
 
 const BOOKMARK = 'Lernapp-Fortschritt'
+const KEYCHAIN = 'lernapp-widget-key'
+const KEY_PREFIX = 'lernapp-widget:'
+const CACHE = 'lernapp-fortschritt.json'
 const APP_URL = 'https://loynx187.github.io/lernapp/'
 
 const THEMES = {
@@ -24,13 +31,71 @@ function useTheme(param) {
   for (const [k, v] of Object.entries(THEMES[name])) C[k] = new Color(v)
 }
 
-async function loadProgress() {
+function parseKey(raw) {
+  const s = (raw || '').trim()
+  if (!s.startsWith(KEY_PREFIX)) return null
+  try {
+    const k = JSON.parse(Data.fromBase64String(s.slice(KEY_PREFIX.length)).toRawString())
+    return k.k && k.r ? k : null
+  } catch (e) {
+    return null
+  }
+}
+
+/** Direkt aus Dropbox laden – mit dem Widget-Schlüssel aus der Lernapp. */
+async function loadFromDropbox(key) {
+  const auth = new Request('https://api.dropboxapi.com/oauth2/token')
+  auth.method = 'POST'
+  auth.headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
+  auth.body = `grant_type=refresh_token&refresh_token=${encodeURIComponent(key.r)}&client_id=${encodeURIComponent(key.k)}`
+  const token = await auth.loadJSON()
+  if (!token.access_token) throw new Error('Schlüssel ungültig')
+  const req = new Request('https://content.dropboxapi.com/2/files/download')
+  req.method = 'POST'
+  req.headers = { Authorization: `Bearer ${token.access_token}`, 'Dropbox-API-Arg': JSON.stringify({ path: key.p || '/Fortschritt.json' }) }
+  const text = await req.loadString()
+  if (req.response.statusCode !== 200) throw new Error('Download fehlgeschlagen')
+  return text
+}
+
+async function loadFromBookmark() {
   const fm = FileManager.iCloud()
   const path = fm.bookmarkedPath(BOOKMARK)
   await fm.downloadFileFromiCloud(path)
-  const data = JSON.parse(fm.readString(path))
+  return fm.readString(path)
+}
+
+async function loadProgress() {
+  const local = FileManager.local()
+  const cache = local.joinPath(local.documentsDirectory(), CACHE)
+  const key = Keychain.contains(KEYCHAIN) ? parseKey(Keychain.get(KEYCHAIN)) : null
+  let text
+  try {
+    text = key ? await loadFromDropbox(key) : await loadFromBookmark()
+    local.writeString(cache, text)
+  } catch (e) {
+    // Ohne Netz: letzten geladenen Stand zeigen
+    if (!local.fileExists(cache)) throw e
+    text = local.readString(cache)
+  }
+  const data = JSON.parse(text)
   if (data.format !== 'lernapp-fortschritt') throw new Error('Unbekanntes Format')
   return data
+}
+
+async function setupKey() {
+  const key = parseKey(Pasteboard.paste())
+  const a = new Alert()
+  if (key) {
+    Keychain.set(KEYCHAIN, Pasteboard.paste().trim())
+    a.title = 'Widget-Schlüssel gespeichert'
+    a.message = 'Das Widget lädt den Fortschritt jetzt direkt aus Dropbox.'
+  } else {
+    a.title = 'Kein Widget-Schlüssel in der Zwischenablage'
+    a.message = 'In der Lernapp unter Einstellungen → Synchronisation „Widget-Schlüssel kopieren“ tippen und das Skript erneut starten.'
+  }
+  a.addAction('OK')
+  await a.present()
 }
 
 const pct = (x) => `${Math.round((x || 0) * 100)} %`
@@ -217,7 +282,7 @@ async function makeWidget(family, param) {
   try {
     return build(await loadProgress(), family)
   } catch (e) {
-    return errorWidget('Fortschritt.json nicht gefunden – File Bookmark „Lernapp-Fortschritt“ und Dropbox-Sync prüfen.')
+    return errorWidget(Keychain.contains(KEYCHAIN) ? 'Fortschritt konnte nicht aus Dropbox geladen werden – Widget-Schlüssel neu kopieren und einfügen.' : 'Kein Widget-Schlüssel – Skript in Scriptable starten und „Widget-Schlüssel einfügen“ wählen.')
   }
 }
 
@@ -233,8 +298,12 @@ async function choose(title, options) {
 if (config.runsInWidget) {
   Script.setWidget(await makeWidget(config.widgetFamily || 'medium', args.widgetParameter))
 } else {
-  // Vorschau beim Start in Scriptable
-  const size = await choose('Vorschau', ['Klein', 'Mittel', 'Groß'])
+  // Beim Start in Scriptable: Schlüssel einrichten oder Vorschau
+  const hasKey = Keychain.contains(KEYCHAIN)
+  const action = await choose(hasKey ? 'Widget-Schlüssel ist eingerichtet' : 'Lernapp-Widget', ['Vorschau', hasKey ? 'Widget-Schlüssel ersetzen' : 'Widget-Schlüssel einfügen'].concat(hasKey ? ['Widget-Schlüssel entfernen'] : []))
+  if (action === 1) await setupKey()
+  if (action === 2) Keychain.remove(KEYCHAIN)
+  const size = action === 0 ? await choose('Vorschau', ['Klein', 'Mittel', 'Groß']) : null
   const color = size == null ? null : await choose('Hintergrund', ['Weiß', 'Schwarz'])
   if (color != null) {
     const family = ['small', 'medium', 'large'][size]
