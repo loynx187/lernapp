@@ -43,7 +43,7 @@ export function OrderSteps() {
     <ol className="help" style={{ margin: 0, fontSize: 14 }}>
       <li>In der Claude-App eine Claude-Code-Sitzung mit dem Repository <code>lernapp</code> starten.</li>
       <li>Auftrag einfügen und die Unterlagen anhängen (Skript, Übungen, Altklausuren).</li>
-      <li>Was Claude zurückgibt (Kartenpaket oder Fachprofile) unter „Karten importieren“ einlesen. Vorschläge fürs Fachprofil werden dabei übernommen und markiert.</li>
+      <li>Was Claude zurückgibt (Paket-Sammlung oder Fachprofile) unter „Karten importieren“ einlesen – die App ordnet alles der richtigen Prüfung zu. Vorschläge fürs Fachprofil werden dabei übernommen und markiert.</li>
     </ol>
   )
 }

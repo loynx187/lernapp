@@ -76,6 +76,17 @@ export async function bundlePlan(exams: Exam[], bundle: PackageBundle): Promise<
   })
 }
 
+/**
+ * Prüfung für ein einzelnes Paket: dort, wo es schon importiert ist (Update), sonst über Archiv-Ordner
+ * bzw. Fachnamen im Paket (`profile.slug`, `module`). Ohne Treffer `undefined` – dann wählt der Nutzer.
+ */
+export async function packageExam(exams: Exam[], pkg: CardPackage): Promise<{ exam?: Exam; installed: boolean }> {
+  const records = await db.packages.where('examId').anyOf(exams.map((e) => e.id)).toArray()
+  const installed = exams.find((e) => records.some((r) => r.examId === e.id && r.packageId === pkg.id))
+  if (installed) return { exam: installed, installed: true }
+  return { exam: matchExam(exams, { slug: pkg.profile?.slug ? slugify(pkg.profile.slug) : undefined, name: pkg.module }), installed: false }
+}
+
 export interface BundleResult {
   /** Aktualisierte bzw. neu importierte Pakete */
   imported: { exam: string; title: string; status: 'neu' | 'neuer'; result: ImportResult }[]

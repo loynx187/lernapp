@@ -9,7 +9,6 @@ import { examStats, packageBlocks, sortPackages } from '../lib/stats'
 import { exportPackage, movePackage, safeFileName, saveFile } from '../lib/packages'
 import { deletedCards } from '../lib/cards'
 import { HistoryChart } from '../components/HistoryChart'
-import { OrderButton, OrderSteps } from '../components/OrderButton'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { Icon, PageHeader, Progress, Stat, pct } from '../components/ui'
 import { sortOpen } from '../lib/homework'
@@ -27,7 +26,7 @@ const RECALL_MIN_CARDS = 10
 
 export function ExamDetail() {
   const { id = '' } = useParams()
-  const { profile, semester } = useActive()
+  const { profile } = useActive()
   const [allChapters, setAllChapters] = useState(false)
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
@@ -102,7 +101,7 @@ export function ExamDetail() {
 
       {staleLecture > 0 && (
         <div className="notice">
-          <b>Neue Unterlagen da?</b> Seit {staleLecture} Tagen kam kein neues Kartenpaket. Unten „Auftrag für Claude kopieren“ und die neuen Folien anhängen – oder unter <Link to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link> „Vorlesung läuft noch“ ausschalten, wenn alles da ist.
+          <b>Neue Unterlagen da?</b> Seit {staleLecture} Tagen kam kein neues Kartenpaket. Auf der Seite <Link to="/pruefungen">Prüfungen</Link> „Auftrag für Claude kopieren“ und die neuen Folien anhängen – oder unter <Link to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link> „Vorlesung läuft noch“ ausschalten, wenn alles da ist.
         </div>
       )}
 
@@ -234,7 +233,7 @@ export function ExamDetail() {
             )}
           </div>
           <p className="muted" style={{ fontSize: 14, marginTop: -4 }}>
-            Karten nachlesen, melden oder löschen. Offene Meldungen stehen automatisch im Auftrag für Claude (unten).
+            Karten nachlesen, melden oder löschen. Offene Meldungen stehen automatisch im Auftrag für Claude.
           </p>
         </>
       )}
@@ -291,11 +290,10 @@ export function ExamDetail() {
             Neue Karten kommen Paket für Paket in dieser Reihenfolge dran, innerhalb eines Pakets wie im Skript. Erst in den letzten 14 Tagen vor der Klausur wird gemischt.
           </small>
         )}
-        <Link className="btn block" to={`/import?exam=${exam.id}`}>Paket importieren oder aktualisieren</Link>
         <Link className="btn block" to="/unterlagen">Skripte für „Folie ansehen“</Link>
       </div>
 
-      <div className="section-title">Karten mit Claude erstellen</div>
+      <div className="section-title">Fachprofil für Claude</div>
       <div className="card stack">
         <div className="row between">
           <div className="grow">
@@ -310,11 +308,9 @@ export function ExamDetail() {
             Claude hat {suggested.map(fieldLabel).join(', ')} vorgeschlagen – bitte prüfen und speichern.
           </div>
         )}
-        <OrderButton exams={[exam]} semester={semester} label="Auftrag für Claude kopieren" />
-        <details className="explain">
-          <summary>So funktioniert’s</summary>
-          <OrderSteps />
-        </details>
+        <small className="muted">
+          Den Auftrag für Claude kopierst du auf der Seite <Link to="/pruefungen">Prüfungen</Link> – er enthält alle Fächer. Neue Pakete ordnet der Import selbst dieser Prüfung zu.
+        </small>
       </div>
       </div>
       </div>

@@ -104,12 +104,12 @@ export async function createExam(page: Page, name: string, daysAhead = 60) {
   await expect(page.getByRole('heading', { name })).toBeVisible()
 }
 
-/** Importiert das Beispielpaket oder eine Paketdatei in die (erste) Prüfung. */
+/** Importiert das Beispielpaket oder eine Paketdatei – in die erkannte bzw. einzige Prüfung oder in `exam`. */
 export async function importPackage(page: Page, file?: string, exam?: string) {
   await page.goto('./#/import')
-  if (exam) await page.locator('select').selectOption({ label: exam })
   if (file) await page.locator('input[type=file]').first().setInputFiles(file)
   else await page.getByRole('button', { name: 'Beispielpaket ausprobieren' }).click()
+  if (exam) await page.getByLabel('Für welche Prüfung?').selectOption({ label: exam })
   await page.getByRole('button', { name: /^(Importieren|Aktualisieren)$/ }).click()
   await expect(page.getByText('Import abgeschlossen')).toBeVisible()
 }
