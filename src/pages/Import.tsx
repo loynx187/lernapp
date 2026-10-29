@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
@@ -28,6 +28,8 @@ export function Import() {
   const [existingVersion, setExistingVersion] = useState<number | null>(null)
   /** Wie die Prüfung für ein einzelnes Paket gefunden wurde – null: vom Nutzer gewählt bzw. nicht erkannt. */
   const [detected, setDetected] = useState<'installed' | 'matched' | null>(null)
+  /** Hat der Nutzer die Prüfung für das aktuelle Paket selbst gewählt? Dann gewinnt seine Wahl gegen die (asynchrone) Erkennung. */
+  const pickedFor = useRef<CardPackage | null>(null)
   const [error, setError] = useState('')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [text, setText] = useState('')
@@ -66,9 +68,11 @@ export function Import() {
 
   // Einzelnes Paket: Prüfung selbst erkennen – wo es schon liegt, sonst am Fachnamen im Paket.
   useEffect(() => {
+    if (!pkg || !exams) return setDetected(null)
+    if (pickedFor.current === pkg) return
     setDetected(null)
-    if (!pkg || !exams) return
     packageExam(exams, pkg).then(({ exam, installed }) => {
+      if (pickedFor.current === pkg) return
       if (exam) {
         setExamId(exam.id)
         setDetected(installed ? 'installed' : 'matched')
@@ -184,6 +188,7 @@ export function Import() {
         onChange={(e) => {
           setExamId(e.target.value)
           setDetected(null)
+          pickedFor.current = pkg
         }}
       >
         {!examId && <option value="">Bitte wählen</option>}
