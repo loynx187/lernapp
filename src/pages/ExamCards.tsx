@@ -106,7 +106,7 @@ export function ExamCards() {
 
       {filter === 'gemeldet' && (
         <div className="notice">
-          Gemeldete Karten sind pausiert und werden nicht abgefragt. Offene Meldungen stehen automatisch im <b>Auftrag für Claude</b> (Prüfungsseite). Ändert ein Paket-Update eine gemeldete Karte, ist die Meldung danach erledigt und die Karte kommt zurück – ebenso, wenn du sie hier abhakst. Entfernt das Update die Karte, ist die Meldung ebenfalls erledigt.
+          Gemeldete Karten sind pausiert und werden nicht abgefragt. Offene Meldungen stehen automatisch im <b>Auftrag für Claude</b> (Seite Prüfungen). Ändert ein Paket-Update eine gemeldete Karte, ist die Meldung danach erledigt und die Karte kommt zurück – ebenso, wenn du sie hier abhakst. Entfernt das Update die Karte, ist die Meldung ebenfalls erledigt.
           {openCount > 0 && (
             <>
               {' '}

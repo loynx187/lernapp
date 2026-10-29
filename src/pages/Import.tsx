@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
@@ -10,7 +10,7 @@ import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
 import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
 import { importTemplate, parseTemplate, templateStatus, templateSummary, TEMPLATE_FORMAT, type ProfileTemplate, type TemplateResult } from '../lib/template'
-import { BUNDLE_FORMAT, bundlePlan, bundleTotals, importBundle, parseBundle, type BundlePlanEntry, type BundleResult, type PackageBundle } from '../lib/bundle'
+import { BUNDLE_FORMAT, bundlePlan, bundleTotals, importBundle, packageExam, parseBundle, type BundlePlanEntry, type BundleResult, type PackageBundle } from '../lib/bundle'
 
 /** Paketname ohne vorangestellten Prüfungsnamen („Maschinendynamik – Fragenkatalog“ → „Fragenkatalog“). */
 const shortTitle = (title: string, exam?: string) => {
@@ -26,6 +26,10 @@ export function Import() {
   const [examId, setExamId] = useState(search.get('exam') ?? '')
   const [pkg, setPkg] = useState<CardPackage | null>(null)
   const [existingVersion, setExistingVersion] = useState<number | null>(null)
+  /** Wie die Prüfung für ein einzelnes Paket gefunden wurde – null: vom Nutzer gewählt bzw. nicht erkannt. */
+  const [detected, setDetected] = useState<'installed' | 'matched' | null>(null)
+  /** Hat der Nutzer die Prüfung für das aktuelle Paket selbst gewählt? Dann gewinnt seine Wahl gegen die (asynchrone) Erkennung. */
+  const pickedFor = useRef<CardPackage | null>(null)
   const [error, setError] = useState('')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [text, setText] = useState('')
@@ -57,9 +61,28 @@ export function Import() {
     if (template) templateStatus(profile.id, template).then(setStatus)
   }, [template, profile.id])
 
+  // Nur eine Prüfung: Die ist gemeint (z. B. für Karten aus anderen Tools).
   useEffect(() => {
-    if (!examId && exams?.length) setExamId(exams[0].id)
+    if (!examId && exams?.length === 1) setExamId(exams[0].id)
   }, [exams, examId])
+
+  // Einzelnes Paket: Prüfung selbst erkennen – wo es schon liegt, sonst am Fachnamen im Paket.
+  useEffect(() => {
+    if (!pkg || !exams) return setDetected(null)
+    if (pickedFor.current === pkg) return
+    setDetected(null)
+    packageExam(exams, pkg).then(({ exam, installed }) => {
+      if (pickedFor.current === pkg) return
+      if (exam) {
+        setExamId(exam.id)
+        setDetected(installed ? 'installed' : 'matched')
+      } else {
+        // Nicht erkannt: die Prüfung, von der aus der Import geöffnet wurde, bei nur einer Prüfung diese – sonst wählt der Nutzer.
+        const from = search.get('exam')
+        setExamId(from && exams.some((e) => e.id === from) ? from : exams.length === 1 ? exams[0].id : '')
+      }
+    })
+  }, [pkg, exams])
 
   useEffect(() => {
     setExistingVersion(null)
@@ -156,6 +179,28 @@ export function Import() {
       setError('Das Beispielpaket konnte nicht geladen werden.')
     }
   }
+
+  const examSelect = (
+    <label className="field" style={{ marginBottom: 0 }}>
+      <span>Für welche Prüfung?</span>
+      <select
+        value={examId}
+        onChange={(e) => {
+          setExamId(e.target.value)
+          setDetected(null)
+          pickedFor.current = pkg
+        }}
+      >
+        {!examId && <option value="">Bitte wählen</option>}
+        {exams.map((e) => (
+          <option key={e.id} value={e.id}>{e.name}</option>
+        ))}
+      </select>
+      {detected === 'installed' && <small>Erkannt: Das Paket liegt schon in dieser Prüfung.</small>}
+      {detected === 'matched' && <small>Erkannt am Fachnamen im Paket.</small>}
+      {pkg && !examId && <small className="badge-warn">Keine passende Prüfung erkannt – bitte wählen.</small>}
+    </label>
+  )
 
   const textPairs = text.trim() ? parseTextCards(text) : []
   const textPkg = textPairs.length ? textToPackage(textTitle.trim() || 'Eingefügte Karten', textPairs) : null
@@ -377,17 +422,6 @@ export function Import() {
         </div>
       ) : (
         <>
-          <div className="card">
-            <label className="field" style={{ marginBottom: 0 }}>
-              <span>Für welche Prüfung?</span>
-              <select value={examId} onChange={(e) => setExamId(e.target.value)}>
-                {exams.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
           {result && (
             <div className="notice">
               <b>Import abgeschlossen.</b> {result.added} neu, {result.updated} aktualisiert, {result.unchanged} unverändert
@@ -445,6 +479,7 @@ export function Import() {
               <p className="muted" style={{ margin: 0 }}>
                 {pkg.cards.length} Karten · {pkg.chapters?.length ?? 0} Kapitel · Version {pkg.version}
               </p>
+              {examSelect}
               {existingVersion !== null && (
                 <div className="notice" style={{ margin: 0 }}>
                   Dieses Paket ist bereits importiert (Version {existingVersion}). Es wird aktualisiert – dein Lernfortschritt bleibt erhalten.
@@ -452,7 +487,7 @@ export function Import() {
               )}
               <div className="row">
                 <button className="btn grow" onClick={() => setPkg(null)}>Abbrechen</button>
-                <button className="btn primary grow" onClick={() => doImport(pkg)}>
+                <button className="btn primary grow" disabled={!examId} onClick={() => doImport(pkg)}>
                   {existingVersion !== null ? 'Aktualisieren' : 'Importieren'}
                 </button>
               </div>
@@ -473,9 +508,9 @@ export function Import() {
                 <details>
                   <summary>So entstehen Kartenpakete aus deinen Unterlagen</summary>
                   <ol className="help" style={{ marginTop: 8 }}>
-                    <li>Auf der Seite der Prüfung unter „Karten mit Claude erstellen“ auf „Auftrag für Claude kopieren“ tippen. Der Auftrag enthält Fach, Klausurtermin, dein Fachprofil, die vorhandenen Pakete und offene Meldungen.</li>
+                    <li>Auf der Seite <Link to="/pruefungen">Prüfungen</Link> auf „Auftrag für Claude kopieren“ tippen. Der Auftrag enthält alle Prüfungen des Semesters mit Klausurtermin, Fachprofil, vorhandenen Paketen und offenen Meldungen.</li>
                     <li>In der Claude-App eine neue Claude-Code-Sitzung mit dem Repository <code>lernapp</code> starten, den Auftrag einfügen und die PDFs anhängen – Skript, Übungsaufgaben und Altklausuren, soweit vorhanden.</li>
-                    <li>Die fertige <code>.lernpaket.json</code> sichern und hier über „Datei auswählen“ importieren. Updates behalten deinen Lernfortschritt; die Vorversion holt Claude aus deinem privaten Archiv. Betrifft ein Auftrag mehrere Pakete, kommt alles als eine Paket-Sammlung (<code>.lernsammlung.json</code>) – ein Import aktualisiert dann alle Prüfungen.</li>
+                    <li>Claude schickt eine Paket-Sammlung (<code>.lernsammlung.json</code>) – auch wenn sich nur ein Fach geändert hat. Hier über „Datei auswählen“ importieren: Die App ordnet jedes Paket der richtigen Prüfung zu. Updates behalten deinen Lernfortschritt; die Vorversion holt Claude aus deinem privaten Archiv.</li>
                   </ol>
                   <p className="muted" style={{ marginBottom: 0 }}>
                     Claude arbeitet dabei immer dieselbe Checkliste ab und berücksichtigt die Schwerpunkte des jeweiligen Fachs. Unterlagen und Pakete werden nicht im (öffentlichen) Repository gespeichert.
@@ -498,6 +533,7 @@ export function Import() {
                   {promptCopied ? 'Vorlage kopiert ✓' : 'Vorlage für ChatGPT & Co. kopieren'}
                 </button>
                 <small className="muted">Die Vorlage bittet ein anderes KI-Tool, die Karten genau in diesem Format mit Kapiteln auszugeben – einfach mit den Unterlagen dort einfügen.</small>
+                {examSelect}
                 <label className="field" style={{ marginBottom: 0 }}>
                   <span>Titel</span>
                   <input type="text" value={textTitle} onChange={(e) => setTextTitle(e.target.value)} placeholder="z. B. QM Zusammenfassung Lisa" />
@@ -511,7 +547,7 @@ export function Import() {
                     {textPairs.length} Karten{textChapters > 0 && ` in ${textChapters} ${textChapters === 1 ? 'Kapitel' : 'Kapiteln'}`}. Gleicher Titel bei einem späteren Import = Update: Neue Karten kommen dazu, der Lernfortschritt bleibt.
                   </small>
                 )}
-                <button className="btn primary block" disabled={!textPkg} onClick={() => textPkg && doImport(textPkg)}>
+                <button className="btn primary block" disabled={!textPkg || !examId} onClick={() => textPkg && doImport(textPkg)}>
                   {textPkg ? `${textPairs.length} Karten importieren` : 'Keine Karten erkannt'}
                 </button>
               </div>

@@ -18,7 +18,8 @@ test('Fachprofil hinterlegen, Auftrag kopieren, Vorschläge von Claude übernehm
   await page.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByText('schriftlich · Rechenaufgaben: hoch')).toBeVisible()
 
-  // Auftrag kopieren
+  // Auftrag kopieren (auf der Seite Prüfungen, für alle Prüfungen)
+  await page.goto('./#/pruefungen')
   await page.getByRole('button', { name: 'Auftrag für Claude kopieren' }).click()
   await expect(page.getByRole('button', { name: 'Auftrag kopiert ✓' })).toBeVisible()
   const text = await page.evaluate(() => navigator.clipboard.readText())
@@ -52,7 +53,5 @@ test('Fachprofil hinterlegen, Auftrag kopieren, Vorschläge von Claude übernehm
   await page.getByRole('button', { name: 'Übernehmen' }).click()
   await expect(page.getByText('Thermodynamik (Dauer)')).toBeVisible()
 
-  await page.goto('./#/pruefungen')
-  await expect(page.getByRole('button', { name: 'Auftrag für alle Prüfungen kopieren' })).toBeVisible()
   expect(errors).toEqual([])
 })

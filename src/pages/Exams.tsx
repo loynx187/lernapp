@@ -70,12 +70,12 @@ export function Exams() {
       <Link className="btn block" to="/import" style={{ marginTop: 8 }}>Karten importieren</Link>
       {rows.length > 0 && (
         <>
-          <div className="section-title">Alle Fächer mit Claude einrichten</div>
+          <div className="section-title">Karten mit Claude erstellen</div>
           <div className="card stack">
             <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-              Ein Auftrag für alle Prüfungen dieses Semesters – z. B. um zu Semesterbeginn alle Fachprofile anzulegen oder Unterlagen mehrerer Fächer auf einmal zu schicken. Claude fragt gesammelt nach, was fehlt, und gibt dir eine Datei mit den Fachprofilen zum Importieren zurück.
+              Ein Auftrag für alle Prüfungen dieses Semesters – für neue Unterlagen (auch nur für ein Fach: einfach die PDFs anhängen und dazuschreiben, wofür), offene Meldungen zu Karten oder zu Semesterbeginn für alle Fachprofile. Claude bearbeitet nur die Fächer, für die etwas zu tun ist, und schickt eine Datei zurück, die du unter „Karten importieren“ einliest.
             </p>
-            <OrderButton exams={rows.map((r) => r.exam)} semester={semester} label="Auftrag für alle Prüfungen kopieren" />
+            <OrderButton exams={rows.map((r) => r.exam)} semester={semester} label="Auftrag für Claude kopieren" />
             <OrderSteps />
           </div>
         </>
