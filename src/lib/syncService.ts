@@ -1,7 +1,7 @@
 import { duePending } from './pending'
 import { db, type Profile } from './db'
 import { addDays, daysUntil, isoWeek, studyDayStart } from './dates'
-import { adoptPendingTokens, deleteFile, download, DropboxError, getRev, listFolder, upload } from './dropbox'
+import { adoptPendingTokens, deleteFile, download, DropboxError, DROPBOX_APP_KEY, getRev, getTokens, listFolder, upload } from './dropbox'
 import { loadStudyData, type StudyData } from './study'
 import { examStats, streak } from './stats'
 import { applyDoc, docSignature, exportDoc, mergeDocs, parseSyncDoc, replaceProfile, type SyncDoc } from './sync'
@@ -249,4 +249,17 @@ export async function importRemoteProfile(r: RemoteProfile) {
   await adoptPendingTokens(r.doc.profile.id)
   if (!exists) await replaceProfile(r.doc, true)
   await syncProfile(r.doc.profile.id)
+}
+
+export const WIDGET_KEY_PREFIX = 'lernapp-widget:'
+
+/**
+ * Schlüssel für das Scriptable-Widget: App-Schlüssel und Refresh-Token, damit das Widget
+ * Fortschritt.json direkt aus Dropbox lädt (die Dateien-App liefert sonst oft eine veraltete Kopie).
+ * Gilt nur für den App-Ordner; „Trennen“ widerruft ihn.
+ */
+export async function widgetKey(profileId: string): Promise<string | undefined> {
+  const t = await getTokens(profileId)
+  if (!t || !DROPBOX_APP_KEY) return undefined
+  return WIDGET_KEY_PREFIX + btoa(JSON.stringify({ k: DROPBOX_APP_KEY, r: t.refreshToken, p: PROGRESS_PATH }))
 }

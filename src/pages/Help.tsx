@@ -56,12 +56,12 @@ export function Help() {
         <details>
           <summary>Widget für den Homescreen</summary>
           <p style={{ marginTop: 8 }}>
-            Mit der kostenlosen App <b>Scriptable</b> zeigt ein Widget deinen Fortschritt: Ringe (begonnen/Prognose), heutiges Pensum, Lernserie und deine Prüfungen mit Countdown – klein, mittel, groß oder auf dem Sperrbildschirm. Voraussetzung: Dropbox-Sync ist verbunden und die Dropbox-App ist in der Dateien-App aktiviert.
+            Mit der kostenlosen App <b>Scriptable</b> zeigt ein Widget deinen Fortschritt: Ringe (begonnen/Prognose), heutiges Pensum, Lernserie und deine Prüfungen mit Countdown – klein, mittel, groß oder auf dem Sperrbildschirm. Voraussetzung: Dropbox-Sync ist verbunden.
           </p>
           <ol className="help">
             <li>Scriptable aus dem App Store installieren.</li>
-            <li>In Scriptable: Einstellungen (Zahnrad) → „File Bookmarks“ → „+“ → „Pick File“ → Dropbox → Apps → (App-Ordner) → <code>Fortschritt.json</code>. Als Namen genau <code>Lernapp-Fortschritt</code> eingeben.</li>
             <li>Unten auf „Widget-Skript kopieren“ tippen. In Scriptable „+“ → Code einfügen → oben als Namen „Lernapp“ eintragen → Fertig.</li>
+            <li>In der Lernapp: Einstellungen → Synchronisation → „Widget-Schlüssel (Scriptable)“ → „Widget-Schlüssel kopieren“. Dann in Scriptable das Skript „Lernapp“ antippen → „Widget-Schlüssel einfügen“. Das Widget lädt den Fortschritt so direkt aus Dropbox und ist immer aktuell.</li>
             <li>Lange auf den Homescreen drücken → „+“ → Scriptable → Größe wählen → Widget hinzufügen. Dann lange auf das Widget drücken → „Widget bearbeiten“ → Script: „Lernapp“.</li>
           </ol>
           <CopyWidgetScript />

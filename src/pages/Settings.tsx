@@ -12,7 +12,7 @@ import { PageHeader } from '../components/ui'
 import { useSync } from '../sync-state'
 import { SEMESTER_KINDS } from '../lib/semesters'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { listBackups, restoreBackup as restoreDropboxBackup, type BackupEntry } from '../lib/syncService'
+import { listBackups, restoreBackup as restoreDropboxBackup, widgetKey, type BackupEntry } from '../lib/syncService'
 
 export function Settings() {
   const { profile, semester, semesters } = useActive()
@@ -215,6 +215,7 @@ export function Settings() {
                 Trennen
               </button>
             </div>
+            <WidgetKey profileId={profile.id} />
             {backups === null ? (
               <button className="btn small ghost" style={{ color: 'var(--accent)', alignSelf: 'flex-start', marginLeft: -8 }} onClick={showBackups}>
                 Wochensicherungen anzeigen
@@ -300,5 +301,30 @@ function BudgetNote({ info, desk }: { info?: BudgetInfo; desk?: boolean }) {
       Gemessen{desk ? ' (Aufgaben)' : ''}: ⌀ {Math.round(info.measured)} min an {info.days} Lerntagen (letzte {BUDGET_WINDOW_DAYS} Tage)
       {!desk && info.effective !== info.setting ? ` · geplant wird mit ${info.effective} min` : ''}.{hw}
     </small>
+  )
+}
+
+/** Schlüssel fürs Scriptable-Widget kopieren (siehe public/scriptable/lernapp-widget.js). */
+function WidgetKey({ profileId }: { profileId: string }) {
+  const [state, setState] = useState<'idle' | 'ok' | 'error'>('idle')
+  async function copy() {
+    try {
+      const key = await widgetKey(profileId)
+      if (!key) throw new Error()
+      await navigator.clipboard.writeText(key)
+      setState('ok')
+    } catch {
+      setState('error')
+    }
+  }
+  return (
+    <details className="explain">
+      <summary>Widget-Schlüssel (Scriptable)</summary>
+      <p className="muted" style={{ fontSize: 14 }}>
+        Damit das Homescreen-Widget immer aktuell ist, lädt es den Fortschritt direkt aus deiner Dropbox. Schlüssel kopieren, dann in Scriptable das Skript „Lernapp“ starten und „Widget-Schlüssel einfügen“ wählen. Der Schlüssel erlaubt nur Zugriff auf den Ordner der Lernapp und wird mit „Trennen“ ungültig.
+      </p>
+      <button className="btn block" onClick={copy}>{state === 'ok' ? 'Widget-Schlüssel kopiert' : 'Widget-Schlüssel kopieren'}</button>
+      {state === 'error' && <small className="badge-warn">Kopieren nicht möglich.</small>}
+    </details>
   )
 }
