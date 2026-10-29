@@ -27,6 +27,8 @@ export interface Profile extends Synced {
   budgetAuto?: boolean
   /** Eigene Notizen zu Ideen für die nächste Hauptversion (Seite „Ideen für Version 2“). */
   ideas?: { id: string; text: string; createdAt: number }[]
+  /** Sokratisches Lernen (Test): Leitfragen und Kernpunkte in der Lernsitzung zeigen. Standard: aus. */
+  socratic?: boolean
 }
 
 export interface Semester extends Synced {
@@ -130,6 +132,10 @@ export interface CardContent {
   pastExam?: boolean
   /** Überschreibt den Modus; Standard: Aufgaben am Schreibtisch, alles andere unterwegs. */
   mode?: Mode
+  /** Sokratisches Lernen: Leitfragen, die vor dem Aufdecken einzeln als „Tipp“ erscheinen. */
+  prompts?: string[]
+  /** Sokratisches Lernen: Kernpunkte der Antwort zum Abhaken nach dem Aufdecken. */
+  keyPoints?: string[]
 }
 
 export interface NumericAnswer {

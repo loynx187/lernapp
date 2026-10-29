@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { db } from '../lib/db'
 import { importPackage, parsePackage, parseTextCards, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
+import { appTooOld } from '../lib/package-format'
 import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
 import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
@@ -76,7 +77,10 @@ export function Import() {
         setPkg(null)
         setProfiles(null)
         setTemplate(null)
-        setBundle(parseBundle(raw))
+        const b = parseBundle(raw)
+        const tooOld = b.exams.flatMap((e) => e.packages).map((p) => appTooOld(p, __APP_VERSION__)).find(Boolean)
+        if (tooOld) throw new Error(tooOld)
+        setBundle(b)
         return
       }
       if ((raw as { format?: unknown })?.format === TEMPLATE_FORMAT) {
@@ -91,7 +95,10 @@ export function Import() {
         return
       }
       setProfiles(null)
-      setPkg(parsePackage(raw))
+      const p = parsePackage(raw)
+      const tooOld = appTooOld(p, __APP_VERSION__)
+      if (tooOld) throw new Error(tooOld)
+      setPkg(p)
     } catch (e) {
       setPkg(null)
       setError((e as Error).message)

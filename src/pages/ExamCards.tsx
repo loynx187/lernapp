@@ -186,6 +186,18 @@ export function ExamCards() {
                         <Rich text={c.back} />
                       </>
                     )}
+                    {!!c.prompts?.length && (
+                      <div className="hints-list">
+                        <b>Leitfragen</b>
+                        <ol>{c.prompts.map((p, i) => <li key={i}><Rich text={p} /></li>)}</ol>
+                      </div>
+                    )}
+                    {!!c.keyPoints?.length && (
+                      <div className="hints-list">
+                        <b>Kernpunkte</b>
+                        <ul>{c.keyPoints.map((p, i) => <li key={i}><Rich text={p} /></li>)}</ul>
+                      </div>
+                    )}
                     {c.source?.file && (
                       <small className="muted">
                         Quelle: {c.source.file}

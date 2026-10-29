@@ -44,6 +44,10 @@ Gemeinsame Felder:
 | `pastExam` | – | `true` bei Aufgaben aus Alt- oder Probeklausuren – sie werden am Schreibtisch zuerst empfohlen. |
 | `image` | – | Bild als Daten-URL (`data:image/png;base64,…`), z. B. eine Skizze von der Folie |
 | `mode` | – | `mobile` oder `desk`; Standard: `task` → `desk`, sonst `mobile` |
+| `prompts` | – | **Sokratisches Lernen:** 2–4 Leitfragen, die vor dem Aufdecken einzeln als „Tipp“ erscheinen (nur wenn der Nutzer „Sokratisches Lernen (Test)“ eingeschaltet hat). Jede führt einen Denkschritt weiter, keine verrät die Antwort. |
+| `keyPoints` | – | **Sokratisches Lernen:** 2–5 Kernpunkte der Antwort, die der Nutzer nach dem Aufdecken abhakt; die App schlägt daraus eine Bewertung vor. Jeder Kernpunkt muss sich in `back` wiederfinden. |
+
+Pakete mit `prompts`/`keyPoints` tragen auf oberster Ebene `"minApp": "1.19.0"`: Ältere Apps verwerfen die Felder sonst still, neuere warnen vor dem Import, wenn sie zu alt sind.
 
 ### Typen
 

@@ -18,6 +18,8 @@ import { SlideViewer } from '../components/SlideViewer'
 import { MatchQuestion, matchScore } from '../components/MatchQuestion'
 import { Rich } from '../components/Rich'
 import { Icon, Progress } from '../components/ui'
+import { Hints, KeyPoints } from '../components/Socratic'
+import { suggestRating } from '../lib/socratic'
 
 /** Karten, die innerhalb dieser Zeit wieder fällig sind, kommen noch in derselben Sitzung dran. */
 const REQUEUE_WITHIN = 30 * 60_000
@@ -48,6 +50,9 @@ export function Session() {
   const [selected, setSelected] = useState<number[]>([])
   const [matchSel, setMatchSel] = useState<number[]>([])
   const [stepsShown, setStepsShown] = useState(0)
+  /** Sokratisches Lernen: aufgedeckte Leitfragen und abgehakte Kernpunkte der aktuellen Karte. */
+  const [hintsShown, setHintsShown] = useState(0)
+  const [pointsChecked, setPointsChecked] = useState<number[] | null>(null)
   const [undo, setUndo] = useState<Undo | null>(null)
   const [busy, setBusy] = useState(false)
   const [reporting, setReporting] = useState(false)
@@ -90,6 +95,8 @@ export function Session() {
     setSelected([])
     setMatchSel([])
     setStepsShown(0)
+    setHintsShown(0)
+    setPointsChecked(null)
     started.current = Date.now()
   }
 
@@ -257,6 +264,13 @@ export function Session() {
 
   const isNew = card.s.state === 0
   const steps = card.steps ?? []
+  // Sokratisches Lernen nur mit eingeschaltetem Test-Schalter – sonst läuft die Sitzung wie bisher.
+  const prompts = profile.socratic ? card.prompts ?? [] : []
+  const keyPoints = profile.socratic ? card.keyPoints ?? [] : []
+  const suggestion =
+    revealed && (pointsChecked !== null || (keyPoints.length === 0 && hintsShown > 0))
+      ? suggestRating({ checked: pointsChecked?.length ?? 0, total: keyPoints.length, hints: hintsShown })
+      : undefined
 
   return (
     <>
@@ -279,6 +293,7 @@ export function Session() {
 
         <Rich text={card.front} cloze={card.type === 'cloze' ? (revealed ? 'back' : 'front') : 'none'} />
         {card.image && <img className="card-image" src={card.image} alt="" style={{ marginTop: 12 }} />}
+        {prompts.length > 0 && <Hints prompts={prompts} shown={hintsShown} />}
 
         {card.type === 'mc' && card.options && (
           <div className="options">
@@ -384,6 +399,20 @@ export function Session() {
                 <Rich text={card.back} />
               </>
             )}
+            {keyPoints.length > 0 && (
+              <KeyPoints
+                points={keyPoints}
+                checked={pointsChecked ?? []}
+                onToggle={(i) => setPointsChecked((xs) => ((xs ?? []).includes(i) ? (xs ?? []).filter((x) => x !== i) : [...(xs ?? []), i]))}
+              />
+            )}
+            {suggestion && (
+              <p className="suggestion">
+                Vorschlag: <b>{RATINGS.find((x) => x.r === suggestion)?.label}</b>
+                {keyPoints.length > 0 && ` – ${pointsChecked?.length ?? 0} von ${keyPoints.length} Kernpunkten`}
+                {hintsShown > 0 && `, ${hintsShown} ${hintsShown === 1 ? 'Tipp' : 'Tipps'}`}
+              </p>
+            )}
           </>
         )}
 
@@ -421,6 +450,11 @@ export function Session() {
       )}
 
       <div className="actions">
+        {!revealed && hintsShown < prompts.length && (
+          <button className="btn block" style={{ marginBottom: 8 }} onClick={() => setHintsShown((n) => n + 1)}>
+            Tipp ({hintsShown + 1}/{prompts.length})
+          </button>
+        )}
         {!revealed ? (
           card.type === 'task' && stepsShown < steps.length ? (
             <div className="row">
@@ -437,7 +471,7 @@ export function Session() {
         ) : (
           <div className="ratings">
             {RATINGS.map(({ r, label }) => (
-              <button key={r} className={`r${r}`} onClick={() => rate(r)} disabled={busy}>
+              <button key={r} className={`r${r}${suggestion === r ? ' suggested' : ''}`} onClick={() => rate(r)} disabled={busy}>
                 {label}
                 <small>{intervals ? formatInterval(intervals[r]) : ''}</small>
               </button>
