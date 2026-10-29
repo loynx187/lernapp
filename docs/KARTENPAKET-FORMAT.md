@@ -183,6 +183,24 @@ Export aus der App unter Einstellungen → „Vorlage exportieren“: alle Semes
 
 Pausierte Kapitel stehen als `later` im Paket. `reports`: offene Meldungen zu Karten – sie gelten für alle, die Karten bleiben auch beim Empfänger pausiert, bis ein Update sie ändert. Prüfungen werden beim Import über den Namen (oder `profile.slug`) zugeordnet, bevorzugt im gleichnamigen, sonst im aktiven Semester: vorhandene werden ergänzt (Fachprofil nur in leere Felder), fehlende neu angelegt. Pakete: neuere oder gleiche Version → Update (Lernfortschritt bleibt; im Paket fehlende Karten werden nicht archiviert), ältere Version → übersprungen samt ihrer Meldungen.
 
+## Paket-Sammlung (`<Datum>_Updates.lernsammlung.json`)
+
+Mehrere Kartenpakete für verschiedene Prüfungen in einer Datei – z. B. alle Updates eines Auftrags. Der Nutzer importiert sie unter „Karten importieren“ in einem Schritt; die Vorschau zeigt je Paket „Update 3 → 4“, „neu“, „schon aktuell“ oder „deine Version ist neuer“.
+
+```json
+{
+  "format": "lernapp-sammlung",
+  "formatVersion": 1,
+  "created": "2026-10-29",
+  "exams": [
+    { "slug": "qualitaetsmanagement", "name": "Qualitätsmanagement", "packages": [ { "format": "lernapp-paket", "…": "…" } ] },
+    { "slug": "maschinendynamik", "packages": [ "…" ] }
+  ]
+}
+```
+
+Zuordnung wie bei Fachprofilen: über `slug` (Archiv-Ordner, wie im Auftrag), sonst über `name`, sonst über die Prüfung, in der ein Paket mit gleicher ID schon importiert ist; Prüfungen des aktiven Semesters haben Vorrang. Jedes neue oder neuere Paket wird wie ein einzelner Import übernommen (Lernfortschritt bleibt, im Paket fehlende Karten werden archiviert, Meldungen zu geänderten Karten gelten als erledigt, `later`/`pending`/`profile` wirken wie gewohnt). Gleiche und ältere Versionen bleiben unverändert. Erzeugen: `npm run sammlung -- --out <datei> <archiv>/faecher/<slug>/pakete/<paket>.lernpaket.json …` (Slug aus dem Archivpfad oder als `<slug>=<datei>`).
+
 ## Karten aus anderen Tools (Text-Import)
 
 Wer kein Claude nutzt, importiert Karten unter „Karten importieren“ → „Karten aus anderen Tools“ (Datei oder eingefügter Text). Erkannt werden:
