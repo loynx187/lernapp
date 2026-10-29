@@ -38,9 +38,11 @@ export async function deleteReport(r: CardReport) {
 
 /** Offene Meldungen einer Prüfung mit Karteninhalt, damit Claude sie zuordnen kann. */
 export async function openReportEntries(examId: string) {
-  const reports = (await db.reports.where('examId').equals(examId).toArray()).filter((r) => !r.resolvedAt)
-  const cards = new Map((await db.cards.bulkGet(reports.map((r) => r.cardId))).filter(Boolean).map((c) => [c!.id, c!]))
-  return reports
+  const open = (await db.reports.where('examId').equals(examId).toArray()).filter((r) => !r.resolvedAt)
+  // Meldungen zu archivierten Karten (vom Update entfernt oder vom Nutzer gelöscht) sind gegenstandslos.
+  const cards = new Map((await db.cards.bulkGet(open.map((r) => r.cardId))).filter((c) => c && !c.archived).map((c) => [c!.id, c!]))
+  return open
+    .filter((r) => cards.has(r.cardId))
     .sort((a, b) => a.createdAt - b.createdAt)
     .map((r) => {
       const c = cards.get(r.cardId)

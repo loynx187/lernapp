@@ -46,11 +46,13 @@ export function ExamCards() {
     )
   }
   const { cards, packages, reports } = data
+  const active = cards.filter((c) => !c.deletedAt)
+  // Nur Meldungen zu vorhandenen Karten zählen – archivierte (vom Update entfernte) Karten erscheinen hier nicht.
+  const activeIds = new Set(active.map((c) => c.id))
   const openByCard = new Map<string, CardReport[]>()
-  for (const r of reports.filter((r) => !r.resolvedAt).sort((a, b) => a.createdAt - b.createdAt)) {
+  for (const r of reports.filter((r) => !r.resolvedAt && activeIds.has(r.cardId)).sort((a, b) => a.createdAt - b.createdAt)) {
     openByCard.set(r.cardId, [...(openByCard.get(r.cardId) ?? []), r])
   }
-  const active = cards.filter((c) => !c.deletedAt)
   const deleted = cards.filter((c) => c.deletedAt)
   const reported = active.filter((c) => openByCard.has(c.id))
   const openCount = [...openByCard.values()].flat().length
@@ -104,7 +106,7 @@ export function ExamCards() {
 
       {filter === 'gemeldet' && (
         <div className="notice">
-          Gemeldete Karten sind pausiert und werden nicht abgefragt. Offene Meldungen stehen automatisch im <b>Auftrag für Claude</b> (Prüfungsseite). Ändert ein Paket-Update eine gemeldete Karte, ist die Meldung danach erledigt und die Karte kommt zurück – ebenso, wenn du sie hier abhakst.
+          Gemeldete Karten sind pausiert und werden nicht abgefragt. Offene Meldungen stehen automatisch im <b>Auftrag für Claude</b> (Prüfungsseite). Ändert ein Paket-Update eine gemeldete Karte, ist die Meldung danach erledigt und die Karte kommt zurück – ebenso, wenn du sie hier abhakst. Entfernt das Update die Karte, ist die Meldung ebenfalls erledigt.
           {openCount > 0 && (
             <>
               {' '}

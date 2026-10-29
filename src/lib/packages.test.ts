@@ -166,6 +166,17 @@ describe('Meldungen', () => {
     expect(r).toMatchObject({ archived: 1, resolvedReports: 1 })
     expect((await exportReports(exam)).reports).toEqual([])
   })
+
+  it('zu bereits archivierten Karten zählen nicht mehr als offen', async () => {
+    const { reportCard, openReportEntries } = await import('./reports')
+    const v1 = parsePackage(sample)
+    await importPackage(exam, v1)
+    const card = (await db.cards.get(`e1:${v1.id}:k1-02`))!
+    await reportCard(card, 'sonstiges', 'nicht nötig')
+    // Stand aus älteren App-Versionen: Karte archiviert, Meldung noch offen
+    await db.cards.update(card.id, { archived: 1 })
+    expect(await openReportEntries('e1')).toEqual([])
+  })
 })
 
 describe('Gemeldete Karten', () => {
