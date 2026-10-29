@@ -60,7 +60,8 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
         if (old.archived) result.restored++
         else if (contentKey(old) !== contentKey(content)) {
           result.updated++
-          changed.push(old.id)
+          // Nur Leitfragen/Kernpunkte ergänzt: Eine Meldung zum Inhalt ist damit nicht bearbeitet.
+          if (contentKey({ ...old, prompts: undefined, keyPoints: undefined }) !== contentKey({ ...content, prompts: undefined, keyPoints: undefined })) changed.push(old.id)
         } else result.unchanged++
         return { ...stripContent(old), ...content, chapterTitle, order, archived: 0 as const }
       }
