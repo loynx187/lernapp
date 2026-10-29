@@ -3,14 +3,23 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { db } from '../lib/db'
-import { importPackage, parsePackage, parseTextCards, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
+import { BACKUP_FORMAT, importPackage, parsePackage, parseTextCards, textToPackage, type CardPackage, type ImportResult } from '../lib/packages'
+import { REPORTS_FORMAT } from '../lib/reports'
 import { appTooOld } from '../lib/package-format'
 import { importReminders, parseRemindersFile, REMINDERS_FORMAT, type ReminderEntry } from '../lib/reminders'
 import { OTHER_AI_PROMPT } from '../lib/textCards'
 import { PageHeader } from '../components/ui'
-import { applyPending, applyProfile, fieldLabel, matchExam, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
+import { applyPending, applyProfile, fieldLabel, matchExam, ORDER_FORMAT, parseProfilesFile, PROFILES_FORMAT, type ProfileEntry } from '../lib/profile'
 import { importTemplate, parseTemplate, templateStatus, templateSummary, TEMPLATE_FORMAT, type ProfileTemplate, type TemplateResult } from '../lib/template'
 import { BUNDLE_FORMAT, bundlePlan, bundleTotals, importBundle, packageExam, parseBundle, type BundlePlanEntry, type BundleResult, type PackageBundle } from '../lib/bundle'
+
+/** Dateien der App, die woanders hingehören – statt „Unbekanntes Dateiformat“ sagen, wohin. */
+const WRONG_PLACE: Record<string, string> = {
+  [BACKUP_FORMAT]: 'Das ist eine Sicherung deiner Lerndaten. Wiederherstellen unter Einstellungen → Daten & Sicherung.',
+  'lernapp-sync': 'Das ist die Synchronisationsdatei aus Dropbox. Ein Profil von einem anderen Gerät holst du unter Einstellungen → Synchronisation.',
+  [REPORTS_FORMAT]: 'Das ist ein Export deiner Meldungen zu Karten – er ist für Claude gedacht (offene Meldungen stehen auch automatisch im Auftrag) und wird hier nicht importiert.',
+  [ORDER_FORMAT]: 'Das ist ein Auftrag für Claude – in einer Claude-Code-Sitzung einfügen, nicht hier importieren.',
+}
 
 /** Paketname ohne vorangestellten Prüfungsnamen („Maschinendynamik – Fragenkatalog“ → „Fragenkatalog“). */
 const shortTitle = (title: string, exam?: string) => {
@@ -97,45 +106,36 @@ export function Import() {
     setProfilesDone(null)
     setTemplateDone(null)
     setBundleDone(null)
+    setRemindersDone(null)
+    // Vorschau der vorherigen Datei immer verwerfen – auch wenn die neue Datei fehlerhaft ist.
+    setPkg(null)
+    setProfiles(null)
+    setTemplate(null)
     setBundle(null)
     setReminders(null)
-    setRemindersDone(null)
+    const format = (raw as { format?: unknown })?.format
     try {
-      if ((raw as { format?: unknown })?.format === REMINDERS_FORMAT) {
-        setPkg(null)
-        setProfiles(null)
-        setTemplate(null)
-        setReminders(parseRemindersFile(raw))
-        return
-      }
-      if ((raw as { format?: unknown })?.format === BUNDLE_FORMAT) {
-        setPkg(null)
-        setProfiles(null)
-        setTemplate(null)
+      const hint = WRONG_PLACE[format as string]
+      if (hint) throw new Error(hint)
+      if (format === REMINDERS_FORMAT) return setReminders(parseRemindersFile(raw))
+      if (format === BUNDLE_FORMAT) {
         const b = parseBundle(raw)
         const tooOld = b.exams.flatMap((e) => e.packages).map((p) => appTooOld(p, __APP_VERSION__)).find(Boolean)
         if (tooOld) throw new Error(tooOld)
-        setBundle(b)
-        return
+        return setBundle(b)
       }
-      if ((raw as { format?: unknown })?.format === TEMPLATE_FORMAT) {
-        setPkg(null)
-        setProfiles(null)
-        setTemplate(parseTemplate(raw))
-        return
+      if (format === TEMPLATE_FORMAT) {
+        const t = parseTemplate(raw)
+        const tooOld = t.semesters.flatMap((s) => s.exams.flatMap((e) => e.packages)).map((p) => appTooOld(p, __APP_VERSION__)).find(Boolean)
+        if (tooOld) throw new Error(tooOld)
+        return setTemplate(t)
       }
-      if ((raw as { format?: unknown })?.format === PROFILES_FORMAT) {
-        setPkg(null)
-        setProfiles(parseProfilesFile(raw))
-        return
-      }
-      setProfiles(null)
+      if (format === PROFILES_FORMAT) return setProfiles(parseProfilesFile(raw))
       const p = parsePackage(raw)
       const tooOld = appTooOld(p, __APP_VERSION__)
       if (tooOld) throw new Error(tooOld)
       setPkg(p)
     } catch (e) {
-      setPkg(null)
       setError((e as Error).message)
     }
   }
@@ -144,7 +144,8 @@ export function Import() {
   async function onFile(file?: File) {
     if (!file) return
     setError('')
-    const content = await file.text()
+    // Byte-Order-Mark (Excel, Windows-Editor) entfernen, sonst scheitert JSON.parse.
+    const content = (await file.text()).replace(/^\uFEFF/, '')
     let raw: unknown
     try {
       raw = JSON.parse(content)
@@ -242,6 +243,8 @@ export function Import() {
     const exam = exams!.find((e) => e.id === examId)
     if (!exam) return setError('Bitte wähle eine Prüfung.')
     try {
+      const installed = await db.packages.get(`${exam.id}:${p.id}`)
+      if (installed && installed.version > p.version) return setError(`Du hast schon die neuere Version ${installed.version} von „${p.title}“ – die ältere Version ${p.version} wird nicht importiert.`)
       setResult(await importPackage(exam, p))
       setPkg(null)
       setText('')
@@ -480,14 +483,18 @@ export function Import() {
                 {pkg.cards.length} Karten · {pkg.chapters?.length ?? 0} Kapitel · Version {pkg.version}
               </p>
               {examSelect}
-              {existingVersion !== null && (
+              {existingVersion !== null && existingVersion > pkg.version ? (
+                <div className="notice warn" style={{ margin: 0 }}>
+                  Du hast schon die neuere Version {existingVersion}. Diese Datei (Version {pkg.version}) wird nicht importiert – sonst würden neuere Karten durch ältere ersetzt. Wahrscheinlich ist es eine alte Datei aus deinen Downloads.
+                </div>
+              ) : existingVersion !== null ? (
                 <div className="notice" style={{ margin: 0 }}>
                   Dieses Paket ist bereits importiert (Version {existingVersion}). Es wird aktualisiert – dein Lernfortschritt bleibt erhalten.
                 </div>
-              )}
+              ) : null}
               <div className="row">
                 <button className="btn grow" onClick={() => setPkg(null)}>Abbrechen</button>
-                <button className="btn primary grow" disabled={!examId} onClick={() => doImport(pkg)}>
+                <button className="btn primary grow" disabled={!examId || (existingVersion ?? 0) > pkg.version} onClick={() => doImport(pkg)}>
                   {existingVersion !== null ? 'Aktualisieren' : 'Importieren'}
                 </button>
               </div>

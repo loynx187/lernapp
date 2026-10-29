@@ -80,7 +80,7 @@ Paket-Metadaten: `id` stabil und sprechend (`<fach>-<thema>`), `title` „<Fach>
 
 ## 4. Prüfen
 
-1. `npm run validate -- <paket.json> --folien <erste>-<letzte>` (bei Updates zusätzlich `--alt <vorherige.json>`). Alle FEHLER beheben, WARNUNGEN prüfen und begründet beheben oder bewusst stehen lassen.
+1. `npm run validate -- <paket.json> --folien <erste>-<letzte>` (prüft auch alle Formeln mit KaTeX, Lücken innerhalb von Formeln und das nötige `minApp` – Zuordnen-Karten brauchen mindestens 1.15.0, Leitfragen/Kernpunkte 1.19.0) (bei Updates zusätzlich `--alt <vorherige.json>`). Alle FEHLER beheben, WARNUNGEN prüfen und begründet beheben oder bewusst stehen lassen.
 2. **Selbstkontrolle** – gehe die Karten einmal vollständig durch:
    - Stimmt jede Antwort mit der Folie überein? Keine erfundenen Zahlen, Normen oder Namen.
    - Ist jede Frage ohne die Folie eindeutig beantwortbar?

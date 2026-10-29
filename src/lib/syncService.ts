@@ -242,10 +242,18 @@ export interface RemoteProfile {
 export async function listRemoteProfiles(tokenOwner: string): Promise<RemoteProfile[]> {
   const files = (await listFolder(tokenOwner, '/sync')).filter((f) => f.name.endsWith('.lernsync'))
   const out: RemoteProfile[] = []
+  let failed: unknown
   for (const f of files) {
-    const d = await download(tokenOwner, f.path)
-    if (d) out.push({ doc: await decode(d.data), path: f.path })
+    try {
+      const d = await download(tokenOwner, f.path)
+      if (d) out.push({ doc: await decode(d.data), path: f.path })
+    } catch (e) {
+      // Eine beschädigte oder neuere Datei soll die übrigen Profile nicht verdecken.
+      if (e instanceof DropboxError) throw e
+      failed = e
+    }
   }
+  if (!out.length && failed) throw failed
   return out
 }
 

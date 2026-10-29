@@ -1,7 +1,8 @@
 // Prüft ein Kartenpaket vor der Übergabe an den Nutzer.
 // Aufruf: node scripts/validate-paket.ts <paket.json> [--alt <vorherige-version.json>] [--folien 1-25]
 import { readFileSync } from 'node:fs'
-import { compareVersions, parsePackage, type CardPackage } from '../src/lib/package-format.ts'
+import katex from 'katex'
+import { compareVersions, parsePackage, requiredApp, type CardPackage } from '../src/lib/package-format.ts'
 
 const args = process.argv.slice(2)
 const opt = (name: string) => {
@@ -28,6 +29,8 @@ try {
 
 const count = <T extends string | number>(xs: T[]) => xs.reduce((m, x) => m.set(x, (m.get(x) ?? 0) + 1), new Map<T, number>())
 const chapters = new Map((pkg.chapters ?? []).map((c) => [c.id, c.title]))
+// Wie in src/lib/render.ts
+const MATH = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|\$([^$\n]+?)\$/g
 const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 
 const fronts = new Map<string, string>()
@@ -36,7 +39,22 @@ for (const c of pkg.cards) {
   if (!c.source?.file || c.source.slide === undefined) warnings.push(`${where}: keine vollständige Quelle (Datei + Folie).`)
   if (c.chapter && !chapters.has(c.chapter)) errors.push(`${where}: unbekanntes Kapitel „${c.chapter}“.`)
   if (!c.chapter && chapters.size) warnings.push(`${where}: keinem Kapitel zugeordnet.`)
-  if (c.type === 'cloze' && !/\{\{[\s\S]+?\}\}/.test(c.front)) errors.push(`${where}: Lückentext ohne {{…}}.`)
+  if (c.type === 'cloze' && !/\{\{[\s\S]+?\}\}/.test(c.front.replace(MATH, 'F'))) errors.push(`${where}: Lückentext ohne {{…}} außerhalb von Formeln.`)
+  // Formeln wie in der App (src/lib/render.ts): Fehler würden als roter Quelltext erscheinen.
+  const texts = [c.front, c.back, c.result, ...(c.steps ?? []), ...(c.options ?? []), ...(c.pairs ?? []).flat(), ...(c.prompts ?? []), ...(c.keyPoints ?? [])]
+  for (const t of texts) {
+    if (!t) continue
+    for (const m of t.replace(/!\[[^\]]*\]\([^)]*\)/g, '').matchAll(MATH)) {
+      const tex = (m[1] ?? m[2] ?? m[3] ?? m[4]).trim()
+      // Formeln werden vor den Lücken ausgewertet: {{…}} in $…$ wird keine Lücke, die Antwort stünde offen da.
+      if (c.type === 'cloze' && t === c.front && /\{\{/.test(tex)) errors.push(`${where}: Lücke innerhalb einer Formel – stattdessen die ganze Formel einklammern: {{$…$}}.`)
+      try {
+        katex.renderToString(tex, { throwOnError: true, displayMode: m[1] !== undefined || m[2] !== undefined, strict: 'ignore' })
+      } catch (e) {
+        errors.push(`${where}: Formel lässt sich nicht darstellen: „${tex.slice(0, 50)}“ – ${(e as Error).message.replace(/^KaTeX parse error: /, '').slice(0, 80)}`)
+      }
+    }
+  }
   if (c.type === 'task' && (!c.steps?.length || !c.result)) errors.push(`${where}: Rechenaufgabe ohne Lösungsschritte oder Ergebnis.`)
   if (c.type === 'task' && !c.answers?.length) warnings.push(`${where}: Rechenaufgabe ohne answers – keine automatische Ergebnisprüfung.`)
   if (c.type === 'basic' && !c.back.trim()) errors.push(`${where}: Antwort fehlt.`)
@@ -48,14 +66,15 @@ for (const c of pkg.cards) {
   const key = norm(c.front)
   if (fronts.has(key)) warnings.push(`${where}: gleiche Frage wie ${fronts.get(key)}.`)
   else fronts.set(key, c.uid)
-  if (!/^k\d+-f\d{3}-\d+$/.test(c.uid)) warnings.push(`${where}: uid folgt nicht dem Schema k<Kapitel>-f<Folie>-<n>.`)
+  // Schema k<Kapitel>-<Kürzel><Nummer>[-<n>], z. B. k3-f087-1, k1-q01, k2-a03, k0-m001-1
+  if (!/^k\d+-[a-z][a-z0-9]*\d(-\d+)?$/i.test(c.uid)) warnings.push(`${where}: uid folgt nicht dem Schema k<Kapitel>-<Kürzel><Nr>[-<n>], z. B. k3-f087-1.`)
 }
 // Sokratisches Lernen: Leitfragen und Kernpunkte
-const SOCRATIC_APP = '1.19.0'
 const words = (s: string) => norm(s.replace(/\$[^$]*\$/g, ' ')).split(' ').filter((w) => w.length >= 5)
 const socratic = pkg.cards.filter((c) => c.prompts?.length || c.keyPoints?.length)
-if (socratic.length && (!pkg.minApp || compareVersions(pkg.minApp, SOCRATIC_APP) < 0))
-  errors.push(`Leitfragen/Kernpunkte brauchen "minApp": "${SOCRATIC_APP}" – ältere Apps verwerfen sie sonst still.`)
+const needed = requiredApp(pkg.cards)
+if (needed && (!pkg.minApp || compareVersions(pkg.minApp, needed) < 0))
+  errors.push(`Das Paket nutzt ${socratic.length ? 'Leitfragen/Kernpunkte' : 'Zuordnen-Karten'} und braucht "minApp": "${needed}" – ältere Apps verwerfen sonst Felder still oder lehnen das Paket ab.`)
 for (const c of socratic) {
   const where = `Karte ${c.uid}`
   const answer = new Set(words(c.back))

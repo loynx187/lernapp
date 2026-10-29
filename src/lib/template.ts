@@ -113,8 +113,9 @@ export function parseTemplate(raw: unknown): ProfileTemplate {
         return {
           name: e.name,
           date: e.date,
-          weight: typeof e.weight === 'number' && e.weight > 0 ? e.weight : 1,
-          color: isStr(e.color) ? e.color : EXAM_COLORS[0],
+          // Wichtigkeit 1–3 wie im Formular; fremde Werte würden den Lernplan verzerren.
+          weight: typeof e.weight === 'number' && Number.isFinite(e.weight) ? Math.min(3, Math.max(1, Math.round(e.weight))) : 2,
+          color: isStr(e.color) && /^#[0-9a-f]{3,8}$/i.test(e.color) ? e.color : EXAM_COLORS[0],
           ongoing: e.ongoing === true || undefined,
           ongoingDays: typeof e.ongoingDays === 'number' ? e.ongoingDays : undefined,
           profile: parseProfile(e.profile),
