@@ -78,6 +78,13 @@ export function HomeworkList() {
         subtitle={examFilter ? examById.get(examFilter)?.name : undefined}
         action={<Link className="btn small" to={`/hausaufgabe/neu${examFilter ? `?exam=${examFilter}` : ''}`}>Neu</Link>}
       />
+      <Link className="list-item card" to="/erinnerungen" style={{ marginBottom: 12 }}>
+        <span className="grow">
+          <span style={{ display: 'block', fontWeight: 500 }}>Erinnerungen</span>
+          <small className="muted">Für alles ohne Abgabe – oder um eine Hausaufgabe früher anzugehen</small>
+        </span>
+        <span aria-hidden>›</span>
+      </Link>
       {open.length === 0 && done.length === 0 && (
         <div className="card empty stack">
           <p className="muted">Noch keine Hausaufgaben. Hausaufgaben erscheinen kurz vor der Abgabe in der Schreibtisch-Sitzung und werden in dein Zeitbudget eingeplant.</p>
@@ -306,6 +313,11 @@ export function HomeworkPage() {
     <>
       <PageHeader back title="Hausaufgabe" action={<Link className="btn small" to={`/hausaufgabe/${h.id}/bearbeiten`}>Bearbeiten</Link>} />
       <HomeworkWork key={`${h.id}:${h.doneAt ?? 0}`} h={h} exam={exam} onFinished={() => navigate('/hausaufgaben')} />
+      {!h.doneAt && (
+        <Link className="btn block" style={{ marginTop: 12 }} to={`/erinnerung/neu?hausaufgabe=${h.id}`}>
+          Erinnerung zum Bearbeiten setzen
+        </Link>
+      )}
       {h.doneAt && (
         <div className="row" style={{ marginTop: 12 }}>
           <button className="btn grow" onClick={() => reopenHomework(h)}>Wieder öffnen</button>

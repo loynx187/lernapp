@@ -3,6 +3,7 @@ import { AppStateProvider, useAppState } from './state'
 import { Onboarding } from './pages/Onboarding'
 import { Dashboard } from './pages/Dashboard'
 import { Ideas } from './pages/Ideas'
+import { ReminderForm, RemindersList } from './pages/Reminders'
 import { Session } from './pages/Session'
 import { LearnChoice } from './pages/LearnChoice'
 import { Exams } from './pages/Exams'
@@ -68,6 +69,9 @@ function Shell() {
         <Route path="/einstellungen" element={<Settings />} />
         <Route path="/hilfe" element={<Help />} />
         <Route path="/ideen" element={<Ideas />} />
+        <Route path="/erinnerungen" element={<RemindersList />} />
+        <Route path="/erinnerung/neu" element={<ReminderForm />} />
+        <Route path="/erinnerung/:id" element={<ReminderForm />} />
         <Route path="/semester/neu" element={<SemesterForm />} />
         <Route path="/probeklausur/:id" element={<MockExam />} />
         <Route path="/lernalgorithmus" element={<FsrsSettings />} />

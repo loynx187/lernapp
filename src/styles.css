@@ -522,3 +522,17 @@ details.explain[open] > summary::after { transform: rotate(90deg); }
 .ratings button.suggested { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hints-list b { font-size: 13px; color: var(--muted); display: block; }
 .hints-list ol, .hints-list ul { margin: 4px 0 0; padding-left: 20px; }
+
+/* Erinnerungen */
+.reminder-list { padding: 4px 16px; }
+.reminder-row { display: flex; gap: 10px; align-items: flex-start; padding: 12px 0; }
+.reminder-row + .reminder-row { border-top: 1px solid var(--glass-border); }
+.reminder-row .dot { margin-top: 7px; flex-shrink: 0; }
+.reminder-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.reminder-title { color: inherit; font-weight: 500; overflow-wrap: anywhere; }
+.reminder-title:hover { text-decoration: none; }
+.reminder-row.compact { align-items: center; padding: 8px 0; }
+.reminder-row.compact .dot { margin-top: 0; }
+.reminder-row.compact .reminder-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.reminder-row.compact .btn { flex-shrink: 0; }
+.w-reminders { display: flex; flex-direction: column; margin-bottom: 8px; }

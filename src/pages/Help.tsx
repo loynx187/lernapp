@@ -171,6 +171,15 @@ export function Help() {
             Beim Abhaken kannst du deine Lösung notieren oder fotografieren und die Aufgabe als Übungsaufgabe behalten – dann wird sie zur Klausurvorbereitung wie eine Karte wiederholt.
           </p>
         </details>
+        <details>
+          <summary>Erinnerungen</summary>
+          <p style={{ marginTop: 8 }}>
+            Für alles, was keinen Abgabetermin hat oder früher erledigt werden soll: Widget „Erinnerungen“ → „Eintragen“ (oder unter Hausaufgaben → „Erinnerungen“). Eine Erinnerung hat einen Titel, optional eine Notiz und einen Tag, ab dem sie fällig ist; verknüpfen kannst du sie mit einer Prüfung oder einer Hausaufgabe. Auf einer Hausaufgabe setzt „Erinnerung zum Bearbeiten setzen“ eine Erinnerung zwei Tage vor der Abgabe – ist die Hausaufgabe erledigt, ist es die Erinnerung auch.
+          </p>
+          <p>
+            Fällige Erinnerungen stehen auf der Startseite zum Abhaken; auf der Seite „Erinnerungen“ lassen sie sich auch auf morgen verschieben. Sie stehen außerdem in der täglichen Kurzbefehle-Erinnerung und werden über Dropbox abgeglichen. Claude kann dir Erinnerungen als Datei mitschicken – Import unter „Karten importieren“.
+          </p>
+        </details>
       </div>
 
       <div className="card stack">
