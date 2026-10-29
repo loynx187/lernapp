@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.18.0** – Seite „Ideen für Version 2“ (Einstellungen → Hilfe): gesammelte Ideen für die nächste Hauptversion, u. a. sokratisches Lernen mit Leitfragen, „Warum?“-Nachfragen und Hinweisleitern, dazu eigene Notizen, die mit dem Profil abgeglichen werden. Umsetzung nach der Testphase (siehe `docs/IDEEN-2.0.md`).
 - **1.17.0** – Scriptable-Widget immer aktuell: Unter Einstellungen → Synchronisation gibt es einen „Widget-Schlüssel“. In Scriptable eingefügt, lädt das Widget den Fortschritt direkt aus Dropbox statt über die Dateien-App, die die Datei im Hintergrund oft nicht aktualisiert. Ohne Netz zeigt es den zuletzt geladenen Stand. Das Widget-Skript bitte neu kopieren.
 - **1.16.3** – Meldungen zu Karten, die nicht mehr im Paket sind, tauchen nicht mehr als offen auf („x Meldungen exportieren“, Prüfungsseite, Auftrag für Claude) – auch solche aus der Zeit vor 1.16.2, die sich nicht abhaken ließen.
 - **1.16.2** – Meldungen zu Karten, die ein Paket-Update entfernt (archiviert), gelten jetzt ebenfalls als erledigt – bisher nur Meldungen zu geänderten Karten.

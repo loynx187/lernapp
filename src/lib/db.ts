@@ -25,6 +25,8 @@ export interface Profile extends Synced {
   fsrsHintDismissed?: boolean
   /** false: immer mit dem eingestellten Budget planen statt es an die gemessene Lernzeit anzupassen (Standard: anpassen). */
   budgetAuto?: boolean
+  /** Eigene Notizen zu Ideen für die nächste Hauptversion (Seite „Ideen für Version 2“). */
+  ideas?: { id: string; text: string; createdAt: number }[]
 }
 
 export interface Semester extends Synced {
