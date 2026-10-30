@@ -41,6 +41,7 @@ Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und we
 
 ## Versionen
 
+- **1.25.0** – Zuordnen-Karten: Die Antworten werden bei jeder Abfrage neu gemischt, statt immer in derselben Reihenfolge zu stehen. Eine schon zugeordnete Antwort steht in den übrigen Auswahllisten nicht mehr zur Wahl.
 - **1.24.0** – Lernstand zurücksetzen: Auf der Prüfungsseite unter „Kartenpakete“ → „Zurücksetzen“ gelten alle Karten eines zu früh gelernten Pakets wieder als neu und tauchen nicht mehr in den Wiederholungen auf. Sie kommen wie neue Karten in der Paket-Reihenfolge dran (mit ↓ lässt sich das Paket nach hinten schieben). Bewertungen bleiben für die Statistik erhalten.
 - **1.23.2** – Änderung an der Bewertungsleiste aus 1.23.1 zurückgenommen – Darstellung wie in 1.23.0.
 - **1.23.1** – Darstellung beim Lernen: Die Bewertungsknöpfe bleiben beim Scrollen langer Karten am unteren Rand, haben jetzt aber einen deckenden Hintergrund – vorher schien der Antworttext zwischen und unter den Knöpfen durch.
