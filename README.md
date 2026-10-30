@@ -31,6 +31,10 @@ npm run build
 
 Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
+## Lizenz
+
+Der Code steht unter der **GNU General Public License v3.0** ([LICENSE](LICENSE)): Er darf genutzt, verändert und weitergegeben werden; wer eine veränderte Fassung weitergibt, muss sie ebenfalls unter der GPL-3.0 mit Quellcode veröffentlichen. Kartenpakete und Vorlesungsunterlagen gehören nicht zum Code und sind nicht Teil dieses Repositorys.
+
 ## Mitentwickeln
 
 Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und welche Regeln dafür sorgen, dass sich Funktionen später übernehmen lassen, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
