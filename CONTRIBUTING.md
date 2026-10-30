@@ -2,6 +2,10 @@
 
 Die Lernapp wird von **loynx187** gepflegt. Eigene Weiterentwicklungen sind willkommen – in einem **Fork**, aus dem gute Funktionen einzeln übernommen werden. Diese Anleitung sorgt dafür, dass sich Änderungen aus einem Fork später sauber übernehmen lassen.
 
+## Lizenz
+
+Der Code steht unter der **GPL-3.0** (`LICENSE`). Dein Fork und alle Beiträge stehen unter derselben Lizenz: Gibst du eine veränderte Fassung weiter, veröffentlichst du sie samt Quellcode ebenfalls unter der GPL-3.0. Mit einem Pull Request stellst du deinen Beitrag unter diese Lizenz.
+
 ## Einrichten
 
 1. Auf GitHub `loynx187/lernapp` **forken**. Der Fork ist deine eigene Kopie; deine Claude-Sitzungen arbeiten nur dort.
