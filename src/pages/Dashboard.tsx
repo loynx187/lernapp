@@ -4,7 +4,7 @@ import { useActive } from '../state'
 import { loadStudyData, updateSnapshots } from '../lib/study'
 import { addDays, formatCountdown, isoDate, studyDate, studyDayStart } from '../lib/dates'
 import { cardMode, type Mode } from '../lib/db'
-import { examStats, streak } from '../lib/stats'
+import { examStats, materialByExam, streak } from '../lib/stats'
 import { DayBars, Icon, PageHeader, Progress, Widget } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
@@ -151,7 +151,8 @@ export function Dashboard() {
             const info = MODE_INFO[m]
             const budget = data.budgets[m].effective
             const forMode = subjects.filter((s) => s.left[m] > 0)
-            const choose = forMode.length > 1
+            // Auswahl, sobald mehrere Fächer Stoff für diesen Modus haben – auch wenn heute nur eines eingeplant ist.
+            const choose = new Set([...materialByExam(data.cards, m).keys(), ...forMode.map((s) => s.examId)]).size > 1
             return (
               <Widget
                 key={m}
@@ -166,7 +167,7 @@ export function Dashboard() {
                     {left > 0 ? (
                       <>
                         <div className="w-number">{left}</div>
-                        <div className="w-caption">{choose ? `${info.unit} in ${forMode.length} Fächern` : `${info.unit} heute`}</div>
+                        <div className="w-caption">{forMode.length > 1 ? `${info.unit} in ${forMode.length} Fächern` : `${info.unit} heute`}</div>
                       </>
                     ) : (
                       <>
@@ -180,7 +181,7 @@ export function Dashboard() {
                       <>
                         {hwCount > 0 && <span>{hwCount} {hwCount === 1 ? 'Hausaufgabe' : 'Hausaufgaben'}</span>}
                         <span>{t.reviewsLeft} Wdh. · {t.newLeft} {m === 'desk' ? 'empfohlen' : 'neu'}</span>
-                        {choose && <span className="truncate">Empfohlen: {examById.get(forMode[0].examId)?.name}</span>}
+                        {choose && forMode.length > 0 && <span className="truncate">Empfohlen: {examById.get(forMode[0].examId)?.name}</span>}
                         <span className="w-pill">ca. {t.minutesLeft} min · {choose ? 'Fach wählen' : 'Start'}</span>
                       </>
                     ) : (
