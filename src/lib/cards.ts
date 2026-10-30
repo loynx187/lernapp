@@ -1,4 +1,5 @@
 import { db, type StudyCard } from './db'
+import { newMemoryState } from './scheduler'
 
 /**
  * Löscht eine Karte aus dem Lernplan. Sie wird nur archiviert und markiert, damit
@@ -51,6 +52,19 @@ export async function restorePackage(examId: string, packageId: string) {
     const cards = await db.cards.where('packageId').equals(packageId).filter((c) => c.examId === examId && c.deletedAt === rec.removedAt).toArray()
     for (const c of cards) await db.cards.update(c.id, { archived: 0, deletedAt: undefined })
     await db.packages.update(rec.id, { removedAt: undefined })
+  })
+}
+
+/**
+ * Setzt den Lernstand eines Pakets zurück (z. B. zu früh gelernt): Alle begonnenen, aktiven Karten
+ * werden wieder neu und vom Lernplan wie neue Karten eingeführt. Bewertungen bleiben für die Statistik
+ * erhalten; über `updatedAt` erreicht der Rücksetzer bei der Synchronisation auch die anderen Geräte.
+ */
+export async function resetPackage(examId: string, packageId: string, now = Date.now()) {
+  return db.transaction('rw', db.cards, async () => {
+    const cards = await db.cards.where('packageId').equals(packageId).filter((c) => c.examId === examId && !c.archived && c.s.state !== 0).toArray()
+    for (const c of cards) await db.cards.update(c.id, { s: newMemoryState(now) })
+    return cards.length
   })
 }
 

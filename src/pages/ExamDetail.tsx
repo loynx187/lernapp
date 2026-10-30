@@ -7,7 +7,7 @@ import { loadStudyData } from '../lib/study'
 import { addDays, daysUntil, formatCountdown, formatDate, isoDate } from '../lib/dates'
 import { examStats, packageBlocks, sortPackages } from '../lib/stats'
 import { exportPackage, movePackage, safeFileName, saveFile } from '../lib/packages'
-import { deletedCards, removePackage, restorePackage } from '../lib/cards'
+import { deletedCards, removePackage, resetPackage, restorePackage } from '../lib/cards'
 import { HistoryChart } from '../components/HistoryChart'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { Icon, PageHeader, Progress, Stat, pct } from '../components/ui'
@@ -289,6 +289,17 @@ export function ExamDetail() {
             <div className="row" style={{ gap: 8 }}>
               <button className="btn small" onClick={() => share(p.packageId)}>Teilen</button>
               <button
+                className="btn small ghost"
+                aria-label={`Lernstand von ${p.title} zurücksetzen`}
+                onClick={async () => {
+                  if (!confirm(`Lernstand von „${p.title}“ zurücksetzen? Alle Karten des Pakets gelten wieder als neu und kommen wie neue Karten in der Reihenfolge der Pakete dran. Das lässt sich nicht rückgängig machen.`)) return
+                  const n = await resetPackage(exam.id, p.packageId)
+                  alert(n ? `${n === 1 ? '1 Karte' : `${n} Karten`} zurückgesetzt.` : 'Aus diesem Paket wurde noch nichts gelernt.')
+                }}
+              >
+                Zurücksetzen
+              </button>
+              <button
                 className="btn small ghost danger"
                 aria-label={`${p.title} entfernen`}
                 onClick={() => {
@@ -302,7 +313,7 @@ export function ExamDetail() {
         ))}
         {active.length > 1 && (
           <small className="muted">
-            Neue Karten kommen Paket für Paket in dieser Reihenfolge dran, innerhalb eines Pakets wie im Skript. Erst in den letzten 14 Tagen vor der Klausur wird gemischt.
+            Neue Karten kommen Paket für Paket in dieser Reihenfolge dran, innerhalb eines Pakets wie im Skript. Erst in den letzten 14 Tagen vor der Klausur wird gemischt. Zu früh gelernt? „Zurücksetzen“ macht die Karten eines Pakets wieder neu; mit ↓ kommt es später dran.
           </small>
         )}
         {removed.length > 0 && (

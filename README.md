@@ -41,6 +41,7 @@ Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und we
 
 ## Versionen
 
+- **1.24.0** – Lernstand zurücksetzen: Auf der Prüfungsseite unter „Kartenpakete“ → „Zurücksetzen“ gelten alle Karten eines zu früh gelernten Pakets wieder als neu und tauchen nicht mehr in den Wiederholungen auf. Sie kommen wie neue Karten in der Paket-Reihenfolge dran (mit ↓ lässt sich das Paket nach hinten schieben). Bewertungen bleiben für die Statistik erhalten.
 - **1.23.2** – Änderung an der Bewertungsleiste aus 1.23.1 zurückgenommen – Darstellung wie in 1.23.0.
 - **1.23.1** – Darstellung beim Lernen: Die Bewertungsknöpfe bleiben beim Scrollen langer Karten am unteren Rand, haben jetzt aber einen deckenden Hintergrund – vorher schien der Antworttext zwischen und unter den Knöpfen durch.
 - **1.23.0** – Ganze Kartenpakete entfernen: auf der Prüfungsseite unter „Kartenpakete“ → „Entfernen“. Die Karten werden nicht mehr abgefragt, der Lernfortschritt bleibt gespeichert, Paket-Updates bringen sie nicht zurück; „Wiederherstellen“ holt genau diese Karten zurück (einzeln gelöschte bleiben gelöscht). Der Auftrag für Claude markiert entfernte Pakete.
