@@ -31,6 +31,10 @@ npm run build
 
 Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
+## Mitentwickeln
+
+Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und welche Regeln dafür sorgen, dass sich Funktionen später übernehmen lassen, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Versionen
 
 - **1.23.2** – Änderung an der Bewertungsleiste aus 1.23.1 zurückgenommen – Darstellung wie in 1.23.0.

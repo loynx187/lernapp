@@ -2,6 +2,12 @@
 
 Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App und aller Inhalte: **Deutsch**.
 
+## Projektangaben
+In einem Fork diese Angaben anpassen (siehe `CONTRIBUTING.md`):
+- Betreuer und Repository: `loynx187/lernapp`, App: https://loynx187.github.io/lernapp/
+- **Inhalte-Repository (privat):** `loynx187/lernapp-inhalte` – wird lokal nach `/home/user/lernapp-inhalte` geklont
+- Dropbox-App-Schlüssel: `.env` (`VITE_DROPBOX_APP_KEY`)
+
 ## Architektur
 - Vite + React + TypeScript, PWA via `vite-plugin-pwa`, gehostet auf GitHub Pages unter `/lernapp/` (`.github/workflows/deploy.yml`).
 - **Local-first, kein eigener Server.** Daten in IndexedDB (Dexie, `src/lib/db.ts`).
@@ -13,6 +19,7 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 ## Versionen und Änderungen
 - `main` ist geschützt und entspricht der veröffentlichten App. **Nie direkt auf `main` pushen.** Änderungen auf einem eigenen Branch entwickeln und als Pull Request einreichen. Eigene Pull Requests mergt Claude selbst, sobald der Workflow `Tests` grün ist und es keine Konflikte gibt (Merge-Commit, kein Squash/Rebase). Pull Requests von anderen (externe Änderungen) übernimmt nur der Nutzer. Der Merge auf `main` veröffentlicht die App automatisch.
 - Jede Veröffentlichung bekommt eine neue Versionsnummer in `package.json` (`package-lock.json` mitziehen) und einen Eintrag unter „Versionen“ in `README.md`: Fehlerbehebung → 1.0.1, neue Funktion → 1.1.0, grundlegende Umbauten → 2.0.0. Der Workflow `Tests` prüft das (`scripts/check-version.mjs`): Ändert ein Pull Request die App (`src/`, `public/`, `index.html`, `vite.config.ts`, Abhängigkeiten), muss die Version steigen. Build-Nummer und Datum setzt die Veröffentlichung automatisch. Release/Tag `v<Version>` legt der Nutzer auf GitHub an.
+- **Mitentwicklung über Forks** (`CONTRIBUTING.md`): Pull Requests aus Forks prüft Claude auf Wunsch (Diff gegen den aktuellen `main`, fehlende Grundlagen, Regeln, Tests), gemergt werden sie nur vom Nutzer. „Funktion X aus dem Fork übernehmen“: Fork-Branch lesen, die Funktion in einem eigenen Branch auf dem aktuellen `main` nachbauen und an die Regeln hier anpassen, eigener Pull Request mit eigener Version. Der Workflow `Tests` blockiert Änderungen an `db.version`/`formatVersion` ohne den Vermerk „Schemaänderung abgestimmt“ in einer Commit-Nachricht (`scripts/check-compat.mjs`).
 - Ideen für die nächste Hauptversion (2.0.0) sammeln, nicht umsetzen, bis der Nutzer die Testphase beendet: `docs/IDEEN-2.0.md` und `src/lib/ideas.ts` (Seite „Ideen für Version 2“) gemeinsam ergänzen. Ausnahme auf Wunsch des Nutzers: „Sokratisch lernen“ wird in Stufen schon vorher umgesetzt.
 - **Regeln für „Sokratisch lernen“ (und andere neue Lernfunktionen in der Testphase):** alles hinter dem Schalter `profile.socratic` (Standard aus – ohne ihn verhält sich die App unverändert); nur optionale Felder, keine Dexie-Schema-Migration; **vorhandene Tests in diesen Pull Requests nicht ändern**, nur neue hinzufügen; Lernplan (`planner.ts`) und Lernalgorithmus (`scheduler.ts`) erst ab Stufe 3 anfassen; je Stufe ein eigener Pull Request mit eigener Version. Neue Kartenfelder in `contentKey`/`stripContent` (`packages.ts`) und `parsePackage` aufnehmen, Pakete damit bekommen `minApp`.
 
@@ -27,7 +34,7 @@ Lern-PWA für die Prüfungsvorbereitung (Maschinenbau, DHBW). Sprache der App un
 Wenn der Nutzer eine Sicherung hochlädt und persönliche FSRS-Parameter möchte: `pip install "fsrs[optimizer]"` (in einer venv im Scratchpad), dann `python scripts/optimize-fsrs.py <sicherung.json>`. Die ausgegebene Zahlenreihe dem Nutzer schicken – er fügt sie in der App unter Einstellungen → Lernalgorithmus ein. Sicherungen enthalten Lerndaten: nicht committen.
 
 ## Kartenpakete aus Vorlesungsunterlagen erstellen
-**Immer nach dem Skill `.claude/skills/kartenpaket/SKILL.md` vorgehen** (auch ohne `/kartenpaket`-Aufruf, sobald PDFs für Karten hochgeladen werden). Unterlagen, Pakete, Fachprofile und Meldungen liegen im privaten Repository `loynx187/lernapp-inhalte` (`faecher/<fach>/…`).
+**Immer nach dem Skill `.claude/skills/kartenpaket/SKILL.md` vorgehen** (auch ohne `/kartenpaket`-Aufruf, sobald PDFs für Karten hochgeladen werden). Unterlagen, Pakete, Fachprofile und Meldungen liegen im privaten Inhalte-Repository (siehe „Projektangaben“) (`faecher/<fach>/…`).
 Meist schickt der Nutzer dazu einen **Auftrag aus der App** (`lernapp-auftrag`: Prüfungen, Fachprofil, Paketstände, offene Meldungen; erzeugt in `src/lib/profile.ts`). Das Fachprofil der App ist maßgeblich; Vorschläge gehen als `profile` im Paket oder als `lernapp-fachprofile`-Datei zurück.
 Format: `docs/KARTENPAKET-FORMAT.md`. Beispiel: `public/beispiel-paket.json`.
 
