@@ -17,6 +17,8 @@ jobs:
           fetch-depth: 0
       - name: Versionsnummer erhöht?
         run: node scripts/check-version.mjs origin/${{ github.base_ref }}
+      - name: Datenbankschema und Dateiformate verträglich?
+        run: node scripts/check-compat.mjs origin/${{ github.base_ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22

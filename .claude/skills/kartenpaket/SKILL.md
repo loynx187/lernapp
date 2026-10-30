@@ -9,7 +9,7 @@ Ziel: gleichbleibend hohe Qualität für alle Fächer. Arbeite **jeden** Schritt
 
 ## 0. Inhalte-Archiv
 
-Unterlagen, Pakete, Fachprofile und Meldungen liegen im **privaten** Repository `loynx187/lernapp-inhalte` (Aufbau: `faecher/<fach-slug>/{profil.md, unterlagen/, pakete/, meldungen/}`).
+Unterlagen, Pakete, Fachprofile und Meldungen liegen im **privaten** Inhalte-Repository, das in `CLAUDE.md` unter „Projektangaben“ steht (Original: `loynx187/lernapp-inhalte`) (Aufbau: `faecher/<fach-slug>/{profil.md, unterlagen/, pakete/, meldungen/}`).
 - Ist es nicht in der Sitzung, hänge es mit `add_repo` an (Zugriff `push`) und klone es nach `/home/user/lernapp-inhalte`. Klappt das nicht, bitte den Nutzer, es freizugeben – ohne Archiv nur weitermachen, wenn er die Vorversion des Pakets selbst hochlädt.
 - Unterlagen und Pakete **nur dort** ablegen, **nie** im öffentlichen Repository `lernapp`.
 
