@@ -87,6 +87,10 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
         next.push({ ...old, archived: 1 })
       }
     }
+    // Vom Nutzer entferntes Paket: Ein Update aktualisiert die Inhalte, das Paket bleibt aber entfernt
+    // (auch neue Karten), bis er es wiederherstellt.
+    const removedAt = (await db.packages.get(`${exam.id}:${pkg.id}`))?.removedAt
+    if (removedAt) for (const [i, c] of next.entries()) if (!c.archived) next[i] = { ...c, archived: 1, deletedAt: removedAt }
     await db.cards.bulkPut(next)
     // Meldungen zu Karten, die das Update geändert oder entfernt hat, gelten als bearbeitet.
     const open = (await db.reports.where('cardId').anyOf(changed).toArray()).filter((r) => !r.resolvedAt)
@@ -105,6 +109,7 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
       // Hat der Nutzer die Reihenfolge festgelegt, kommt ein neues Paket ans Ende.
       position: previous ? previous.position : await nextPosition(exam.id),
       cardCount: pkg.cards.length,
+      removedAt: previous?.removedAt,
     }
     await db.packages.put(record)
     const current = await db.exams.get(exam.id)
@@ -142,7 +147,8 @@ async function nextPosition(examId: string): Promise<number | undefined> {
 /** Verschiebt ein Paket in der Lernreihenfolge seiner Prüfung um eine Stelle (-1 = früher, +1 = später). */
 export async function movePackage(examId: string, packageId: string, step: -1 | 1) {
   await db.transaction('rw', db.packages, async () => {
-    const order = sortPackages(await db.packages.where('examId').equals(examId).toArray())
+    // Entfernte Pakete stehen nicht in der Liste und zählen nicht mit.
+    const order = sortPackages((await db.packages.where('examId').equals(examId).toArray()).filter((p) => !p.removedAt))
     const i = order.findIndex((p) => p.packageId === packageId)
     const j = i + step
     if (i < 0 || j < 0 || j >= order.length) return

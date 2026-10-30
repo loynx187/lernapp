@@ -208,6 +208,8 @@ export interface PackageRecord extends Synced {
   /** Vom Nutzer festgelegte Lernreihenfolge der Pakete einer Prüfung (0, 1, …), siehe movePackage. */
   position?: number
   cardCount: number
+  /** Vom Nutzer entfernt: Alle Karten des Pakets sind mit genau diesem Zeitpunkt gelöscht (siehe removePackage). */
+  removedAt?: number
 }
 
 export interface Snapshot extends Synced {

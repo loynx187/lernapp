@@ -35,6 +35,7 @@ export function Import() {
   const [examId, setExamId] = useState(search.get('exam') ?? '')
   const [pkg, setPkg] = useState<CardPackage | null>(null)
   const [existingVersion, setExistingVersion] = useState<number | null>(null)
+  const [existingRemoved, setExistingRemoved] = useState(false)
   /** Wie die Prüfung für ein einzelnes Paket gefunden wurde – null: vom Nutzer gewählt bzw. nicht erkannt. */
   const [detected, setDetected] = useState<'installed' | 'matched' | null>(null)
   /** Hat der Nutzer die Prüfung für das aktuelle Paket selbst gewählt? Dann gewinnt seine Wahl gegen die (asynchrone) Erkennung. */
@@ -95,7 +96,12 @@ export function Import() {
 
   useEffect(() => {
     setExistingVersion(null)
-    if (pkg && examId) db.packages.get(`${examId}:${pkg.id}`).then((r) => setExistingVersion(r ? r.version : null))
+    setExistingRemoved(false)
+    if (pkg && examId)
+      db.packages.get(`${examId}:${pkg.id}`).then((r) => {
+        setExistingVersion(r ? r.version : null)
+        setExistingRemoved(!!r?.removedAt)
+      })
   }, [pkg, examId])
 
   if (!exams) return null
@@ -490,6 +496,7 @@ export function Import() {
               ) : existingVersion !== null ? (
                 <div className="notice" style={{ margin: 0 }}>
                   Dieses Paket ist bereits importiert (Version {existingVersion}). Es wird aktualisiert – dein Lernfortschritt bleibt erhalten.
+                  {existingRemoved && ' Du hast es entfernt: Es bleibt entfernt, bis du es auf der Prüfungsseite wiederherstellst.'}
                 </div>
               ) : null}
               <div className="row">
