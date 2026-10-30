@@ -385,7 +385,17 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
 .step b { font-size: 13px; color: var(--muted); display: block; margin-bottom: 2px; }
 .step.result { background: color-mix(in srgb, var(--ok) 14%, transparent); }
 
-.actions { position: sticky; bottom: calc(env(safe-area-inset-bottom) + 10px); margin-top: 16px; }
+/* Bleibt beim Scrollen am unteren Rand: deckender Hintergrund bis zur Bildschirmkante, damit die Karte nicht zwischen oder unter den Knöpfen durchscheint. */
+.actions {
+  position: sticky;
+  bottom: 0;
+  margin: 16px -8px 0;
+  padding: 8px 8px calc(env(safe-area-inset-bottom) + 10px);
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
+  z-index: 5;
+}
 .ratings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .ratings button {
   border: none;
