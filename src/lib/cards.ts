@@ -14,10 +14,44 @@ export async function restoreCard(card: Pick<StudyCard, 'id'>) {
   await db.cards.update(card.id, { archived: 0, deletedAt: undefined })
 }
 
-/** Gelöschte Karten einer Prüfung, zuletzt gelöschte zuerst. */
+/** Einzeln gelöschte Karten einer Prüfung, zuletzt gelöschte zuerst (Karten entfernter Pakete stehen beim Paket). */
 export async function deletedCards(examId: string) {
-  const cards = await db.cards.where('[examId+archived]').equals([examId, 1]).filter((c) => !!c.deletedAt).toArray()
+  const removed = await removedAtByPackage(examId)
+  const cards = await db.cards
+    .where('[examId+archived]')
+    .equals([examId, 1])
+    .filter((c) => !!c.deletedAt && removed.get(c.packageId) !== c.deletedAt)
+    .toArray()
   return cards.sort((a, b) => b.deletedAt! - a.deletedAt!)
+}
+
+async function removedAtByPackage(examId: string) {
+  const records = await db.packages.where('examId').equals(examId).toArray()
+  return new Map(records.filter((r) => r.removedAt).map((r) => [r.packageId, r.removedAt!]))
+}
+
+/**
+ * Entfernt ein ganzes Paket aus dem Lernplan: Alle aktiven Karten werden wie beim
+ * Einzellöschen archiviert und mit demselben Zeitpunkt markiert. Fortschritt und Bewertungen bleiben,
+ * Paket-Updates bringen die Karten nicht zurück, „Wiederherstellen“ holt genau diese Karten zurück.
+ */
+export async function removePackage(examId: string, packageId: string, now = Date.now()) {
+  await db.transaction('rw', db.cards, db.packages, async () => {
+    const cards = await db.cards.where('packageId').equals(packageId).filter((c) => c.examId === examId && !c.archived).toArray()
+    for (const c of cards) await db.cards.update(c.id, { archived: 1, deletedAt: now })
+    await db.packages.update(`${examId}:${packageId}`, { removedAt: now })
+  })
+}
+
+/** Macht removePackage rückgängig; vorher einzeln gelöschte oder vom Paket entfernte Karten bleiben, wie sie waren. */
+export async function restorePackage(examId: string, packageId: string) {
+  await db.transaction('rw', db.cards, db.packages, async () => {
+    const rec = await db.packages.get(`${examId}:${packageId}`)
+    if (!rec?.removedAt) return
+    const cards = await db.cards.where('packageId').equals(packageId).filter((c) => c.examId === examId && c.deletedAt === rec.removedAt).toArray()
+    for (const c of cards) await db.cards.update(c.id, { archived: 0, deletedAt: undefined })
+    await db.packages.update(rec.id, { removedAt: undefined })
+  })
 }
 
 const SYMBOLS: Record<string, string> = {

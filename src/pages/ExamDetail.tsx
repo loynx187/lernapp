@@ -7,7 +7,7 @@ import { loadStudyData } from '../lib/study'
 import { addDays, daysUntil, formatCountdown, formatDate, isoDate } from '../lib/dates'
 import { examStats, packageBlocks, sortPackages } from '../lib/stats'
 import { exportPackage, movePackage, safeFileName, saveFile } from '../lib/packages'
-import { deletedCards } from '../lib/cards'
+import { deletedCards, removePackage, restorePackage } from '../lib/cards'
 import { HistoryChart } from '../components/HistoryChart'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { Icon, PageHeader, Progress, Stat, pct } from '../components/ui'
@@ -55,6 +55,8 @@ export function ExamDetail() {
   }
   const { cards, deleted, snapshots, packages, reports, homework, plan } = data
   const cardIds = new Set(cards.map((c) => c.id))
+  const active = packages.filter((p) => !p.removedAt)
+  const removed = packages.filter((p) => p.removedAt)
   const openReports = reports.filter((r) => !r.resolvedAt && cardIds.has(r.cardId))
   const stats = examStats(exam, cards, Date.now(), profile.retention, packageBlocks(packages))
   const days = daysUntil(exam.date)
@@ -263,32 +265,60 @@ export function ExamDetail() {
 
       <div className="section-title">Kartenpakete</div>
       <div className="card stack">
-        {packages.length === 0 && <p className="muted">Noch keine Pakete importiert.</p>}
-        {packages.map((p, i) => (
-          <div className="row between" key={p.id}>
-            <div className="grow" style={{ minWidth: 0 }}>
-              <b>
-                {packages.length > 1 && `${i + 1}. `}
-                {p.title}
-              </b>
-              <br />
-              <small>
-                Version {p.version} · {p.cardCount} Karten · importiert {new Date(p.importedAt).toLocaleDateString('de-DE')}
-              </small>
+        {active.length === 0 && <p className="muted">Noch keine Pakete importiert.</p>}
+        {active.map((p, i) => (
+          <div key={p.id} className="stack" style={{ gap: 6 }}>
+            <div className="row between">
+              <div className="grow" style={{ minWidth: 0 }}>
+                <b>
+                  {active.length > 1 && `${i + 1}. `}
+                  {p.title}
+                </b>
+                <br />
+                <small>
+                  Version {p.version} · {p.cardCount} Karten · importiert {new Date(p.importedAt).toLocaleDateString('de-DE')}
+                </small>
+              </div>
+              {active.length > 1 && (
+                <>
+                  <button className="btn small" aria-label={`${p.title} früher lernen`} disabled={i === 0} onClick={() => movePackage(exam.id, p.packageId, -1)}>↑</button>
+                  <button className="btn small" aria-label={`${p.title} später lernen`} disabled={i === active.length - 1} onClick={() => movePackage(exam.id, p.packageId, 1)}>↓</button>
+                </>
+              )}
             </div>
-            {packages.length > 1 && (
-              <>
-                <button className="btn small" aria-label={`${p.title} früher lernen`} disabled={i === 0} onClick={() => movePackage(exam.id, p.packageId, -1)}>↑</button>
-                <button className="btn small" aria-label={`${p.title} später lernen`} disabled={i === packages.length - 1} onClick={() => movePackage(exam.id, p.packageId, 1)}>↓</button>
-              </>
-            )}
-            <button className="btn small" onClick={() => share(p.packageId)}>Teilen</button>
+            <div className="row" style={{ gap: 8 }}>
+              <button className="btn small" onClick={() => share(p.packageId)}>Teilen</button>
+              <button
+                className="btn small ghost danger"
+                aria-label={`${p.title} entfernen`}
+                onClick={() => {
+                  if (confirm(`„${p.title}“ entfernen? Die Karten werden nicht mehr abgefragt. Dein Lernfortschritt bleibt gespeichert – du kannst das Paket unten wiederherstellen.`)) removePackage(exam.id, p.packageId)
+                }}
+              >
+                Entfernen
+              </button>
+            </div>
           </div>
         ))}
-        {packages.length > 1 && (
+        {active.length > 1 && (
           <small className="muted">
             Neue Karten kommen Paket für Paket in dieser Reihenfolge dran, innerhalb eines Pakets wie im Skript. Erst in den letzten 14 Tagen vor der Klausur wird gemischt.
           </small>
+        )}
+        {removed.length > 0 && (
+          <>
+            <b style={{ marginTop: 4 }}>Entfernte Pakete</b>
+            {removed.map((p) => (
+              <div key={p.id} className="row between">
+                <div className="grow" style={{ minWidth: 0 }}>
+                  <span className="muted">{p.title}</span>
+                  <br />
+                  <small>entfernt am {new Date(p.removedAt!).toLocaleDateString('de-DE')} · Fortschritt gespeichert</small>
+                </div>
+                <button className="btn small" aria-label={`${p.title} wiederherstellen`} onClick={() => restorePackage(exam.id, p.packageId)}>Wiederherstellen</button>
+              </div>
+            ))}
+          </>
         )}
         <Link className="btn block" to="/unterlagen">Skripte für „Folie ansehen“</Link>
       </div>

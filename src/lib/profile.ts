@@ -83,7 +83,8 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
           packages: packages.map((p) => {
             // Vom Nutzer gelöschte Karten: Claude soll sie bei Updates nicht durch ähnliche ersetzen.
             const del = deleted.filter((c) => c.packageId === p.packageId).map((c) => c.uid)
-            return { id: p.packageId, title: p.title, version: p.version, cards: p.cardCount, deleted: del.length ? del : undefined }
+            // Vom Nutzer entferntes Paket: nicht mehr pflegen (deletedCards enthält seine Karten nicht).
+            return { id: p.packageId, title: p.title, version: p.version, cards: p.cardCount, deleted: del.length ? del : undefined, removed: p.removedAt ? true : undefined }
           }),
           reports: reports.length ? reports : undefined,
           // Noch fehlende Unterlagen – Claude erinnert daran bzw. trägt neue als `pending` im Paket ein.

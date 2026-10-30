@@ -53,7 +53,9 @@ export function ExamCards() {
   for (const r of reports.filter((r) => !r.resolvedAt && activeIds.has(r.cardId)).sort((a, b) => a.createdAt - b.createdAt)) {
     openByCard.set(r.cardId, [...(openByCard.get(r.cardId) ?? []), r])
   }
-  const deleted = cards.filter((c) => c.deletedAt)
+  // Karten entfernter Pakete stehen beim Paket (Prüfungsseite), nicht unter „gelöscht“.
+  const removedAt = new Map(packages.filter((p) => p.removedAt).map((p) => [p.packageId, p.removedAt]))
+  const deleted = cards.filter((c) => c.deletedAt && removedAt.get(c.packageId) !== c.deletedAt)
   const reported = active.filter((c) => openByCard.has(c.id))
   const openCount = [...openByCard.values()].flat().length
 
