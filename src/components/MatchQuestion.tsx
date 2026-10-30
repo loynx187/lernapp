@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Rich } from './Rich'
 import { plainText } from '../lib/cards'
 
-/** Feste, aber gemischte Reihenfolge je Karte (gleiche Karte → gleiche Reihenfolge). */
+/** Gemischte Reihenfolge, fest je Startwert (gleicher Startwert → gleiche Reihenfolge). */
 export function matchOrder(n: number, seed: string): number[] {
   let h = 2166136261
   for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619)
@@ -28,7 +28,8 @@ export function MatchQuestion({ pairs, value, onChange, revealed, seed }: {
   revealed: boolean
   seed: string
 }) {
-  const order = useMemo(() => matchOrder(pairs.length, seed), [pairs.length, seed])
+  // Bei jeder Abfrage neu gemischt, damit man sich nicht die Position der Antworten merkt.
+  const order = useMemo(() => matchOrder(pairs.length, `${seed}:${Math.random()}`), [pairs.length, seed])
   return (
     <div className="match">
       {pairs.map(([left, right], i) => {
@@ -52,7 +53,8 @@ export function MatchQuestion({ pairs, value, onChange, revealed, seed }: {
                 onChange={(e) => onChange(Object.assign(Array.from({ length: pairs.length }, (_, k) => value[k] ?? -1), { [i]: Number(e.target.value) }))}
               >
                 <option value={-1}>Bitte wählen …</option>
-                {order.map((k) => (
+                {/* Schon anderen Begriffen zugeordnete Antworten fallen weg */}
+                {order.filter((k) => k === chosen || !value.includes(k)).map((k) => (
                   <option key={k} value={k}>{plainText(pairs[k][1])}</option>
                 ))}
               </select>
