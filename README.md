@@ -33,6 +33,7 @@ Kartenformat: [docs/KARTENPAKET-FORMAT.md](docs/KARTENPAKET-FORMAT.md)
 
 ## Versionen
 
+- **1.23.2** – Änderung an der Bewertungsleiste aus 1.23.1 zurückgenommen – Darstellung wie in 1.23.0.
 - **1.23.1** – Darstellung beim Lernen: Die Bewertungsknöpfe bleiben beim Scrollen langer Karten am unteren Rand, haben jetzt aber einen deckenden Hintergrund – vorher schien der Antworttext zwischen und unter den Knöpfen durch.
 - **1.23.0** – Ganze Kartenpakete entfernen: auf der Prüfungsseite unter „Kartenpakete“ → „Entfernen“. Die Karten werden nicht mehr abgefragt, der Lernfortschritt bleibt gespeichert, Paket-Updates bringen sie nicht zurück; „Wiederherstellen“ holt genau diese Karten zurück (einzeln gelöschte bleiben gelöscht). Der Auftrag für Claude markiert entfernte Pakete.
 - **1.22.0** – Fächerwahl am Schreibtisch wie unterwegs: Das Widget führt zur Auswahl, sobald mehrere Fächer Aufgaben bzw. Karten haben – nicht erst, wenn heute in mehreren Fächern etwas eingeplant ist. Fächer ohne eingeplante Aufgaben stehen darunter zum Üben nach Bedarf (eine Aufgabe bzw. zehn Karten extra).
