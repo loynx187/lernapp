@@ -171,3 +171,13 @@ export const toPlanCard = (c: StudyCard, blocks?: Map<string, number>) => ({
   block: blockOf(c, blocks),
   relevance: c.relevance,
 })
+
+/**
+ * Wie viele Karten bzw. Aufgaben jede Prüfung für einen Modus hat – unabhängig davon, ob heute etwas
+ * eingeplant ist. Grundlage für die Fächerwahl: Auch ohne fällige Aufgaben lässt sich ein Fach gezielt üben.
+ */
+export function materialByExam(cards: Pick<StudyCard, 'examId' | 'type' | 'mode'>[], mode: Mode) {
+  const map = new Map<string, number>()
+  for (const c of cards) if (cardMode(c) === mode) map.set(c.examId, (map.get(c.examId) ?? 0) + 1)
+  return map
+}

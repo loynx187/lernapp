@@ -109,8 +109,11 @@ export async function importPackage(page: Page, file?: string, exam?: string) {
   await page.goto('./#/import')
   if (file) await page.locator('input[type=file]').first().setInputFiles(file)
   else await page.getByRole('button', { name: 'Beispielpaket ausprobieren' }).click()
+  // Erst auf die Paketvorschau warten – sonst träfe die Auswahl das Feld im Text-Import, das danach verschwindet.
+  const submit = page.getByRole('button', { name: /^(Importieren|Aktualisieren)$/ })
+  await expect(submit).toBeVisible()
   if (exam) await page.getByLabel('Für welche Prüfung?').selectOption({ label: exam })
-  await page.getByRole('button', { name: /^(Importieren|Aktualisieren)$/ }).click()
+  await submit.click()
   await expect(page.getByText('Import abgeschlossen')).toBeVisible()
 }
 

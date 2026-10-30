@@ -4,7 +4,8 @@ import { useActive } from '../state'
 import { loadStudyData } from '../lib/study'
 import { subjectsToday } from '../lib/planner'
 import { homeworkDueByExam } from '../lib/homework'
-import { formatCountdown } from '../lib/dates'
+import { daysUntil, formatCountdown } from '../lib/dates'
+import { materialByExam } from '../lib/stats'
 import type { Mode } from '../lib/db'
 import { PageHeader } from '../components/ui'
 import { MODE_INFO } from './Dashboard'
@@ -23,6 +24,10 @@ export function LearnChoice() {
   const hwCount = mode === 'desk' ? [...hwByExam.values()].reduce((a, b) => a + b, 0) : 0
   const left = t.reviewsLeft + t.newLeft + hwCount
   const subjects = subjectsToday(data.plan, hwByExam).filter((s) => s.left[mode] > 0)
+  // Fächer mit Stoff, aber heute nichts eingeplant: gezielt extra üben (wie „Alle Fächer“ nach dem Tagespensum).
+  const material = materialByExam(data.cards, mode)
+  const planned = new Set(subjects.map((s) => s.examId))
+  const others = data.exams.filter((e) => material.has(e.id) && !planned.has(e.id))
   const examById = new Map(data.exams.map((e) => [e.id, e]))
   const count = (n: number) => `${n} ${n === 1 ? info.one : info.unit}`
 
@@ -36,7 +41,7 @@ export function LearnChoice() {
         </div>
         <small>Wechselt zwischen den Fächern ab – gut, wenn du einfach das Tagespensum abarbeiten willst.</small>
       </Link>
-      {subjects.length > 0 && <div className="section-title">Ein Fach lernen</div>}
+      {subjects.length + others.length > 0 && <div className="section-title">Ein Fach lernen</div>}
       {subjects.map((s, i) => {
         const e = examById.get(s.examId)!
         return (
@@ -55,6 +60,23 @@ export function LearnChoice() {
           </Link>
         )
       })}
+      {others.length > 0 && (
+        <>
+          {subjects.length > 0 && <p className="muted" style={{ fontSize: 14, margin: '4px 0 8px' }}>Heute nichts eingeplant – zum Üben nach Bedarf:</p>}
+          {others.map((e) => (
+            <Link key={e.id} to={`/lernen/${mode}?exam=${e.id}&extra=${info.extra}`} className="card link" aria-label={`${e.name} üben`}>
+              <div className="row between" style={{ marginBottom: 4 }}>
+                <span className="row grow">
+                  <span className="dot" style={{ background: e.color }} />
+                  <b className="truncate">{e.name}</b>
+                </span>
+                <span className="chip">{info.extra} extra</span>
+              </div>
+              <small>{count(material.get(e.id)!)} im Fach · Klausur {formatCountdown(daysUntil(e.date, now))}</small>
+            </Link>
+          ))}
+        </>
+      )}
     </>
   )
 }
