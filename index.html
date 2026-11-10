@@ -12,6 +12,17 @@
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <title>Lernapp</title>
+    <script>
+      // Darstellung vor dem ersten Zeichnen setzen (wie src/lib/theme.ts), damit nichts aufblitzt.
+      try {
+        var d = JSON.parse(localStorage.getItem('lernapp-darstellung') || 'null') || {}
+        var a = d.appearance === 'light' || d.appearance === 'dark' ? d.appearance : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = d.theme === 'papier' || d.theme === 'graphit' ? d.theme : 'standard'
+        document.documentElement.dataset.scheme = a
+      } catch (e) {
+        document.documentElement.dataset.scheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
