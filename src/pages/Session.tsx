@@ -12,6 +12,7 @@ import { previewIntervals, Rating, type Grade } from '../lib/scheduler'
 import { formatInterval } from '../lib/dates'
 import { reportCard } from '../lib/reports'
 import { ReportForm } from '../components/ReportForm'
+import { CardEditor } from '../components/CardEditor'
 import { deleteCard } from '../lib/cards'
 import { skipToday } from '../lib/skip'
 import { checkAnswer, formatAnswer } from '../lib/answers'
@@ -57,6 +58,7 @@ export function Session() {
   const [undo, setUndo] = useState<Undo | null>(null)
   const [busy, setBusy] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [reported, setReported] = useState<Set<string>>(new Set())
   const [answerInputs, setAnswerInputs] = useState<string[]>([])
   const [showSlide, setShowSlide] = useState(false)
@@ -91,6 +93,7 @@ export function Session() {
 
   const resetCardUi = () => {
     setReporting(false)
+    setEditing(false)
     setAnswerInputs([])
     setRevealed(false)
     setSelected([])
@@ -167,6 +170,21 @@ export function Session() {
     resetCardUi()
   }
 
+  /** Nach dem Bearbeiten die neue Fassung in die Sitzung übernehmen; mit der eigenen Korrektur ist eine Meldung erledigt. */
+  async function finishEdit() {
+    if (card) {
+      const fresh = await db.cards.get(card.id)
+      if (fresh) setQueue((q) => q?.map((c) => (c.id === fresh.id ? fresh : c)) ?? q)
+      if (fresh?.edit)
+        setReported((r) => {
+          const n = new Set(r)
+          n.delete(fresh.id)
+          return n
+        })
+    }
+    setEditing(false)
+  }
+
   async function removeCard() {
     if (!card || !queue || busy) return
     if (!confirm('Karte löschen? Sie wird nicht mehr abgefragt – auch nicht nach einem Paket-Update. Wiederherstellen kannst du sie auf der Seite der Prüfung.')) return
@@ -191,7 +209,7 @@ export function Session() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName
-      if (!card || reporting || showSlide || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (!card || reporting || editing || showSlide || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if (!revealed && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault()
         reveal()
@@ -215,7 +233,20 @@ export function Session() {
       <Progress value={total ? reviewed / total : 1} />
       <small className="session-count" aria-label={`${reviewed} von ${total} erledigt`}>{reviewed}/{total}</small>
       {card && (
-        <button className="btn ghost small" onClick={() => setReporting((r) => !r)} aria-label="Karte melden" aria-pressed={reporting}>
+        <button
+          className="btn ghost small"
+          onClick={() => {
+            setReporting(false)
+            setEditing((e) => !e)
+          }}
+          aria-label="Karte bearbeiten"
+          aria-pressed={editing}
+        >
+          <Icon name="pencil" />
+        </button>
+      )}
+      {card && (
+        <button className="btn ghost small" onClick={() => { setEditing(false); setReporting((r) => !r) }} aria-label="Karte melden" aria-pressed={reporting}>
           <Icon name="flag" />
         </button>
       )}
@@ -281,6 +312,15 @@ export function Session() {
     revealed && (pointsChecked !== null || (keyPoints.length === 0 && hintsShown > 0))
       ? suggestRating({ checked: pointsChecked?.length ?? 0, total: keyPoints.length, hints: hintsShown })
       : undefined
+
+  if (editing) {
+    return (
+      <>
+        {top}
+        <CardEditor card={card} socratic={!!profile.socratic} onDone={finishEdit} />
+      </>
+    )
+  }
 
   return (
     <>

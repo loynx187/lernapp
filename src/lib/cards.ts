@@ -1,4 +1,4 @@
-import { db, type StudyCard } from './db'
+import { db, type CardContent, type EditableFields, type StudyCard } from './db'
 import { newMemoryState } from './scheduler'
 
 /**
@@ -66,6 +66,69 @@ export async function resetPackage(examId: string, packageId: string, now = Date
     for (const c of cards) await db.cards.update(c.id, { s: newMemoryState(now) })
     return cards.length
   })
+}
+
+const EDITABLE = ['front', 'back', 'prompts', 'keyPoints'] as const
+
+/** Bearbeitbare Felder einer Karte; leere Listen zählen als nicht vorhanden. */
+export function editableFields(c: EditableFields): EditableFields {
+  const list = (l?: string[]) => (l?.length ? l : undefined)
+  return { front: c.front, back: c.back, prompts: list(c.prompts), keyPoints: list(c.keyPoints) }
+}
+
+export const sameFields = (a: EditableFields, b: EditableFields) => JSON.stringify(editableFields(a)) === JSON.stringify(editableFields(b))
+
+/** Prüft eine bearbeitete Fassung; liefert eine Fehlermeldung oder null. */
+export function checkEdit(card: Pick<CardContent, 'type'>, v: EditableFields): string | null {
+  if (!v.front.trim()) return 'Die Frage darf nicht leer sein.'
+  if (card.type === 'cloze' && !/\{\{.+?\}\}/s.test(v.front)) return 'Ein Lückentext braucht mindestens eine Lücke in doppelten geschweiften Klammern, z. B. {{Antwort}}.'
+  return null
+}
+
+/**
+ * Speichert die eigene Fassung einer Karte. Die Fassung aus dem Paket bleibt in `edit.original`; Paket-Updates
+ * überschreiben die eigene Fassung nicht (siehe importPackage). Entspricht die neue Fassung wieder dem Paket,
+ * gilt die Karte als nicht mehr bearbeitet. Offene Meldungen zur Karte sind mit der eigenen Korrektur erledigt –
+ * die Änderung erreicht Claude über den Auftrag.
+ */
+export async function editCard(card: StudyCard, values: EditableFields, now = Date.now()) {
+  const original = card.edit?.original ?? editableFields(card)
+  const next = editableFields(values)
+  const unchanged = sameFields(next, original)
+  await db.transaction('rw', db.cards, db.reports, async () => {
+    await db.cards.update(card.id, { ...next, edit: unchanged ? undefined : { original, editedAt: now, packageChanged: card.edit?.packageChanged } })
+    if (unchanged) return
+    const open = (await db.reports.where('cardId').equals(card.id).toArray()).filter((r) => !r.resolvedAt)
+    for (const r of open) await db.reports.update(r.id, { resolvedAt: now })
+  })
+}
+
+/** Verwirft die eigene Fassung und zeigt wieder die aus dem Paket. */
+export async function resetCardEdit(card: StudyCard) {
+  if (!card.edit) return
+  await db.cards.update(card.id, { ...editableFields(card.edit.original), edit: undefined })
+}
+
+/**
+ * Eigene Fassung bei einem Paket-Update erhalten – je Feld: Was der Nutzer geändert hat, bleibt; die übrigen Felder
+ * folgen dem Paket. Ändert das Paket ein selbst bearbeitetes Feld, wird das vermerkt (Hinweis im Bearbeiten-Formular).
+ * Hat das Paket die eigene Fassung übernommen, gilt die Karte nicht mehr als bearbeitet.
+ */
+export function keepEdit(old: StudyCard, updated: StudyCard): StudyCard {
+  const { edit: _, ...plain } = updated
+  if (!old.edit) return plain as StudyCard
+  const pkg = editableFields(updated)
+  const own = editableFields(old)
+  const before = editableFields(old.edit.original)
+  const merged: EditableFields = { ...pkg }
+  let packageChanged = old.edit.packageChanged ?? false
+  for (const k of EDITABLE) {
+    if (JSON.stringify(own[k]) === JSON.stringify(before[k])) continue
+    ;(merged as Record<string, unknown>)[k] = own[k]
+    if (JSON.stringify(pkg[k]) !== JSON.stringify(before[k])) packageChanged = true
+  }
+  if (sameFields(merged, pkg)) return plain as StudyCard
+  return { ...updated, ...merged, edit: { ...old.edit, original: pkg, packageChanged: packageChanged || undefined } }
 }
 
 const SYMBOLS: Record<string, string> = {

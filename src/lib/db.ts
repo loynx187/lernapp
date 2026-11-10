@@ -178,6 +178,19 @@ export interface StudyCard extends CardContent, Synced {
   deletedAt?: number
   addedAt: number
   s: MemoryState
+  /** Vom Nutzer in der App bearbeitet: Frage, Antwort, Tipps und Kernpunkte zeigen seine Fassung (siehe cards.ts). */
+  edit?: CardEdit
+}
+
+/** Vom Nutzer bearbeitbare Textfelder einer Karte. */
+export type EditableFields = Pick<CardContent, 'front' | 'back' | 'prompts' | 'keyPoints'>
+
+export interface CardEdit {
+  /** Fassung aus dem Paket (bei Updates nachgeführt) – zum Wiederherstellen. */
+  original: EditableFields
+  editedAt: number
+  /** Ein Paket-Update hat die Karte seit der Bearbeitung geändert; die eigene Fassung gilt weiter. */
+  packageChanged?: boolean
 }
 
 /** Eine einzelne Bewertung. Unveränderlich; die ID ist geräteübergreifend eindeutig. */
