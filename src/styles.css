@@ -576,3 +576,75 @@ details.explain[open] > summary::after { transform: rotate(90deg); }
 .reminder-row.done .reminder-title, .reminder-row.done .dot { opacity: 0.45; }
 .reminder-row.done .reminder-title { text-decoration: line-through; }
 .w-reminders { display: flex; flex-direction: column; margin-bottom: 8px; }
+
+/*
+ * Design „Bagel“: feste Kacheln, Bagel-Überschriften, Farben aus vier Grundfarben (theme.ts setzt --k-*),
+ * Kritzeleien als Masken in der Akzentfarbe – großer Ski-Hintergrund und ein Motiv in der Ecke jeder Kachel.
+ */
+:root[data-theme='bagel'] {
+  --bg: var(--k-bg);
+  --surface: var(--k-tile);
+  --surface-2: color-mix(in srgb, var(--k-ink) 6%, var(--k-tile));
+  --fill: color-mix(in srgb, var(--k-ink) 7%, transparent);
+  --text: var(--k-ink);
+  --muted: color-mix(in srgb, var(--k-ink) 64%, var(--k-tile));
+  --subtle: color-mix(in srgb, var(--k-ink) 50%, var(--k-tile));
+  --separator: color-mix(in srgb, var(--k-ink) 14%, transparent);
+  --accent: var(--k-accent);
+  --accent-hover: var(--k-accent);
+  --accent-soft: color-mix(in srgb, var(--k-accent) 13%, var(--k-tile));
+  --on-accent: var(--k-on-accent);
+  --glass: var(--k-tile);
+  --glass-strong: var(--k-tile);
+  --glass-border: color-mix(in srgb, var(--k-ink) 22%, var(--k-tile));
+  --glass-shadow: none;
+  --glass-blur: none;
+  --wallpaper: var(--k-bg);
+}
+:root[data-theme='bagel'] body { font-family: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+:root[data-theme='bagel'] h1,
+:root[data-theme='bagel'] .w-number { font-family: 'Bagel Fat One', 'Bricolage Grotesque', sans-serif; font-weight: 400; letter-spacing: 0; }
+:root[data-theme='bagel'] .card,
+:root[data-theme='bagel'] .widget,
+:root[data-theme='bagel'] .list { border-width: 1.5px; }
+
+/* Großer Ski-Hintergrund, bleibt beim Scrollen stehen */
+:root[data-theme='bagel'][data-doodles='on'] .app::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--k-accent);
+  opacity: 0.2;
+  -webkit-mask: url('./assets/kritzel/ski-szene.svg') center bottom / cover no-repeat;
+  mask: url('./assets/kritzel/ski-szene.svg') center bottom / cover no-repeat;
+}
+:root[data-theme='bagel'][data-scheme='dark'][data-doodles='on'] .app::after { opacity: 0.28; }
+
+/* Motiv groß und angeschnitten unten rechts, hinter dem Inhalt der Kachel */
+:root[data-theme='bagel'][data-doodles='on'] .widget { position: relative; isolation: isolate; }
+:root[data-theme='bagel'][data-doodles='on'] .widget[data-motif]::after {
+  content: '';
+  position: absolute;
+  right: -16px;
+  bottom: -16px;
+  width: 96px;
+  height: 96px;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--k-accent);
+  opacity: 0.16;
+  -webkit-mask: var(--motif) center / contain no-repeat;
+  mask: var(--motif) center / contain no-repeat;
+}
+:root[data-theme='bagel'][data-scheme='dark'][data-doodles='on'] .widget[data-motif]::after { opacity: 0.24; }
+:root[data-theme='bagel'] .widget-small[data-motif]::after { width: 76px; height: 76px; }
+.widget[data-motif='cards'] { --motif: url('./assets/kritzel/ski.svg'); }
+.widget[data-motif='pencil'] { --motif: url('./assets/kritzel/stift.svg'); }
+.widget[data-motif='bell'] { --motif: url('./assets/kritzel/glocke.svg'); }
+.widget[data-motif='clock'] { --motif: url('./assets/kritzel/uhr.svg'); }
+.widget[data-motif='flame'] { --motif: url('./assets/kritzel/flamme.svg'); }
+.widget[data-motif='chart'] { --motif: url('./assets/kritzel/gipfel.svg'); }
+.widget[data-motif='download'] { --motif: url('./assets/kritzel/pfeil.svg'); }
+.widget[data-motif='plus'], .widget[data-motif='settings'] { --motif: url('./assets/kritzel/flocke.svg'); }

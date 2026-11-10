@@ -98,11 +98,11 @@ export function Widget({ size, to, title, icon, tint = 'var(--accent)', children
     </>
   )
   return to ? (
-    <Link to={to} className={`widget widget-${size}`} aria-label={label ?? title}>
+    <Link to={to} className={`widget widget-${size}`} aria-label={label ?? title} data-motif={icon}>
       {inner}
     </Link>
   ) : (
-    <section className={`widget widget-${size}`} aria-label={label ?? title}>
+    <section className={`widget widget-${size}`} aria-label={label ?? title} data-motif={icon}>
       {inner}
     </section>
   )
