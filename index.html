@@ -13,15 +13,27 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <title>Lernapp</title>
     <script>
-      // Darstellung vor dem ersten Zeichnen setzen (wie src/lib/theme.ts), damit nichts aufblitzt.
-      try {
-        var d = JSON.parse(localStorage.getItem('lernapp-darstellung') || 'null') || {}
-        var a = d.appearance === 'light' || d.appearance === 'dark' ? d.appearance : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-        document.documentElement.dataset.theme = d.theme === 'papier' || d.theme === 'graphit' ? d.theme : 'standard'
-        document.documentElement.dataset.scheme = a
-      } catch (e) {
-        document.documentElement.dataset.scheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      }
+      // Darstellung vor dem ersten Zeichnen setzen (die fertige Fassung speichert src/lib/theme.ts), damit nichts aufblitzt.
+      ;(function () {
+        var root = document.documentElement
+        var dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches
+        root.dataset.theme = 'standard'
+        root.dataset.scheme = dark ? 'dark' : 'light'
+        try {
+          var d = JSON.parse(localStorage.getItem('lernapp-darstellung') || 'null')
+          var b = d && d.boot && d.boot[dark ? 'dark' : 'light']
+          if (!b) {
+            // Gespeichert von App 1.29.0 (ohne fertige Fassung)
+            if (d && (d.theme === 'papier' || d.theme === 'graphit')) root.dataset.theme = d.theme
+            if (d && (d.appearance === 'light' || d.appearance === 'dark')) root.dataset.scheme = d.appearance
+            return
+          }
+          root.dataset.theme = d.theme
+          root.dataset.scheme = b.scheme
+          if (b.doodles) root.dataset.doodles = b.doodles
+          for (var k in b.vars) root.style.setProperty(k, b.vars[k])
+        } catch (e) {}
+      })()
     </script>
   </head>
   <body>

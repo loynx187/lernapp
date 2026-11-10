@@ -9,7 +9,7 @@ import { createTemplate, templateSummary } from '../lib/template'
 import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
-import { APPEARANCES, loadDisplay, saveDisplay, THEMES, type Display } from '../lib/theme'
+import { activeColors, APPEARANCES, colorWarnings, loadDisplay, PALETTES, readableOn, saveDisplay, THEMES, type Colors, type Display } from '../lib/theme'
 import { useSync } from '../sync-state'
 import { SEMESTER_KINDS } from '../lib/semesters'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -171,6 +171,7 @@ export function Settings() {
           </div>
           <small>{THEMES.find((t) => t.value === display.theme)?.hint}</small>
         </div>
+        {display.theme === 'bagel' && <BagelOptions display={display} change={changeDisplay} />}
         <div className="field" style={{ marginBottom: 0 }}>
           <span className="field-label">Hell oder dunkel</span>
           <div className="segmented" role="radiogroup" aria-label="Hell oder dunkel">
@@ -180,7 +181,10 @@ export function Settings() {
               </button>
             ))}
           </div>
-          <small>Gilt für dieses Gerät. „Automatisch“ folgt der Einstellung des iPhones bzw. iPads.</small>
+          <small>
+            Gilt für dieses Gerät. „Automatisch“ folgt der Einstellung des iPhones bzw. iPads.
+            {display.theme === 'bagel' && display.palette === 'eigene' && ' Eigene Farben gelten hell wie dunkel.'}
+          </small>
         </div>
       </div>
 
@@ -372,5 +376,62 @@ function WidgetKey({ profileId }: { profileId: string }) {
       <button className="btn block" onClick={copy}>{state === 'ok' ? 'Widget-Schlüssel kopiert' : 'Widget-Schlüssel kopieren'}</button>
       {state === 'error' && <small className="badge-warn">Kopieren nicht möglich.</small>}
     </details>
+  )
+}
+
+const COLOR_FIELDS: { key: keyof Colors; label: string }[] = [
+  { key: 'bg', label: 'Hintergrund' },
+  { key: 'tile', label: 'Kacheln' },
+  { key: 'ink', label: 'Schrift' },
+  { key: 'accent', label: 'Akzent (Icons, Buttons, Kritzeleien)' },
+]
+
+/** Palette, eigene Farben mit Kontrastprüfung und Kritzeleien für das Design „Bagel“. */
+function BagelOptions({ display, change }: { display: Display; change: (d: Partial<Display>) => void }) {
+  const warnings = display.palette === 'eigene' ? colorWarnings(display.colors) : []
+  const setColor = (key: keyof Colors, value: string) => change({ colors: { ...display.colors, [key]: value } })
+  return (
+    <>
+      <div className="field">
+        <span className="field-label">Farben</span>
+        <div className="segmented" role="radiogroup" aria-label="Farben">
+          {[...PALETTES.map((p) => ({ value: p.value, label: p.label })), { value: 'eigene' as const, label: 'Eigene' }].map((p) => (
+            <button
+              type="button"
+              key={p.value}
+              role="radio"
+              aria-checked={display.palette === p.value}
+              className={display.palette === p.value ? 'on' : ''}
+              // Eigene Farben starten mit der gerade sichtbaren Palette
+              onClick={() => change(p.value === 'eigene' && display.palette !== 'eigene' ? { palette: 'eigene', colors: activeColors(display) } : { palette: p.value })}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {display.palette === 'eigene' && (
+        <div className="field">
+          {COLOR_FIELDS.map((f) => (
+            <label key={f.key} className="row between" style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 15 }}>{f.label}</span>
+              <input type="color" value={display.colors[f.key]} onChange={(e) => setColor(f.key, e.target.value)} aria-label={f.label} />
+            </label>
+          ))}
+          {warnings.map((w) => (
+            <div className="notice" role="alert" key={w} style={{ margin: '4px 0' }}>{w}</div>
+          ))}
+          {warnings.some((w) => w.startsWith('Die Schrift')) && (
+            <button type="button" className="btn small" onClick={() => setColor('ink', readableOn(display.colors.tile))}>
+              Lesbare Schriftfarbe übernehmen
+            </button>
+          )}
+        </div>
+      )}
+      <label className="row" style={{ gap: 10, marginBottom: 14 }}>
+        <input type="checkbox" checked={display.doodles} onChange={(e) => change({ doodles: e.target.checked })} />
+        <span style={{ fontSize: 15 }}>Kritzeleien (Ski-Hintergrund und Motive in den Kacheln)</span>
+      </label>
+    </>
   )
 }
