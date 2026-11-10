@@ -9,6 +9,7 @@ import { createTemplate, templateSummary } from '../lib/template'
 import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
+import { APPEARANCES, loadDisplay, saveDisplay, THEMES, type Display } from '../lib/theme'
 import { useSync } from '../sync-state'
 import { SEMESTER_KINDS } from '../lib/semesters'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -20,6 +21,12 @@ export function Settings() {
   const sync = useSync()
   const pdfs = useLiveQuery(() => db.pdfs.toCollection().primaryKeys(), [])
   const [backups, setBackups] = useState<BackupEntry[] | null>(null)
+  const [display, setDisplay] = useState(loadDisplay)
+  const changeDisplay = (d: Partial<Display>) => {
+    const next = { ...display, ...d }
+    setDisplay(next)
+    saveDisplay(next)
+  }
 
   async function showBackups() {
     try {
@@ -149,6 +156,32 @@ export function Settings() {
           <span>Lernalgorithmus (FSRS)</span>
           <small>{profile.fsrsWeights ? 'persönlich angepasst' : 'Standard'} ›</small>
         </Link>
+      </div>
+
+      <div className="section-title">Darstellung</div>
+      <div className="card">
+        <div className="field">
+          <span className="field-label">Design</span>
+          <div className="segmented" role="radiogroup" aria-label="Design">
+            {THEMES.map((t) => (
+              <button type="button" key={t.value} role="radio" aria-checked={display.theme === t.value} className={display.theme === t.value ? 'on' : ''} onClick={() => changeDisplay({ theme: t.value })}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <small>{THEMES.find((t) => t.value === display.theme)?.hint}</small>
+        </div>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <span className="field-label">Hell oder dunkel</span>
+          <div className="segmented" role="radiogroup" aria-label="Hell oder dunkel">
+            {APPEARANCES.map((a) => (
+              <button type="button" key={a.value} role="radio" aria-checked={display.appearance === a.value} className={display.appearance === a.value ? 'on' : ''} onClick={() => changeDisplay({ appearance: a.value })}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+          <small>Gilt für dieses Gerät. „Automatisch“ folgt der Einstellung des iPhones bzw. iPads.</small>
+        </div>
       </div>
 
       <div className="section-title">Semester</div>

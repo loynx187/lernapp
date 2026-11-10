@@ -5,7 +5,9 @@ import 'katex/dist/katex.min.css'
 import './styles.css'
 import { App } from './App'
 import { requestPersistentStorage } from './lib/db'
+import { initDisplay } from './lib/theme'
 
+initDisplay()
 requestPersistentStorage()
 
 createRoot(document.getElementById('root')!).render(

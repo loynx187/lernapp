@@ -37,8 +37,8 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+/* Dunkel: data-scheme setzt index.html bzw. theme.ts (automatisch nach System oder fest gewählt). */
+:root[data-scheme='dark'] {
     --bg: #000000;
     --surface: #1c1c1e;
     --surface-2: #2c2c2e;
@@ -69,7 +69,42 @@
       radial-gradient(45% 35% at 95% 85%, #3a2210 0%, transparent 70%),
       #050608;
     color-scheme: dark;
-  }
+}
+
+/*
+ * Minimalistische Designs (Einstellungen → Darstellung): flache, deckende Flächen ohne Glas und Verlauf,
+ * schwarzer bzw. weißer Akzent. Die Bewertungsfarben bleiben, damit „Nochmal“ bis „Einfach“ unterscheidbar sind.
+ */
+:root[data-theme='papier'], :root[data-theme='graphit'] {
+  --glass: var(--surface);
+  --glass-strong: var(--surface);
+  --glass-shadow: none;
+  --glass-blur: none;
+  --wallpaper: var(--bg);
+}
+:root[data-theme='papier'] {
+  --bg: #f7f6f3; --surface: #ffffff; --surface-2: #f1efea; --fill: rgba(60, 55, 45, 0.07);
+  --text: #1f1e1c; --muted: #6f6c66; --subtle: #9a968e; --separator: rgba(0, 0, 0, 0.07);
+  --accent: #1f1e1c; --accent-hover: #3a3834; --accent-soft: rgba(31, 30, 28, 0.07); --on-accent: #ffffff;
+  --glass-border: #e7e4dd;
+}
+:root[data-theme='papier'][data-scheme='dark'] {
+  --bg: #191918; --surface: #222220; --surface-2: #2a2a28; --fill: rgba(255, 255, 255, 0.07);
+  --text: #ecebe8; --muted: #a3a19c; --subtle: #7d7b76; --separator: rgba(255, 255, 255, 0.08);
+  --accent: #ecebe8; --accent-hover: #ffffff; --accent-soft: rgba(236, 235, 232, 0.1); --on-accent: #191918;
+  --glass-border: #30302d;
+}
+:root[data-theme='graphit'] {
+  --bg: #ffffff; --surface: #ffffff; --surface-2: #f4f4f5; --fill: rgba(0, 0, 0, 0.05);
+  --text: #18181b; --muted: #71717a; --subtle: #a1a1aa; --separator: rgba(0, 0, 0, 0.08);
+  --accent: #18181b; --accent-hover: #3f3f46; --accent-soft: rgba(24, 24, 27, 0.06); --on-accent: #ffffff;
+  --glass-border: #e4e4e7;
+}
+:root[data-theme='graphit'][data-scheme='dark'] {
+  --bg: #000000; --surface: #0f0f10; --surface-2: #18181b; --fill: rgba(255, 255, 255, 0.07);
+  --text: #fafafa; --muted: #a1a1aa; --subtle: #71717a; --separator: rgba(255, 255, 255, 0.09);
+  --accent: #fafafa; --accent-hover: #e4e4e7; --accent-soft: rgba(250, 250, 250, 0.1); --on-accent: #000000;
+  --glass-border: #27272a;
 }
 
 * { box-sizing: border-box; }
@@ -117,8 +152,8 @@ pre code { display: block; background: none; padding: 0; font-size: inherit; lin
 /* Mattes Glas */
 .glass, .card, .list, .widget {
   background: var(--glass);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: var(--glass-blur, blur(30px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(30px) saturate(180%));
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
 }
@@ -130,8 +165,8 @@ pre code { display: block; background: none; padding: 0; font-size: inherit; lin
 .back-link {
   border: 1px solid var(--glass-border);
   background: var(--glass);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: var(--glass-blur, blur(30px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(30px) saturate(180%));
   box-shadow: var(--glass-shadow);
   color: var(--text);
   font: inherit;
@@ -404,8 +439,8 @@ input[type='range'] { width: 100%; accent-color: var(--accent); }
   line-height: 1.25;
   min-height: 60px;
   justify-content: center;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
   transition: transform 0.1s ease;
 }
 .ratings button:active { transform: scale(0.95); }
