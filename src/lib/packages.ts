@@ -3,6 +3,7 @@ import { mergeProfile } from './profile'
 import { sortPackages } from './stats'
 import { newMemoryState } from './scheduler'
 import { chapterKey, mergePending } from './pending'
+import { keepEdit } from './cards'
 import { PACKAGE_FORMAT, requiredApp, type CardPackage } from './package-format'
 
 export { BACKUP_FORMAT, PACKAGE_FORMAT, parsePackage, type CardPackage } from './package-format'
@@ -55,15 +56,17 @@ export async function importPackage(exam: Exam, pkg: CardPackage, now = Date.now
         existing.delete(content.uid)
         if (old.deletedAt) {
           result.deleted++
-          return { ...stripContent(old), ...content, chapterTitle, order, archived: 1 as const }
+          return keepEdit(old, { ...stripContent(old), ...content, chapterTitle, order, archived: 1 as const })
         }
+        // Vom Nutzer bearbeitete Karte: mit der Paketfassung vergleichen, nicht mit der eigenen.
+        const base = old.edit ? { ...old, ...old.edit.original } : old
         if (old.archived) result.restored++
-        else if (contentKey(old) !== contentKey(content)) {
+        else if (contentKey(base) !== contentKey(content)) {
           result.updated++
           // Nur Leitfragen/Kernpunkte ergänzt: Eine Meldung zum Inhalt ist damit nicht bearbeitet.
-          if (contentKey({ ...old, prompts: undefined, keyPoints: undefined }) !== contentKey({ ...content, prompts: undefined, keyPoints: undefined })) changed.push(old.id)
+          if (contentKey({ ...base, prompts: undefined, keyPoints: undefined }) !== contentKey({ ...content, prompts: undefined, keyPoints: undefined })) changed.push(old.id)
         } else result.unchanged++
-        return { ...stripContent(old), ...content, chapterTitle, order, archived: 0 as const }
+        return keepEdit(old, { ...stripContent(old), ...content, chapterTitle, order, archived: 0 as const })
       }
       result.added++
       return {
@@ -182,7 +185,8 @@ export async function exportPackage(exam: Exam, packageId: string): Promise<Card
     chapters: [...chapters].map(([id, title]) => ({ id, title })),
     minApp: requiredApp(cards),
     cards: cards.map((c) => {
-      const { id: _1, profileId: _2, examId: _3, packageId: _4, chapterTitle: _5, order: _6, archived: _7, addedAt: _8, s: _9, ...content } = c
+      // Geteilt wird die Fassung, die der Nutzer lernt – eigene Bearbeitungen eingeschlossen.
+      const { id: _1, profileId: _2, examId: _3, packageId: _4, chapterTitle: _5, order: _6, archived: _7, addedAt: _8, s: _9, edit: _10, ...content } = c
       return content
     }),
   }

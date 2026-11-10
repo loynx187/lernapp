@@ -9,6 +9,8 @@ import { sortPackages } from '../lib/stats'
 import { isoDate } from '../lib/dates'
 import { Rich } from '../components/Rich'
 import { ReportForm } from '../components/ReportForm'
+import { CardEditor } from '../components/CardEditor'
+import { useActive } from '../state'
 import { PageHeader } from '../components/ui'
 
 type Filter = 'alle' | 'gemeldet' | 'geloescht'
@@ -23,6 +25,8 @@ export function ExamCards() {
   const filter = (search.get('filter') as Filter) || 'alle'
   const [query, setQuery] = useState('')
   const [reporting, setReporting] = useState<string | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
+  const { profile } = useActive()
 
   const data = useLiveQuery(async () => {
     const exam = await db.exams.get(id)
@@ -142,7 +146,7 @@ export function ExamCards() {
                     <span className="grow" style={{ minWidth: 0, fontWeight: 500, fontSize: 16 }}>
                       <span className="truncate" style={{ display: 'block' }}>{plainText(c.front)}</span>
                       <small className="muted" style={{ fontWeight: 400 }}>
-                        {[c.s.state === 0 ? 'neu' : 'begonnen', open.length > 0 && 'gemeldet, pausiert', c.deletedAt && `gelöscht am ${new Date(c.deletedAt).toLocaleDateString('de-DE')}`]
+                        {[c.s.state === 0 ? 'neu' : 'begonnen', c.edit && 'bearbeitet', open.length > 0 && 'gemeldet, pausiert', c.deletedAt && `gelöscht am ${new Date(c.deletedAt).toLocaleDateString('de-DE')}`]
                           .filter(Boolean)
                           .join(' · ')}
                       </small>
@@ -218,7 +222,9 @@ export function ExamCards() {
                       </div>
                     ))}
 
-                    {reporting === c.id ? (
+                    {editing === c.id ? (
+                      <CardEditor card={c} socratic={!!profile.socratic} onDone={() => setEditing(null)} />
+                    ) : reporting === c.id ? (
                       <ReportForm
                         onCancel={() => setReporting(null)}
                         onSubmit={async (category, note) => {
@@ -232,6 +238,7 @@ export function ExamCards() {
                           <button className="btn small grow" onClick={() => restoreCard(c)}>Wiederherstellen</button>
                         ) : (
                           <>
+                            <button className="btn small grow" onClick={() => setEditing(c.id)}>Bearbeiten</button>
                             <button className="btn small grow" onClick={() => setReporting(c.id)}>Melden</button>
                             <button
                               className="btn small grow danger"

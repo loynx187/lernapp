@@ -1,7 +1,7 @@
-import { db, type Exam, type ExamProfile, type ProfileField, type Semester } from './db'
+import { db, type Exam, type ExamProfile, type ProfileField, type Semester, type StudyCard } from './db'
 import { isoDate } from './dates'
 import { parseProfile, slugify } from './package-format'
-import { deletedCards } from './cards'
+import { deletedCards, editableFields } from './cards'
 import { openReportEntries } from './reports'
 import { mergePending, openPending } from './pending'
 import { parsePending, type PendingInput } from './package-format'
@@ -60,6 +60,16 @@ export async function rememberSlugs(exams: Exam[]) {
   }
 }
 
+function editedEntry(c: StudyCard) {
+  const own = editableFields(c)
+  const original = editableFields(c.edit!.original)
+  const entry: Record<string, unknown> = { uid: c.uid }
+  for (const k of ['front', 'back', 'prompts', 'keyPoints'] as const) {
+    if (JSON.stringify(own[k]) !== JSON.stringify(original[k])) entry[k] = own[k] ?? null
+  }
+  return entry
+}
+
 export async function buildOrder(exams: Exam[], semester: Semester, now = Date.now()) {
   return {
     format: ORDER_FORMAT,
@@ -72,6 +82,7 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
         const packages = await db.packages.where('examId').equals(e.id).toArray()
         const reports = await openReportEntries(e.id)
         const deleted = await deletedCards(e.id)
+        const edited = (await db.cards.where('examId').equals(e.id).filter((c) => !!c.edit && !c.archived).toArray()).sort((a, b) => a.order - b.order)
         return {
           name: e.name,
           slug: examSlug(e),
@@ -84,7 +95,9 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
             // Vom Nutzer gelöschte Karten: Claude soll sie bei Updates nicht durch ähnliche ersetzen.
             const del = deleted.filter((c) => c.packageId === p.packageId).map((c) => c.uid)
             // Vom Nutzer entferntes Paket: nicht mehr pflegen (deletedCards enthält seine Karten nicht).
-            return { id: p.packageId, title: p.title, version: p.version, cards: p.cardCount, deleted: del.length ? del : undefined, removed: p.removedAt ? true : undefined }
+            // Vom Nutzer bearbeitete Karten: nur die geänderten Felder in seiner Fassung – Claude übernimmt sie ins Paket.
+            const own = edited.filter((c) => c.packageId === p.packageId).map((c) => editedEntry(c))
+            return { id: p.packageId, title: p.title, version: p.version, cards: p.cardCount, deleted: del.length ? del : undefined, edited: own.length ? own : undefined, removed: p.removedAt ? true : undefined }
           }),
           reports: reports.length ? reports : undefined,
           // Noch fehlende Unterlagen – Claude erinnert daran bzw. trägt neue als `pending` im Paket ein.

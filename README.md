@@ -41,6 +41,7 @@ Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und we
 
 ## Versionen
 
+- **1.28.0** – Karten bearbeiten: Beim Lernen über den Stift oben oder in der Kartenübersicht unter „Bearbeiten“ lassen sich Frage, Antwort sowie – mit sokratischem Lernen – Tipps und Kernpunkte ändern (mit Vorschau). Die eigene Fassung bleibt bei Paket-Updates erhalten; ändert ein Update eine selbst bearbeitete Stelle, weist das Formular darauf hin. „Paketfassung wiederherstellen“ verwirft die eigene Fassung. Bearbeitete Karten stehen im Auftrag für Claude, damit die Änderung ins Paket übernommen wird; offene Meldungen zur Karte gelten mit der eigenen Korrektur als erledigt. Geteilt wird die eigene Fassung.
 - **1.27.0** – Lernserie zeigt das Tagespensum: Ein Balken ist voll, wenn an dem Tag alle eingeplanten Karten (unterwegs) gelernt sind – vorher zeigte er die Zahl der Bewertungen im Verhältnis zum stärksten Tag der Woche. Das Pensum wird dafür je Tag gespeichert und synchronisiert; Tage vor dem Update zeigen noch die alte Darstellung.
 - **1.26.1** – Darstellung beim Lernen: Lange Kapitelnamen über der Frage brechen jetzt um, statt über den Rand der Karte hinauszuragen (auch in der Probeklausur).
 - **1.26.0** – Karten überspringen: In der Lernsitzung nimmt das Symbol ⏭ oben die aktuelle Karte ohne Bewertung heraus. Sie ruht bis zum nächsten Lerntag (auf diesem Gerät), ihr Lernstand bleibt unverändert – praktisch für eine Karte, die heute einfach nicht sitzen will und sonst als letzte immer wiederkommt.

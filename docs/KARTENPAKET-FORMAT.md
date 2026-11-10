@@ -138,14 +138,14 @@ Text, den die App für Claude erzeugt („Auftrag für Claude kopieren“): eine
       "lecturesOngoing": true,
       "profile": { "form": "schriftlich", "aids": "Taschenrechner" },
       "unconfirmed": ["aids"],
-      "packages": [{ "id": "tm2-festigkeitslehre", "title": "…", "version": 2, "cards": 140, "deleted": ["k2-f031-1"] }],
+      "packages": [{ "id": "tm2-festigkeitslehre", "title": "…", "version": 2, "cards": 140, "deleted": ["k2-f031-1"], "edited": [{ "uid": "k1-f004-1", "front": "…", "prompts": ["…"] }] }],
       "reports": [ { "packageId": "…", "uid": "…", "category": "fehler", "note": "…", "front": "…", "back": "…" } ]
     }
   ]
 }
 ```
 
-`lecturesOngoing`: Die Vorlesung läuft noch, weitere Unterlagen folgen. `unconfirmed`: Felder, die Claude vorgeschlagen und der Nutzer noch nicht bestätigt hat. `reports`: offene Meldungen wie in der Meldungsdatei. `deleted`: uids der Karten, die der Nutzer gelöscht hat – nicht durch inhaltsgleiche Karten mit neuer uid ersetzen.
+`lecturesOngoing`: Die Vorlesung läuft noch, weitere Unterlagen folgen. `unconfirmed`: Felder, die Claude vorgeschlagen und der Nutzer noch nicht bestätigt hat. `reports`: offene Meldungen wie in der Meldungsdatei. `deleted`: uids der Karten, die der Nutzer gelöscht hat – nicht durch inhaltsgleiche Karten mit neuer uid ersetzen. `edited`: Karten, die der Nutzer in der App bearbeitet hat (ab App 1.28.0), mit seiner Fassung der geänderten Felder (`front`, `back`, `prompts`, `keyPoints`; `null` = geleert). Die App behält diese Fassung bei Updates; übernimmt das Paket sie wörtlich, gilt die Karte in der App wieder als unbearbeitet.
 
 ## Fachprofile (`Fachprofile_<Semester>.json`)
 
