@@ -43,8 +43,10 @@ export async function pausedCardIds(examIds: string[]): Promise<Set<string>> {
 
 /** Lädt alles, was für Tagesplan und Lernsitzung des aktiven Semesters nötig ist. */
 export async function loadStudyData(profile: Profile, now = Date.now()): Promise<StudyData> {
-  const exams = profile.activeSemesterId ? await db.exams.where('semesterId').equals(profile.activeSemesterId).toArray() : []
-  exams.sort((a, b) => a.date.localeCompare(b.date))
+  const all = profile.activeSemesterId ? await db.exams.where('semesterId').equals(profile.activeSemesterId).toArray() : []
+  all.sort((a, b) => a.date.localeCompare(b.date))
+  // Pausierte Prüfungen werden weder abgefragt noch eingeplant – ihr Zeitbudget geht an die übrigen.
+  const exams = all.filter((e) => !e.pausedAt)
   // Karten mit offener Meldung sind pausiert, bis die Meldung erledigt ist (Korrektur per Paket-Update oder abgehakt).
   const paused = await pausedCardIds(exams.map((e) => e.id))
   // Neue Karten pausierter Kapitel werden noch nicht eingeführt; begonnene Karten werden weiter wiederholt.
@@ -62,7 +64,8 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
     .filter((l) => l.profileId === profile.id)
     .toArray()
   const semester = profile.activeSemesterId ? await db.semesters.get(profile.activeSemesterId) : undefined
-  const homework = sortOpen((await Promise.all(exams.map((e) => db.homework.where('examId').equals(e.id).toArray()))).flat())
+  // Hausaufgaben haben einen Abgabetermin und bleiben auch bei pausierter Prüfung im Plan.
+  const homework = sortOpen((await Promise.all(all.map((e) => db.homework.where('examId').equals(e.id).toArray()))).flat())
   const homeworkMinutes = Math.round(homeworkMinutesToday(homework, now))
   const auto = profile.budgetAuto !== false
   // Hausaufgaben haben einen Abgabetermin: Ihr Tagesanteil ist fest reserviert und wird nie an die gemessene

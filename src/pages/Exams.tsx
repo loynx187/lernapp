@@ -46,12 +46,13 @@ export function Exams() {
       {rows.map(({ exam: e, stats, forecast }) => {
         const d = daysUntil(e.date)
         return (
-          <Link key={e.id} to={`/pruefung/${e.id}`} className="card link" style={d < 0 ? { opacity: 0.6 } : undefined}>
+          <Link key={e.id} to={`/pruefung/${e.id}`} className="card link" style={d < 0 || e.pausedAt ? { opacity: 0.6 } : undefined}>
             <div className="row between" style={{ marginBottom: 4 }}>
               <span className="row grow">
                 <span className="dot" style={{ background: e.color }} />
                 <b>{e.name}</b>
               </span>
+              {e.pausedAt && <span className="chip">pausiert</span>}
               <span className="chip">{formatCountdown(d)}</span>
             </div>
             <small>{formatDate(e.date)} · {stats.total} Karten{stats.tasks.total > 0 && ` · ${stats.tasks.practiced}/${stats.tasks.total} Aufgaben geübt`}</small>

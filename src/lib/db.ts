@@ -61,6 +61,8 @@ export interface Exam extends Synced {
   pendingDocs?: PendingDoc[]
   /** Pausierte Kapitel (`${packageId}:${chapter}`): Ihre neuen Karten werden noch nicht eingeführt. */
   pausedChapters?: string[]
+  /** Pausiert (Zeitpunkt): Die Prüfung wird nicht abgefragt und nicht eingeplant, ihr Lernstand bleibt erhalten (siehe study.ts). */
+  pausedAt?: number
 }
 
 export interface PendingDoc {
