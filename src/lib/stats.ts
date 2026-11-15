@@ -148,14 +148,17 @@ export function estimateCosts(logs: ReviewLog[]): Record<Mode, Costs> {
 }
 
 /** Aufeinanderfolgende Tage mit mindestens einer Lerneinheit (heute zählt, falls schon gelernt). */
-export function streak(logs: ReviewLog[], now: number): number {
+/** Tage in Folge mit Lernen; freie Tage (`isFree`, z. B. aus dem Wochenplan) unterbrechen die Serie nicht. */
+export function streak(logs: ReviewLog[], now: number, isFree: (day: string) => boolean = () => false): number {
   const days = new Set(logs.map((l) => studyDate(l.reviewedAt)))
   const prev = (d: string) => studyDate(addDays(parseIsoDate(d), -1) + 12 * 3600_000)
   let d = studyDate(now)
   if (!days.has(d)) d = prev(d)
   let n = 0
-  while (days.has(d)) {
-    n++
+  // Höchstens 60 Tage zurück (so weit reichen die geladenen Bewertungen)
+  for (let i = 0; i < 60; i++) {
+    if (days.has(d)) n++
+    else if (!isFree(d)) break
     d = prev(d)
   }
   return n

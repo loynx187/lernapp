@@ -1,9 +1,10 @@
 import { duePending } from './pending'
 import { db, type Profile } from './db'
-import { addDays, daysUntil, isoWeek, studyDayStart } from './dates'
+import { addDays, daysUntil, isoWeek, parseIsoDate, studyDayStart } from './dates'
 import { adoptPendingTokens, deleteFile, download, DropboxError, DROPBOX_APP_KEY, getRev, getTokens, listFolder, upload } from './dropbox'
 import { loadStudyData, type StudyData } from './study'
 import { examStats, streak } from './stats'
+import { dayFactor } from './weekplan'
 import { applyDoc, docSignature, exportDoc, mergeDocs, parseSyncDoc, replaceProfile, type SyncDoc } from './sync'
 import { isDueReminder, sortReminders } from './reminders'
 
@@ -150,14 +151,14 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 
 /** Text für die tägliche Erinnerung (Kurzbefehle-Automation liest die Datei aus Dropbox). */
 export function reminderText(profile: Profile, today: StudyData, tomorrow: StudyData, now: number, dueReminders: string[] = []): string {
-  const left = (d: StudyData) => d.plan.modes.mobile.reviewsLeft + d.plan.modes.mobile.newLeft + d.plan.modes.desk.reviewsLeft + d.plan.modes.desk.newLeft
+  const left = (d: StudyData) => d.plan.modes.mobile.reviewsLeft + d.plan.modes.mobile.newLeft + (d.plan.modes.mobile.refreshLeft ?? 0) + d.plan.modes.desk.reviewsLeft + d.plan.modes.desk.newLeft
   const useToday = left(today) > 0
   const d = useToday ? today : tomorrow
   const day = useToday ? studyDayStart(now) : addDays(studyDayStart(now), 1)
   const lines = [`Lernplan ${new Date(day).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })}`]
   const m = d.plan.modes.mobile
   const k = d.plan.modes.desk
-  if (m.reviewsLeft + m.newLeft) lines.push(`Unterwegs: ${plural(m.reviewsLeft + m.newLeft, 'Karte', 'Karten')} · ca. ${m.minutesLeft} min`)
+  if (m.reviewsLeft + m.newLeft + (m.refreshLeft ?? 0)) lines.push(`Unterwegs: ${plural(m.reviewsLeft + m.newLeft + (m.refreshLeft ?? 0), 'Karte', 'Karten')} · ca. ${m.minutesLeft} min`)
   if (k.reviewsLeft + k.newLeft) lines.push(`Schreibtisch: ${plural(k.reviewsLeft + k.newLeft, 'Aufgabe', 'Aufgaben')} · ca. ${k.minutesLeft} min`)
   if (lines.length === 1) lines.push('Nichts fällig – gut gemacht!')
   const missing = d.exams.flatMap((e) => duePending(e, now).map((p) => `${e.name}: ${p.title}`))
@@ -206,8 +207,8 @@ export function progressSummary(profile: Profile, d: StudyData, now: number, sem
     stand: new Date(now).toISOString(),
     profil: profile.name,
     semester: semesterName,
-    heute: { karten: m.reviewsLeft + m.newLeft, aufgaben: k.reviewsLeft + k.newLeft, minuten: m.minutesLeft + k.minutesLeft },
-    serie: streak(d.logs, now),
+    heute: { karten: m.reviewsLeft + m.newLeft + (m.refreshLeft ?? 0), aufgaben: k.reviewsLeft + k.newLeft, minuten: m.minutesLeft + k.minutesLeft },
+    serie: streak(d.logs, now, (day) => dayFactor(profile, parseIsoDate(day) + 12 * 3600_000) === 0),
     gesamt: { begonnen: total ? Math.round((introduced / total) * 100) / 100 : 0, prognose: total ? Math.round((forecast / total) * 100) / 100 : 0 },
     pruefungen,
   }

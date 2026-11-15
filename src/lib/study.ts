@@ -3,13 +3,15 @@ import { homeworkMinutesToday, sortOpen } from './homework'
 import { DAY, studyDate } from './dates'
 import { planDay, type DayPlan } from './planner'
 import { planExams, semesterKind, SEMESTER_KINDS } from './semesters'
-import { review, type Grade } from './scheduler'
+import { retrievability, review, type Grade } from './scheduler'
 import { doneToday, estimateCosts, examStats, packageBlocks, toPlanCard } from './stats'
 import { budgetInfo, type BudgetInfo } from './budget'
 import { rankTasks, type TaskRecommendation } from './tasks'
 import { chapterKey } from './pending'
 import { dayWork } from './dayProgress'
 import { skippedToday } from './skip'
+import { dayFactor, dayFactors, minutesOn } from './weekplan'
+import { parseIsoDate } from './dates'
 import { daysUntil } from './dates'
 import type { PlanCard } from './planner'
 
@@ -30,9 +32,13 @@ export interface StudyData {
   recommendations: Map<string, TaskRecommendation>
 }
 
-/** Karten für Planer und Lernsitzung, neue Schreibtischaufgaben mit ihrem Empfehlungswert. */
-export function planCards(d: Pick<StudyData, 'cards' | 'blocks' | 'recommendations'>): PlanCard[] {
-  return d.cards.map((c) => ({ ...toPlanCard(c, d.blocks), priority: d.recommendations.get(c.id)?.score }))
+/** Karten für Planer und Lernsitzung, neue Schreibtischaufgaben mit ihrem Empfehlungswert, begonnene mit Abrufwahrscheinlichkeit. */
+export function planCards(d: Pick<StudyData, 'cards' | 'blocks' | 'recommendations'>, now = Date.now(), retention = 0.9): PlanCard[] {
+  return d.cards.map((c) => ({
+    ...toPlanCard(c, d.blocks),
+    priority: d.recommendations.get(c.id)?.score,
+    recall: c.s.state !== 0 ? retrievability(c.s, now, retention) : undefined,
+  }))
 }
 
 /** IDs der Karten mit offener Meldung. */
@@ -70,16 +76,25 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
   const auto = profile.budgetAuto !== false
   // Hausaufgaben haben einen Abgabetermin: Ihr Tagesanteil ist fest reserviert und wird nie an die gemessene
   // Lernzeit angepasst. Angepasst wird nur die übrige Schreibtisch-Zeit für Aufgaben (nur deren Dauer wird gemessen).
+  // Wochenplan: Lernzeit des heutigen Tags. Die Anpassung an die gemessene Lernzeit wird für einen normalen Tag
+  // bestimmt (gemessene Zeiten auf einen normalen Tag umgerechnet) und als Verhältnis auf den heutigen Tag übertragen.
+  const factorOf = (day: string) => dayFactor(profile, parseIsoDate(day) + 12 * 3600_000)
+  const scaled = (normalSetting: number, todaySetting: number, mode: Mode) => {
+    const base = budgetInfo(normalSetting, logs, mode, now, auto, factorOf)
+    const ratio = base.setting > 0 ? base.effective / base.setting : 1
+    return { ...base, setting: todaySetting, effective: Math.round(todaySetting * ratio) }
+  }
   const budgets = {
-    mobile: budgetInfo(profile.minutesMobile, logs, 'mobile', now, auto),
-    desk: budgetInfo(Math.max(0, profile.minutesDesk - homeworkMinutes), logs, 'desk', now, auto),
+    mobile: scaled(profile.minutesMobile, minutesOn(profile, 'mobile', now), 'mobile'),
+    desk: scaled(Math.max(0, profile.minutesDesk - homeworkMinutes), Math.max(0, minutesOn(profile, 'desk', now) - homeworkMinutes), 'desk'),
   }
   const recommendations = rankTasks(cards, new Map(exams.map((e) => [e.id, daysUntil(e.date, now)])), now, profile.retention)
   const plan = planDay({
     now,
     exams: planExams(exams, semester),
     buffer: SEMESTER_KINDS[semesterKind(semester)].buffer,
-    cards: planCards({ cards, blocks, recommendations }),
+    cards: planCards({ cards, blocks, recommendations }, now, profile.retention),
+    dayFactors: dayFactors(profile, now, Math.max(1, ...exams.map((e) => daysUntil(e.date, now) + 1))),
     done: doneToday(
       logs.filter((l) => examIds.has(l.examId)),
       now,

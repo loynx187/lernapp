@@ -23,7 +23,7 @@ export function LearnChoice() {
   const t = data.plan.modes[mode]
   const hwByExam = homeworkDueByExam(data.homework, now)
   const hwCount = mode === 'desk' ? [...hwByExam.values()].reduce((a, b) => a + b, 0) : 0
-  const left = t.reviewsLeft + t.newLeft + hwCount
+  const left = t.reviewsLeft + t.newLeft + (t.refreshLeft ?? 0) + hwCount
   const subjects = subjectsToday(data.plan, hwByExam).filter((s) => s.left[mode] > 0)
   // Fächer mit Stoff, aber heute nichts eingeplant: gezielt extra üben (wie „Alle Fächer“ nach dem Tagespensum).
   const material = materialByExam(data.cards, mode)

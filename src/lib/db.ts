@@ -29,6 +29,10 @@ export interface Profile extends Synced {
   ideas?: { id: string; text: string; createdAt: number }[]
   /** Sokratisches Lernen (Test): Leitfragen und Kernpunkte in der Lernsitzung zeigen. Standard: aus. */
   socratic?: boolean
+  /** Lernzeit je Wochentag als Faktor auf die Tagesbudgets (Index 0 = Montag); fehlt: jeden Tag gleich. */
+  weekFactors?: number[]
+  /** Freie Tage (YYYY-MM-DD): kein neuer Stoff, keine Lernzeit eingeplant. */
+  freeDays?: string[]
 }
 
 export interface Semester extends Synced {

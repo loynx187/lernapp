@@ -2,13 +2,14 @@ import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useActive } from '../state'
 import { loadStudyData, updateSnapshots } from '../lib/study'
-import { addDays, formatCountdown, isoDate, studyDate, studyDayStart } from '../lib/dates'
+import { addDays, formatCountdown, isoDate, parseIsoDate, studyDate, studyDayStart } from '../lib/dates'
 import { cardMode, type Mode } from '../lib/db'
 import { examStats, materialByExam, streak } from '../lib/stats'
 import { DayBars, Icon, PageHeader, Progress, Widget } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
 import { backlogCards, backlogLabel } from '../lib/backlog'
+import { dayFactor } from '../lib/weekplan'
 import { homeworkDueByExam, isDueSoon } from '../lib/homework'
 import { duePending } from '../lib/pending'
 import { shortDue } from './Homework'
@@ -53,7 +54,9 @@ export function Dashboard() {
   const upcoming = exams.filter((e) => plan.exams.some((p) => p.examId === e.id))
   const next = upcoming[0]
   const nextPlan = next && plan.exams.find((p) => p.examId === next.id)
-  const days = streak(logs, now)
+  const isFreeDay = (day: string) => dayFactor(profile, parseIsoDate(day) + 12 * 3600_000) === 0
+  const days = streak(logs, now, isFreeDay)
+  const freeToday = dayFactor(profile, now) === 0
   // Ohne Dropbox: Erinnerung an eine Sicherungsdatei, sobald seit der letzten (bzw. dem ersten Lernen) eine Woche vergangen ist.
   const since = backupAt || Math.min(...logs.map((l) => l.reviewedAt))
   const backupDue =
@@ -160,7 +163,7 @@ export function Dashboard() {
           {modes.map((m) => {
             const t = plan.modes[m]
             const hwCount = m === 'desk' ? hwDue.length : 0
-            const left = t.reviewsLeft + t.newLeft + hwCount
+            const left = t.reviewsLeft + t.newLeft + (t.refreshLeft ?? 0) + hwCount
             const info = MODE_INFO[m]
             const budget = data.budgets[m].effective
             const forMode = subjects.filter((s) => s.left[m] > 0)
@@ -185,7 +188,7 @@ export function Dashboard() {
                     ) : (
                       <>
                         <div className="w-number done">✓</div>
-                        <div className="w-caption">Für heute erledigt</div>
+                        <div className="w-caption">{freeToday ? 'Heute frei' : 'Für heute erledigt'}</div>
                       </>
                     )}
                   </div>
@@ -193,14 +196,18 @@ export function Dashboard() {
                     {left > 0 ? (
                       <>
                         {hwCount > 0 && <span>{hwCount} {hwCount === 1 ? 'Hausaufgabe' : 'Hausaufgaben'}</span>}
-                        <span>{t.reviewsLeft} Wdh. · {t.newLeft} {m === 'desk' ? 'empfohlen' : 'neu'}</span>
+                        <span>
+                          {t.reviewsLeft} Wdh. · {t.newLeft} {m === 'desk' ? 'empfohlen' : 'neu'}
+                          {!!t.refreshLeft && ` · ${t.refreshLeft} Endspurt`}
+                        </span>
+                        {freeToday && <span>Heute frei – nur, wenn du magst</span>}
                         {choose && forMode.length > 0 && <span className="truncate">Empfohlen: {examById.get(forMode[0].examId)?.name}</span>}
                         <span className="w-pill">ca. {t.minutesLeft} min · {choose ? 'Fach wählen' : 'Start'}</span>
                       </>
                     ) : (
                       <span className="w-pill">{m === 'mobile' ? '10 extra' : '1 extra'}</span>
                     )}
-                    {(t.minutesNeeded > budget || (m === 'desk' && data.homeworkMinutes > profile.minutesDesk)) && <span className="w-warn">Budget zu knapp</span>}
+                    {!freeToday && (t.minutesNeeded > budget || (m === 'desk' && data.homeworkMinutes > profile.minutesDesk)) && <span className="w-warn">Budget zu knapp</span>}
                   </div>
                 </div>
               </Widget>

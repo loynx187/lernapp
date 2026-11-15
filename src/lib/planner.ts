@@ -22,6 +22,8 @@ export interface PlanCard {
   relevance?: number
   /** Empfehlungswert neuer Schreibtischaufgaben (höher = früher), siehe tasks.ts. */
   priority?: number
+  /** Aktuelle Abrufwahrscheinlichkeit begonnener Karten (0–1) – für die Auffrischung im Endspurt. */
+  recall?: number
 }
 
 export interface PlanExam {
@@ -65,6 +67,11 @@ export interface PlanInput {
   budgetMinutes: Record<Mode, number>
   costs: Record<Mode, Costs>
   buffer?: BufferParams
+  /**
+   * Lernzeit ab heute als Faktor je Tag (Index 0 = heute, fehlende Tage = 1), siehe weekplan.ts. Neuer Stoff wird
+   * im Verhältnis dazu verteilt: an Tagen mit viel Zeit mehr, an freien Tagen nichts. Fehlt: jeder Tag gleich.
+   */
+  dayFactors?: number[]
 }
 
 export interface ExamModePlan {
@@ -83,6 +90,8 @@ export interface ExamModePlan {
   newLeft: number
   reviewsDue: number
   reviewsDoneToday: number
+  /** Endspurt: begonnene, noch nicht fällige Karten, die heute zusätzlich aufgefrischt werden (siehe ENDSPURT_DAYS). */
+  refreshLeft?: number
 }
 
 export interface ExamPlan {
@@ -96,6 +105,10 @@ export interface ExamPlan {
   behind: boolean
   /** Erwarteter Anteil begonnener Karten (ohne Schreibtischaufgaben) zum Stichtag, wenn täglich das heutige Pensum gelernt wird. */
   forecastShare: number
+  /** Kernstoff-Karten, die im heutigen Tempo bis zum Stichtag nicht mehr begonnen würden (0 = im Plan). */
+  backlog?: number
+  /** Die Klausur ist höchstens ENDSPURT_DAYS Tage entfernt. */
+  endspurt?: boolean
 }
 
 export interface ModeTotals {
@@ -104,6 +117,8 @@ export interface ModeTotals {
   minutesLeft: number
   /** Minuten pro Tag, die nötig wären, um voll im Plan zu sein. */
   minutesNeeded: number
+  /** Endspurt: zusätzlich aufzufrischende Karten. */
+  refreshLeft?: number
 }
 
 export interface DayPlan {
@@ -130,6 +145,20 @@ export function introductionDays(daysLeft: number, buffer: BufferParams = DEFAUL
 }
 
 const isCore = (c: PlanCard) => (c.relevance ?? 2) >= 2
+
+/**
+ * Endspurt: In den letzten Tagen vor einer Klausur füllt die App freie Lernzeit (nach Wiederholungen und neuem
+ * Stoff) mit begonnenen Karten dieser Prüfung, die noch nicht fällig sind – klausurrelevante und am ehesten
+ * vergessene zuerst.
+ */
+export const ENDSPURT_DAYS = 3
+
+/** Summe der Tagesfaktoren von Tag `from` bis vor `to` (fehlende Tage = 1). */
+const factorSum = (f: number[] | undefined, from: number, to: number) => {
+  let s = 0
+  for (let i = from; i < to; i++) s += f?.[i] ?? 1
+  return s
+}
 
 /** In den letzten Tagen vor der Klausur wird neuer Stoff paketübergreifend gemischt statt Paket für Paket. */
 export const MIX_WITHIN_DAYS = 14
@@ -211,8 +240,11 @@ export function planDay(input: PlanInput): DayPlan {
       // Heute begonnene Karten zählen zuerst zum Kernstoff.
       const corePool = coreRemaining + newDoneToday
       const required = m === REQUIRED_MODE
-      const quota = intro === 0 || !required ? 0 : Math.ceil(corePool / intro)
-      const optionalQuota = intro === 0 || !required ? 0 : Math.ceil((newRemaining - coreRemaining) / intro)
+      // Anteil des heutigen Tags an der Lernzeit bis zum Stichtag (ohne Wochenplan: 1 / Einführungstage).
+      const total = factorSum(input.dayFactors, 0, intro)
+      const share = total > 0 ? (input.dayFactors?.[0] ?? 1) / total : 0
+      const quota = intro === 0 || !required ? 0 : Math.max(0, Math.ceil(corePool * share - 1e-9))
+      const optionalQuota = intro === 0 || !required ? 0 : Math.max(0, Math.ceil((newRemaining - coreRemaining) * share - 1e-9))
       modes[m] = {
         newRemaining,
         coreRemaining,
@@ -225,7 +257,7 @@ export function planDay(input: PlanInput): DayPlan {
         reviewsDoneToday,
       }
     }
-    return { examId: e.id, daysLeft: e.daysLeft, weight: e.weight, introDeadline: intro, modes, behind: false, forecastShare: 0 }
+    return { examId: e.id, daysLeft: e.daysLeft, weight: e.weight, introDeadline: intro, modes, behind: false, forecastShare: 0, backlog: 0, endspurt: e.daysLeft <= ENDSPURT_DAYS }
   })
 
   const totals = {} as Record<Mode, ModeTotals>
@@ -263,24 +295,49 @@ export function planDay(input: PlanInput): DayPlan {
       const extra = Math.floor(extraAlloc[i] / cost.newCard + 1e-9)
       mp.allowed = core + optional + extra
       mp.newLeft = Math.min(mp.newRemaining, Math.max(0, mp.allowed - mp.newDoneToday))
-      if (core < mp.quota) p.behind = true
+      if (core < mp.quota) {
+        p.behind = true
+        // Im heutigen Tempo (Kernkarten je Faktor-Einheit) bis zum Stichtag
+        const today = input.dayFactors?.[0] ?? 1
+        p.backlog = Math.max(0, mp.coreRemaining + mp.newDoneToday - Math.floor((core / today) * factorSum(input.dayFactors, 0, p.introDeadline) + 1e-9))
+      }
       newLeft += mp.newLeft
       reviewsLeft += mp.reviewsDue
     })
     const neededSeconds = reviewCost + plans.reduce((s, p) => s + p.modes[m].quota * cost.newCard, 0)
+    // Endspurt: Was nach Wiederholungen und neuem Stoff vom Budget übrig ist, frischt begonnene Karten auf.
+    let refreshLeft = 0
+    if (m === REQUIRED_MODE) {
+      const used = reviewCost + plans.reduce((s, p) => s + (p.modes[m].newLeft + p.modes[m].newDoneToday) * cost.newCard, 0)
+      const candidates = plans.map((p) =>
+        p.endspurt ? cards.filter((c) => c.examId === p.examId && c.mode === m && c.state !== 0 && c.due >= endOfToday).length : 0,
+      )
+      const alloc = distribute(
+        Math.max(0, budget - used),
+        plans.map((_, i) => ({ cost: candidates[i] * cost.review, weight: weight(i) })),
+      )
+      plans.forEach((p, i) => {
+        p.modes[m].refreshLeft = Math.min(candidates[i], Math.floor(alloc[i] / cost.review + 1e-9))
+        refreshLeft += p.modes[m].refreshLeft!
+      })
+    }
     totals[m] = {
       reviewsLeft,
       newLeft,
-      minutesLeft: Math.ceil((reviewsLeft * cost.review + newLeft * cost.newCard) / 60),
+      minutesLeft: Math.ceil((reviewsLeft * cost.review + newLeft * cost.newCard + refreshLeft * cost.review) / 60),
       minutesNeeded: Math.ceil(neededSeconds / 60),
+      refreshLeft,
     }
   }
   for (const p of plans) {
     const own = cards.filter((c) => c.examId === p.examId && c.mode === REQUIRED_MODE)
     if (!own.length) continue
     const mp = p.modes[REQUIRED_MODE]
-    // heute noch offen + an den weiteren Einführungstagen im heutigen Tempo
-    const reachable = mp.newLeft + Math.max(mp.allowed, 0) * Math.max(0, p.introDeadline - 1)
+    // heute noch offen + an den weiteren Einführungstagen im heutigen Tempo (je Faktor-Einheit des Wochenplans);
+    // an einem freien Tag gilt der Plan als eingehalten.
+    const today = input.dayFactors?.[0] ?? 1
+    const rest = factorSum(input.dayFactors, 1, p.introDeadline)
+    const reachable = today > 0 ? mp.newLeft + (Math.max(mp.allowed, 0) / today) * rest : mp.newRemaining
     const expected = Math.min(mp.newRemaining, reachable)
     p.forecastShare = (own.length - mp.newRemaining + expected) / own.length
   }
@@ -339,6 +396,15 @@ export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions)
     return orderNew(fresh, mix, mix).slice(0, count)
   })
 
+  // Endspurt: noch nicht fällige Karten – klausurrelevante und am ehesten vergessene zuerst – ans Ende der Sitzung.
+  const refresh = interleave(
+    examPlans.map((p) =>
+      cards
+        .filter((c) => c.examId === p.examId && c.mode === mode && c.state !== 0 && c.due >= endOfToday)
+        .sort((a, b) => Number((b.relevance ?? 2) >= 3) - Number((a.relevance ?? 2) >= 3) || (a.recall ?? 1) - (b.recall ?? 1))
+        .slice(0, p.modes[mode].refreshLeft ?? 0),
+    ),
+  )
   const reviews = interleave(reviewGroups)
   if (mode !== REQUIRED_MODE) {
     // Schreibtisch: erst fällige Wiederholungen geübter Aufgaben, dann neue Aufgaben nach Empfehlung (über alle Fächer).
@@ -346,8 +412,8 @@ export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions)
     return [...reviews, ...recommended]
   }
   const fresh = interleave(newGroups)
-  if (!fresh.length) return reviews
-  if (!reviews.length) return fresh
+  if (!fresh.length) return [...reviews, ...refresh]
+  if (!reviews.length) return [...fresh, ...refresh]
   // Neue Karten gleichmäßig zwischen die Wiederholungen streuen.
   const out: PlanCard[] = []
   const step = (reviews.length + fresh.length) / fresh.length
@@ -357,7 +423,7 @@ export function buildQueue(plan: DayPlan, cards: PlanCard[], opts: QueueOptions)
     const wantNew = n < fresh.length && (r >= reviews.length || i >= Math.floor(n * step + step / 2))
     out.push(wantNew ? fresh[n++] : reviews[r++])
   }
-  return out
+  return [...out, ...refresh]
 }
 
 export interface SubjectToday {
@@ -384,7 +450,7 @@ export function subjectsToday(plan: DayPlan, extraDesk: Map<string, number> = ne
   return plan.exams
     .map((p) => ({
       examId: p.examId,
-      left: { mobile: p.modes.mobile.reviewsDue + p.modes.mobile.newLeft, desk: p.modes.desk.reviewsDue + p.modes.desk.newLeft + (extraDesk.get(p.examId) ?? 0) },
+      left: { mobile: p.modes.mobile.reviewsDue + p.modes.mobile.newLeft + (p.modes.mobile.refreshLeft ?? 0), desk: p.modes.desk.reviewsDue + p.modes.desk.newLeft + (extraDesk.get(p.examId) ?? 0) },
       behind: p.behind,
       daysLeft: p.daysLeft,
       perDay: p.modes[REQUIRED_MODE].quota,

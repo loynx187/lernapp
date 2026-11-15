@@ -23,7 +23,8 @@ export interface BudgetInfo {
  * Richtung der Messung und höchstens auf die Hälfte bzw. das Anderthalbfache der Einstellung.
  * Gezählt werden nur Tage, an denen in diesem Modus gelernt wurde (heute nicht, der Tag läuft noch).
  */
-export function budgetInfo(setting: number, logs: ReviewLog[], mode: Mode, now: number, auto = true): BudgetInfo {
+/** `factorOf`: Faktor des Wochenplans je Tag (YYYY-MM-DD) – gemessene Zeiten werden damit auf einen normalen Tag umgerechnet. */
+export function budgetInfo(setting: number, logs: ReviewLog[], mode: Mode, now: number, auto = true, factorOf?: (day: string) => number): BudgetInfo {
   const today = studyDate(now)
   const cap = mode === 'mobile' ? 5 * 60_000 : 60 * 60_000
   const perDay = new Map<string, number>()
@@ -33,9 +34,14 @@ export function budgetInfo(setting: number, logs: ReviewLog[], mode: Mode, now: 
     if (d === today) continue
     perDay.set(d, (perDay.get(d) ?? 0) + Math.min(l.durationMs, cap))
   }
-  const days = perDay.size
+  // Tage mit Faktor 0 (frei) zählen nicht; an Tagen mit 2× zählt die Hälfte der Zeit als normaler Tag.
+  const normalized = [...perDay].flatMap(([d, ms]) => {
+    const f = factorOf ? factorOf(d) : 1
+    return f > 0 ? [ms / f] : []
+  })
+  const days = normalized.length
   if (days < BUDGET_MIN_DAYS || setting <= 0) return { setting, days, effective: setting }
-  const measured = [...perDay.values()].reduce((a, b) => a + b, 0) / days / 60_000
+  const measured = normalized.reduce((a, b) => a + b, 0) / days / 60_000
   if (!auto) return { setting, measured, days, effective: setting }
   const blended = setting + (measured - setting) / 2
   const effective = Math.round(Math.min(setting * 1.5, Math.max(setting * 0.5, blended)))

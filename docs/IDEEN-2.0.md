@@ -18,6 +18,11 @@ Statt die Antwort nur aufzudecken, führen Fragen schrittweise selbst zur Antwor
 
 ## Weitere Ideen
 
+- **Skizzenfeld für Rechenaufgaben**: Am iPad mit dem Apple Pencil direkt neben der Aufgabe rechnen, einen FUP zeichnen oder SCL skizzieren und danach mit der Lösung vergleichen – statt auf einem Zettel.
+- **Spickzettel-Entwurf**: Für Prüfungen mit eigenem Formelblatt (z. B. Regelungstechnik, zwei A4-Seiten): Formeln und oft vergessene Karten als Vorlage zum Abschreiben zusammenstellen.
+- **Schwachstellen im Auftrag für Claude**: Der Auftrag schickt mit, welche Themen oft vergessen werden; Claude ergänzt gezielt Erklärkarten und passende Übungsaufgaben.
+- **Bildkarten mit Abdeckung**: Teile eines Diagramms (Bode-Diagramm, Regelkreis, Ablaufkette) werden verdeckt und müssen benannt werden – für Technikfächer oft besser als Text.
+- **Klausurergebnis eintragen**: Nach der Klausur die Note eintragen; die App vergleicht sie mit ihrer Prognose und lernt, ob Vorhersage und Budget realistisch waren.
 - **Widget-Schlüssel per QR-Code**: Schlüssel nicht über die Zwischenablage, sondern als QR-Code zum Scannen in Scriptable übertragen.
 - **Musterlösungen abgleichen**: Sobald Musterlösungen zu Probeklausuren kommen: eigene Lösungen in den Karten automatisch als „mit Musterlösung geprüft“ kennzeichnen lassen.
 
