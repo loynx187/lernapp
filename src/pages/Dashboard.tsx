@@ -8,6 +8,7 @@ import { examStats, materialByExam, streak } from '../lib/stats'
 import { DayBars, Icon, PageHeader, Progress, Widget } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { subjectsToday } from '../lib/planner'
+import { backlogCards, backlogLabel } from '../lib/backlog'
 import { homeworkDueByExam, isDueSoon } from '../lib/homework'
 import { duePending } from '../lib/pending'
 import { shortDue } from './Homework'
@@ -307,7 +308,7 @@ export function Dashboard() {
                         <span className="dot" style={{ background: e.color }} />
                         <span className="truncate">{e.name}</span>
                       </span>
-                      <small className={p.behind && st.total ? 'badge-warn' : ''}>{p.behind && st.total ? 'Rückstand · ' : ''}{formatCountdown(p.daysLeft)}</small>
+                      <small className={p.behind && st.total ? 'badge-warn' : ''}>{formatCountdown(p.daysLeft)}</small>
                     </div>
                     {st.total ? (
                       <div className="w-exam-bar">
@@ -319,8 +320,9 @@ export function Dashboard() {
                       </div>
                     ) : null}
                     {st.total > 0 && upcoming.length <= 3 && (
-                      <small className="muted">{st.introduced} von {st.total} Karten begonnen · {st.secure} sicher bis zur Klausur{st.tasks.total > 0 && ` · ${st.tasks.practiced}/${st.tasks.total} Aufgaben`}</small>
+                      <small className="muted">{p.behind && <span className="badge-warn">{backlogLabel(backlogCards(p))} · </span>}{st.introduced} von {st.total} Karten begonnen · {st.secure} sicher bis zur Klausur{st.tasks.total > 0 && ` · ${st.tasks.practiced}/${st.tasks.total} Aufgaben`}</small>
                     )}
+                    {st.total > 0 && upcoming.length > 3 && p.behind && <small className="badge-warn">{backlogLabel(backlogCards(p))}</small>}
                     {!st.total && (
                       <small className="muted">Noch keine Karten</small>
                     )}
