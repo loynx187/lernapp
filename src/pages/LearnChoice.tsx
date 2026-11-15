@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useActive } from '../state'
 import { loadStudyData } from '../lib/study'
 import { subjectsToday } from '../lib/planner'
+import { backlogCards, backlogLabel } from '../lib/backlog'
 import { homeworkDueByExam } from '../lib/homework'
 import { daysUntil, formatCountdown } from '../lib/dates'
 import { materialByExam } from '../lib/stats'
@@ -54,7 +55,7 @@ export function LearnChoice() {
               {i === 0 && subjects.length > 1 && <span className="w-badge">Empfohlen</span>}
             </div>
             <small>
-              {count(s.left[mode])} · {s.behind ? <span className="badge-warn">Rückstand</span> : `Klausur ${formatCountdown(s.daysLeft)}`}
+              {count(s.left[mode])} · {s.behind ? <span className="badge-warn">{backlogLabel(backlogCards(data.plan.exams.find((p) => p.examId === s.examId)!))}</span> : `Klausur ${formatCountdown(s.daysLeft)}`}
               {mode === 'mobile' && <> · {s.perDay > 0 ? `noch ${s.newRemaining} neue Karten, ${s.perDay} pro Tag nötig` : 'nur Wiederholungen'}</>}
             </small>
           </Link>

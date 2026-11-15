@@ -41,6 +41,7 @@ Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und we
 
 ## Versionen
 
+- **1.32.0** – Rückstand in Karten: Statt nur „Rückstand“ zeigen Startseite (Fortschritt), Fächerwahl und Prüfungsseite, wie viele Karten des Kernstoffs mit dem aktuellen Zeitbudget bis zum Stichtag nicht mehr begonnen würden, z. B. „14 Karten Rückstand“.
 - **1.31.0** – Prüfungen pausieren: Auf der Prüfungsseite unter „Prüfung pausieren“. Eine pausierte Prüfung wird nicht abgefragt und nicht eingeplant, ihr Zeitbudget geht an die übrigen Prüfungen; Karten, Lernstand und Hausaufgaben bleiben erhalten. In der Prüfungsliste steht „pausiert“, „Fortsetzen“ nimmt sie wieder auf. Der Auftrag für Claude markiert pausierte Prüfungen.
 - **1.30.0** – Design „Bagel“ (Einstellungen → Darstellung): feste Kacheln, Überschriften und große Zahlen in Bagel Fat One, Text in Bricolage Grotesque. Farben als Palette (Kobalt, Tomate, Salbei – je hell und dunkel) oder eigene Farben für Hintergrund, Kacheln, Schrift und Akzent mit Kontrastprüfung. Kritzeleien abschaltbar: großer Hintergrund mit Ski, Schnee und Bergen, dazu ein Motiv in der Ecke jeder Kachel.
 - **1.29.0** – Darstellung wählbar: Unter Einstellungen → Darstellung gibt es neben dem bisherigen Design die minimalistischen Designs „Papier“ (warmes Off-White, ohne Farbe) und „Graphit“ (Schwarz-Weiß, dunkel echtes Schwarz) – flach, ohne Glas und farbigen Hintergrund. Hell oder dunkel lässt sich fest einstellen oder folgt automatisch dem Gerät. Die Wahl gilt je Gerät.

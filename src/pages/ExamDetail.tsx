@@ -11,6 +11,7 @@ import { deletedCards, removePackage, resetPackage, restorePackage } from '../li
 import { HistoryChart } from '../components/HistoryChart'
 import { fieldLabel, PROFILE_FIELDS } from '../lib/profile'
 import { Icon, PageHeader, Progress, Stat, pct } from '../components/ui'
+import { backlogCards, backlogLabel } from '../lib/backlog'
 import { sortOpen } from '../lib/homework'
 import { dueLabel } from './Homework'
 import { PendingDocs } from '../components/PendingDocs'
@@ -150,7 +151,9 @@ export function ExamDetail() {
                       <>Neuer Stoff bis <b>{formatDate(isoDate(addDays(Date.now(), plan.introDeadline - 1)))}</b>, danach nur noch Wiederholung.{' '}</>
                     )}
                     {plan.behind ? (
-                      <span className="badge-warn">Das Zeitbudget reicht aktuell nicht für den ganzen Kernstoff.</span>
+                      <span className="badge-warn">
+                        {backlogLabel(backlogCards(plan))}: Mit dem aktuellen Zeitbudget würden so viele Karten des Kernstoffs bis dahin nicht begonnen.
+                      </span>
                     ) : (
                       <span className="badge-good">Im Plan.</span>
                     )}
