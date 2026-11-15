@@ -103,6 +103,8 @@ export async function buildOrder(exams: Exam[], semester: Semester, now = Date.n
           // Noch fehlende Unterlagen – Claude erinnert daran bzw. trägt neue als `pending` im Paket ein.
           pending: openPending(e).length ? openPending(e).map((d) => ({ id: d.id, title: d.title, note: d.note })) : undefined,
           pausedChapters: e.pausedChapters?.length ? e.pausedChapters : undefined,
+          // Pausiert: Der Nutzer lernt das Fach gerade nicht mit der App – keine neuen Pakete ohne ausdrücklichen Auftrag.
+          paused: e.pausedAt ? true : undefined,
         }
       }),
     ),

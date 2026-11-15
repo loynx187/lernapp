@@ -101,7 +101,16 @@ export function ExamDetail() {
       <div className="exam-layout">
       <div className="exam-main">
 
-      {staleLecture > 0 && (
+      {exam.pausedAt && (
+        <div className="notice row between" style={{ alignItems: 'center', gap: 12 }}>
+          <span>
+            <b>Pausiert</b> seit {new Date(exam.pausedAt).toLocaleDateString('de-DE')} – die Prüfung wird nicht abgefragt und nicht eingeplant. Dein Lernstand bleibt erhalten.
+          </span>
+          <button className="btn small primary" onClick={() => db.exams.update(exam.id, { pausedAt: undefined })}>Fortsetzen</button>
+        </div>
+      )}
+
+      {staleLecture > 0 && !exam.pausedAt && (
         <div className="notice">
           <b>Neue Unterlagen da?</b> Seit {staleLecture} Tagen kam kein neues Kartenpaket. Auf der Seite <Link to="/pruefungen">Prüfungen</Link> „Auftrag für Claude kopieren“ und die neuen Folien anhängen – oder unter <Link to={`/pruefung/${exam.id}/bearbeiten`}>Bearbeiten</Link> „Vorlesung läuft noch“ ausschalten, wenn alles da ist.
         </div>
@@ -165,8 +174,8 @@ export function ExamDetail() {
           </div>
 
           <div className="exam-actions">
-            {hasMobile && <Link className="btn grow" to={`/lernen/mobile?exam=${exam.id}`}>Karten üben</Link>}
-            {hasDesk && <Link className="btn grow" to={`/lernen/desk?exam=${exam.id}`}>Aufgaben üben</Link>}
+            {hasMobile && !exam.pausedAt && <Link className="btn grow" to={`/lernen/mobile?exam=${exam.id}`}>Karten üben</Link>}
+            {hasDesk && !exam.pausedAt && <Link className="btn grow" to={`/lernen/desk?exam=${exam.id}`}>Aufgaben üben</Link>}
             <Link className="btn grow" to={`/probeklausur/${exam.id}`}>Probeklausur</Link>
           </div>
 
@@ -332,6 +341,18 @@ export function ExamDetail() {
           </>
         )}
         <Link className="btn block" to="/unterlagen">Skripte für „Folie ansehen“</Link>
+      </div>
+
+      <div className="section-title">Prüfung pausieren</div>
+      <div className="card stack">
+        <small>
+          Lernst du für diese Prüfung gerade anders (z. B. mit Übungen oder Altklausuren)? Pausiert wird sie nicht mehr abgefragt und nicht eingeplant; die Zeit geht an die übrigen Prüfungen. Karten, Lernstand und Hausaufgaben bleiben erhalten. Nach dem Fortsetzen sind die zwischenzeitlich fälligen Wiederholungen nachzuholen.
+        </small>
+        {exam.pausedAt ? (
+          <button className="btn" onClick={() => db.exams.update(exam.id, { pausedAt: undefined })}>Prüfung fortsetzen</button>
+        ) : (
+          <button className="btn" onClick={() => db.exams.update(exam.id, { pausedAt: Date.now() })}>Prüfung pausieren</button>
+        )}
       </div>
 
       <div className="section-title">Fachprofil für Claude</div>
