@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { budgetInfo, BUDGET_MIN_DAYS, BUDGET_WINDOW_DAYS, type BudgetInfo } from '../lib/budget'
-import { DAY } from '../lib/dates'
+import { DAY, parseIsoDate } from '../lib/dates'
 import { Link } from 'react-router-dom'
 import { useAppState, useActive } from '../state'
 import { db, deleteProfile, deleteSemester, uid, type Profile } from '../lib/db'
@@ -9,6 +9,7 @@ import { createTemplate, templateSummary } from '../lib/template'
 import { readJsonFile, safeFileName, saveFile } from '../lib/packages'
 import { isoDate } from '../lib/dates'
 import { PageHeader } from '../components/ui'
+import { dayFactor, FACTORS, upcomingFreeDays, WEEKDAYS } from '../lib/weekplan'
 import { activeColors, APPEARANCES, colorWarnings, loadDisplay, PALETTES, readableOn, saveDisplay, THEMES, type Colors, type Display } from '../lib/theme'
 import { useSync } from '../sync-state'
 import { SEMESTER_KINDS } from '../lib/semesters'
@@ -116,8 +117,9 @@ export function Settings() {
     const now = Date.now()
     const logs = await db.reviews.where('reviewedAt').above(now - BUDGET_WINDOW_DAYS * DAY).filter((l) => l.profileId === profile.id).toArray()
     const auto = profile.budgetAuto !== false
-    return { mobile: budgetInfo(profile.minutesMobile, logs, 'mobile', now, auto), desk: budgetInfo(profile.minutesDesk, logs, 'desk', now, auto) }
-  }, [profile.id, profile.minutesMobile, profile.minutesDesk, profile.budgetAuto])
+    const factorOf = (day: string) => dayFactor(profile, parseIsoDate(day) + 12 * 3600_000)
+    return { mobile: budgetInfo(profile.minutesMobile, logs, 'mobile', now, auto, factorOf), desk: budgetInfo(profile.minutesDesk, logs, 'desk', now, auto, factorOf) }
+  }, [profile.id, profile.minutesMobile, profile.minutesDesk, profile.budgetAuto, profile.weekFactors, profile.freeDays])
 
   return (
     <>
@@ -136,6 +138,7 @@ export function Settings() {
           <input type="range" min={0} max={240} step={15} value={profile.minutesDesk} onChange={(e) => update({ minutesDesk: Number(e.target.value) })} />
           <BudgetNote info={budgets?.desk} desk />
         </label>
+        <WeekPlan profile={profile} update={update} />
         <label className="row" style={{ gap: 10, marginBottom: 14 }}>
           <input type="checkbox" checked={profile.budgetAuto !== false} onChange={(e) => update({ budgetAuto: e.target.checked })} />
           <span style={{ fontSize: 15 }}>Budget an die gemessene Lernzeit anpassen</span>
@@ -433,5 +436,59 @@ function BagelOptions({ display, change }: { display: Display; change: (d: Parti
         <span style={{ fontSize: 15 }}>Kritzeleien (Ski-Hintergrund und Motive in den Kacheln)</span>
       </label>
     </>
+  )
+}
+
+/** Lernzeit je Wochentag (Faktor auf die beiden Tagesbudgets) und einzelne freie Tage. */
+function WeekPlan({ profile, update }: { profile: Profile; update: (p: Partial<Profile>) => void }) {
+  const [day, setDay] = useState('')
+  const factors = Array.from({ length: 7 }, (_, i) => profile.weekFactors?.[i] ?? 1)
+  const setFactor = (i: number, f: number) => update({ weekFactors: factors.map((x, k) => (k === i ? f : x)) })
+  const free = upcomingFreeDays(profile, Date.now())
+  return (
+    <div className="field">
+      <span className="field-label">Lernzeit je Wochentag</span>
+      <small style={{ display: 'block', marginBottom: 8 }}>
+        Die Minuten oben gelten für einen normalen Tag (1×). Neuer Stoff wird passend verteilt: an Tagen mit mehr Zeit mehr, an freien Tagen nichts.
+      </small>
+      {WEEKDAYS.map((w, i) => (
+        <div key={w} className="row" style={{ gap: 8, marginBottom: 6 }}>
+          <span style={{ width: 28, fontSize: 15 }}>{w}</span>
+          <div className="segmented grow" role="radiogroup" aria-label={`Lernzeit ${w}`}>
+            {FACTORS.map((f) => (
+              <button type="button" key={f.value} role="radio" aria-checked={factors[i] === f.value} className={factors[i] === f.value ? 'on' : ''} onClick={() => setFactor(i, f.value)}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <span className="field-label" style={{ marginTop: 12 }}>Freie Tage</span>
+      <small style={{ display: 'block', marginBottom: 8 }}>Urlaub, Praxistage ohne Zeit, Klausurtage: An diesen Tagen ist nichts eingeplant, die Lernserie läuft weiter.</small>
+      {free.map((d) => (
+        <div key={d} className="row between" style={{ marginBottom: 6 }}>
+          <span style={{ fontSize: 15 }}>{new Date(parseIsoDate(d)).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long' })}</span>
+          <button type="button" className="btn small ghost danger" aria-label={`Freien Tag ${d} entfernen`} onClick={() => update({ freeDays: (profile.freeDays ?? []).filter((x) => x !== d) })}>
+            Entfernen
+          </button>
+        </div>
+      ))}
+      <div className="row" style={{ gap: 8 }}>
+        <input type="date" value={day} onChange={(e) => setDay(e.target.value)} aria-label="Freier Tag" className="grow" />
+        <button
+          type="button"
+          className="btn small"
+          disabled={!day}
+          onClick={() => {
+            // Ältere freie Tage entfallen beim Speichern, damit die Liste nicht wächst (die Lernserie blickt 60 Tage zurück).
+            const oldest = isoDate(Date.now() - 60 * DAY)
+            update({ freeDays: [...new Set([...(profile.freeDays ?? []).filter((x) => x >= oldest), day])].sort() })
+            setDay('')
+          }}
+        >
+          Hinzufügen
+        </button>
+      </div>
+    </div>
   )
 }

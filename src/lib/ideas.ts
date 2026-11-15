@@ -27,6 +27,11 @@ export const IDEAS_V2: IdeaGroup[] = [
   {
     title: 'Weitere Ideen',
     ideas: [
+      { title: 'Skizzenfeld für Rechenaufgaben', text: 'Am iPad mit dem Apple Pencil direkt neben der Aufgabe rechnen, einen FUP zeichnen oder SCL skizzieren und danach mit der Lösung vergleichen – statt auf einem Zettel.' },
+      { title: 'Spickzettel-Entwurf', text: 'Für Prüfungen mit eigenem Formelblatt (z. B. Regelungstechnik, zwei A4-Seiten): Formeln und oft vergessene Karten als Vorlage zum Abschreiben zusammenstellen.' },
+      { title: 'Schwachstellen im Auftrag für Claude', text: 'Der Auftrag schickt mit, welche Themen oft vergessen werden; Claude ergänzt gezielt Erklärkarten und passende Übungsaufgaben.' },
+      { title: 'Bildkarten mit Abdeckung', text: 'Teile eines Diagramms (Bode-Diagramm, Regelkreis, Ablaufkette) werden verdeckt und müssen benannt werden – für Technikfächer oft besser als Text.' },
+      { title: 'Klausurergebnis eintragen', text: 'Nach der Klausur die Note eintragen; die App vergleicht sie mit ihrer Prognose und lernt, ob Vorhersage und Budget realistisch waren.' },
       { title: 'Widget-Schlüssel per QR-Code', text: 'Schlüssel nicht über die Zwischenablage, sondern als QR-Code zum Scannen in Scriptable übertragen.' },
       { title: 'Musterlösungen abgleichen', text: 'Sobald Musterlösungen zu Probeklausuren kommen: eigene Lösungen in den Karten automatisch als „mit Musterlösung geprüft“ kennzeichnen lassen.' },
     ],
