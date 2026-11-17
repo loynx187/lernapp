@@ -105,7 +105,7 @@ export interface ExamPlan {
   behind: boolean
   /** Erwarteter Anteil begonnener Karten (ohne Schreibtischaufgaben) zum Stichtag, wenn täglich das heutige Pensum gelernt wird. */
   forecastShare: number
-  /** Kernstoff-Karten, die im heutigen Tempo bis zum Stichtag nicht mehr begonnen würden (0 = im Plan). */
+  /** Neue Kernstoff-Karten, die heute zum Soll (Tagesquote) fehlen, weil das Zeitbudget nicht reicht (0 = im Plan). */
   backlog?: number
   /** Die Klausur ist höchstens ENDSPURT_DAYS Tage entfernt. */
   endspurt?: boolean
@@ -297,9 +297,8 @@ export function planDay(input: PlanInput): DayPlan {
       mp.newLeft = Math.min(mp.newRemaining, Math.max(0, mp.allowed - mp.newDoneToday))
       if (core < mp.quota) {
         p.behind = true
-        // Im heutigen Tempo (Kernkarten je Faktor-Einheit) bis zum Stichtag
-        const today = input.dayFactors?.[0] ?? 1
-        p.backlog = Math.max(0, mp.coreRemaining + mp.newDoneToday - Math.floor((core / today) * factorSum(input.dayFactors, 0, p.introDeadline) + 1e-9))
+        // Abstand zum heutigen Soll: neue Kernkarten, die heute dran wären, aber nicht mehr ins Zeitbudget passen
+        p.backlog = mp.quota - core
       }
       newLeft += mp.newLeft
       reviewsLeft += mp.reviewsDue

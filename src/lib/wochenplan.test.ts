@@ -43,12 +43,12 @@ describe('Wochenplan', () => {
     expect(off.exams[0].behind).toBe(false)
   })
 
-  it('rechnet den Rückstand im heutigen Tempo über die kommenden Tage', () => {
+  it('rechnet den Rückstand zum heutigen Soll', () => {
     const exams = [{ id: 'a', date: examIn(30), weight: 2, introBy: examIn(10) }]
     const p = planDay(input({ exams, cards: fresh('a', 300), budgetMinutes: { mobile: 10, desk: 0 }, dayFactors: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1] })).exams[0]
     // 10 neue Karten pro Tag passen ins Budget, Stoff für die Einführungstage reicht nicht
     expect(p.behind).toBe(true)
-    expect(p.backlog).toBe(300 - 10 * p.introDeadline)
+    expect(p.backlog).toBe(p.modes.mobile.quota - 10)
   })
 
   it('rechnet gemessene Lernzeit auf einen normalen Tag um', () => {
