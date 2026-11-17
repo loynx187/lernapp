@@ -14,6 +14,6 @@ test('Rückstand wird in Karten angezeigt', async ({ page }) => {
   await expect(page.locator('.widget', { hasText: 'Fortschritt' })).toContainText(/\d+ Karten? Rückstand/)
   await page.goto('./#/pruefungen')
   await page.locator('a.card.link', { hasText: 'Technische Mechanik' }).click()
-  await expect(page.getByText(/\d+ Karten? Rückstand: Mit dem aktuellen Zeitbudget/)).toBeVisible()
+  await expect(page.getByText(/\d+ Karten? Rückstand: So viele neue Karten des Kernstoffs fehlen heute zum Soll/)).toBeVisible()
   expect(errors).toEqual([])
 })

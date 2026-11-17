@@ -8,11 +8,11 @@ const plan = (over: Partial<ExamPlan['modes']['mobile']>, behind: boolean, intro
 }
 
 describe('Rückstand in Karten', () => {
-  it('zählt den Kernstoff, der bis zum Stichtag nicht mehr begonnen würde', () => {
-    // 100 Karten in 10 Tagen → 10 pro Tag nötig, Budget reicht für 7 → 30 Karten Rückstand
-    expect(backlogCards(plan({ coreRemaining: 100, quota: 10, allowed: 7 }, true))).toBe(30)
-    // Heute schon begonnene Karten zählen zum Tagespensum
-    expect(backlogCards(plan({ coreRemaining: 95, newDoneToday: 5, quota: 10, allowed: 7 }, true))).toBe(30)
+  it('zählt die Karten, die heute zum Soll fehlen – nicht die Hochrechnung bis zum Stichtag', () => {
+    // 100 Karten in 10 Tagen → Soll heute 10, Budget reicht für 7 → 3 Karten Rückstand
+    expect(backlogCards(plan({ coreRemaining: 100, quota: 10, allowed: 7 }, true))).toBe(3)
+    // Heute schon begonnene Karten ändern das Soll nicht
+    expect(backlogCards(plan({ coreRemaining: 95, newDoneToday: 5, quota: 10, allowed: 7 }, true))).toBe(3)
     expect(backlogCards(plan({ coreRemaining: 100, quota: 10, allowed: 10 }, false))).toBe(0)
     expect(backlogLabel(1)).toBe('1 Karte Rückstand')
     expect(backlogLabel(14)).toBe('14 Karten Rückstand')

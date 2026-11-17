@@ -152,7 +152,7 @@ export function ExamDetail() {
                     )}
                     {plan.behind ? (
                       <span className="badge-warn">
-                        {backlogLabel(backlogCards(plan))}: Mit dem aktuellen Zeitbudget würden so viele Karten des Kernstoffs bis dahin nicht begonnen.
+                        {backlogLabel(backlogCards(plan))}: So viele neue Karten des Kernstoffs fehlen heute zum Soll von {plan.modes.mobile.quota} – das Zeitbudget reicht nicht für alle.
                       </span>
                     ) : (
                       <span className="badge-good">Im Plan.</span>

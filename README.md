@@ -41,6 +41,7 @@ Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und we
 
 ## Versionen
 
+- **1.33.1** – Rückstand zum heutigen Soll: Die Anzeige „X Karten Rückstand“ zählt nur noch die neuen Karten des Kernstoffs, die heute zum Tagesziel fehlen, weil das Zeitbudget nicht reicht – nicht mehr die Hochrechnung aller Karten bis zum Stichtag.
 - **1.33.0** – Wochenplan und Endspurt: Unter Einstellungen → Lernplan lässt sich die Lernzeit je Wochentag festlegen (frei, ½, 1×, 2×, 3× der eingestellten Minuten), dazu einzelne freie Tage. Neuer Stoff wird nach der verfügbaren Zeit verteilt, freie Tage planen nichts ein und unterbrechen die Lernserie nicht; Rückstand und Prognose rechnen mit dem Wochenplan. Endspurt: In den letzten drei Tagen vor einer Klausur füllt die App freie Lernzeit mit noch nicht fälligen Karten dieser Prüfung – klausurrelevante und am ehesten vergessene zuerst.
 - **1.32.0** – Rückstand in Karten: Statt nur „Rückstand“ zeigen Startseite (Fortschritt), Fächerwahl und Prüfungsseite, wie viele Karten des Kernstoffs mit dem aktuellen Zeitbudget bis zum Stichtag nicht mehr begonnen würden, z. B. „14 Karten Rückstand“.
 - **1.31.0** – Prüfungen pausieren: Auf der Prüfungsseite unter „Prüfung pausieren“. Eine pausierte Prüfung wird nicht abgefragt und nicht eingeplant, ihr Zeitbudget geht an die übrigen Prüfungen; Karten, Lernstand und Hausaufgaben bleiben erhalten. In der Prüfungsliste steht „pausiert“, „Fortsetzen“ nimmt sie wieder auf. Der Auftrag für Claude markiert pausierte Prüfungen.
