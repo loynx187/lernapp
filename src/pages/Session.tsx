@@ -25,6 +25,8 @@ import { suggestRating } from '../lib/socratic'
 
 /** Karten, die innerhalb dieser Zeit wieder fällig sind, kommen noch in derselben Sitzung dran. */
 const REQUEUE_WITHIN = 30 * 60_000
+/** So lange nach dem Aufdecken gilt die Vorschau der Abstände für die Bewertung (danach wird neu gerechnet). */
+const PREVIEW_VALID = 15 * 60_000
 
 const RATINGS: { r: Grade; label: string; key: string }[] = [
   { r: Rating.Again, label: 'Nochmal', key: '1' },
@@ -104,9 +106,12 @@ export function Session() {
     started.current = Date.now()
   }
 
+  // Zeitpunkt der Vorschau: Die Bewertung rechnet mit demselben Zeitpunkt, damit der Zufallsanteil von FSRS (Fuzz)
+  // gleich ausfällt und der Knopf den Abstand zeigt, der tatsächlich geplant wird.
+  const previewAt = useMemo(() => (card && revealed ? Date.now() : 0), [card, revealed])
   const intervals = useMemo(
-    () => (card && revealed ? previewIntervals(card.s, Date.now(), profile.retention, exam?.date, card.id) : null),
-    [card, revealed, profile.retention, exam?.date],
+    () => (card && previewAt ? previewIntervals(card.s, previewAt, profile.retention, exam?.date, card.id) : null),
+    [card, previewAt, profile.retention, exam?.date],
   )
 
   const mcCorrect = card?.type === 'mc' && revealed ? sameSet(selected, card.correct ?? []) : null
@@ -123,7 +128,8 @@ export function Session() {
       setBusy(true)
       try {
         const now = Date.now()
-        const { updated, undo: u } = await recordReview(profile, exam, card, r, mode, now - started.current, now)
+        const scheduleAt = previewAt && now - previewAt < PREVIEW_VALID ? previewAt : now
+        const { updated, undo: u } = await recordReview(profile, exam, card, r, mode, now - started.current, now, scheduleAt)
         const rest = queue.slice(1)
         if (updated.s.due - now < REQUEUE_WITHIN) rest.splice(Math.min(rest.length, 4), 0, updated)
         setQueue(rest)
@@ -134,7 +140,7 @@ export function Session() {
         setBusy(false)
       }
     },
-    [card, queue, busy, profile, exam, mode],
+    [card, queue, busy, profile, exam, mode, previewAt],
   )
 
   async function undoLast() {

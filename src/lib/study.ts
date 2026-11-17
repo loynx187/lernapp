@@ -118,8 +118,10 @@ export async function recordReview(
   mode: Mode,
   durationMs: number,
   now = Date.now(),
+  /** Zeitpunkt für die Planung, z. B. der der angezeigten Vorschau (sonst `now`). */
+  scheduleAt = now,
 ): Promise<{ updated: StudyCard; undo: Undo }> {
-  const updated: StudyCard = { ...card, s: review(card.s, rating, now, profile.retention, exam?.date, card.id) }
+  const updated: StudyCard = { ...card, s: review(card.s, rating, scheduleAt, profile.retention, exam?.date, card.id) }
   const reviewId = uid()
   await db.transaction('rw', db.cards, db.reviews, async () => {
     await db.cards.put(updated)
