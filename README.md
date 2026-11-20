@@ -41,6 +41,7 @@ Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und we
 
 ## Versionen
 
+- **1.33.3** – Behoben: Kurz vor einer Klausur konnte „Schwer“ einen längeren Abstand anzeigen als „Gut“ oder „Einfach“. Termine, die über den Zieltag einer Karte vor der Klausur hinausgehen, werden jetzt alle auf diesen Tag gelegt – ein längerer Abstand ergibt nie einen früheren Termin.
 - **1.33.2** – Behoben: Die Abstände auf den Bewertungsknöpfen (z. B. „7 T“) konnten bei längeren Abständen um einige Tage vom tatsächlich geplanten Termin abweichen, weil FSRS einen kleinen Zufallsanteil abhängig vom genauen Zeitpunkt einrechnet. Die Bewertung rechnet jetzt mit dem Zeitpunkt der Vorschau – der angezeigte Abstand ist der geplante.
 - **1.33.1** – Rückstand zum heutigen Soll: Die Anzeige „X Karten Rückstand“ zählt nur noch die neuen Karten des Kernstoffs, die heute zum Tagesziel fehlen, weil das Zeitbudget nicht reicht – nicht mehr die Hochrechnung aller Karten bis zum Stichtag.
 - **1.33.0** – Wochenplan und Endspurt: Unter Einstellungen → Lernplan lässt sich die Lernzeit je Wochentag festlegen (frei, ½, 1×, 2×, 3× der eingestellten Minuten), dazu einzelne freie Tage. Neuer Stoff wird nach der verfügbaren Zeit verteilt, freie Tage planen nichts ein und unterbrechen die Lernserie nicht; Rückstand und Prognose rechnen mit dem Wochenplan. Endspurt: In den letzten drei Tagen vor einer Klausur füllt die App freie Lernzeit mit noch nicht fälligen Karten dieser Prüfung – klausurrelevante und am ehesten vergessene zuerst.
