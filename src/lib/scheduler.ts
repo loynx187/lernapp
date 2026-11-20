@@ -85,19 +85,21 @@ function hash(s: string): number {
  *
  * FSRS plant Wiederholungen für maximales Langzeitbehalten. Für eine Prüfung zählt
  * aber, dass jede Karte kurz vor dem Klausurtag noch einmal drankommt. Liegt der
- * nächste Termin nach der Klausur, wird er auf einen der letzten Tage davor gelegt
- * (verteilt, damit nicht alles am Vortag fällig ist).
+ * nächste Termin nach der Klausur oder in ihren letzten Tagen davor, wird er auf einen dieser Tage gelegt
+ * (je Karte fest verteilt, damit nicht alles am Vortag fällig ist). Längere Abstände ergeben so nie frühere Termine.
  */
 export function capToExam(due: number, now: number, examDate: string | undefined, cardId: string): number {
   if (!examDate) return due
   const examStart = parseIsoDate(examDate)
   const today = startOfDay(now)
   const daysLeft = Math.round((examStart - today) / DAY)
-  if (daysLeft <= 1 || due < examStart) return due
+  if (daysLeft <= 1) return due
   const spread = Math.min(3, daysLeft - 2)
   const offset = spread > 0 ? hash(cardId) % (spread + 1) : 0
-  const target = addDays(examStart, -1 - offset)
-  return Math.max(target, addDays(today, 1))
+  const target = Math.max(addDays(examStart, -1 - offset), addDays(today, 1))
+  // Alles ab dem Zieltag der Karte wird auf ihn gelegt, nicht erst Termine nach der Klausur: Sonst bliebe ein Termin
+  // knapp vor der Klausur (z. B. „Schwer“) stehen, während ein längerer („Gut“) davor rutscht.
+  return due < target ? due : target
 }
 
 export function review(s: MemoryState, rating: Grade, now: number, retention: number, examDate: string | undefined, cardId: string): MemoryState {
