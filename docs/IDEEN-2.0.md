@@ -26,6 +26,16 @@ Statt die Antwort nur aufzudecken, führen Fragen schrittweise selbst zur Antwor
 - **Widget-Schlüssel per QR-Code**: Schlüssel nicht über die Zwischenablage, sondern als QR-Code zum Scannen in Scriptable übertragen.
 - **Musterlösungen abgleichen**: Sobald Musterlösungen zu Probeklausuren kommen: eigene Lösungen in den Karten automatisch als „mit Musterlösung geprüft“ kennzeichnen lassen.
 
+## Weitere Lernmethoden und Lernalgorithmus (22.11.2026)
+
+- **Lösungsbeispiele schrittweise ausblenden**: Bei Rechenaufgaben zuerst der ganze Lösungsweg, bei jeder Wiederholung fehlt ein Schritt mehr (von hinten), bis die Aufgabe allein gelöst wird. Nutzt die vorhandenen Lösungsschritte (steps) der Pakete – für Rechenfächer eine der wirksamsten Methoden. Priorität 1.
+- **Fehlerbuch**: Bei einer falsch gelösten Aufgabe kurz die Fehlerart wählen (Vorzeichen, Einheit, falscher Ansatz, Freischnitt vergessen …). Die App zeigt die häufigsten Fehlerarten und empfiehlt passende Aufgaben; die Muster gehen auch in den Auftrag für Claude. Priorität 2.
+- **Gemischtes Üben**: Aufgaben verschiedener Themen gezielt durchmischen, damit der richtige Ansatz selbst erkannt werden muss – bisher wird erst in den letzten 14 Tagen gemischt. Z. B. als Schalter oder eigener Übungsmodus am Schreibtisch.
+- **Vorab-Fragen vor der Vorlesung**: Ein paar Fragen zum kommenden Vorlesungsblock, bevor er gehört wird (Pakete mit „later“). Auch falsche Vermutungen machen den Stoff danach einprägsamer; die Fragen zählen nicht in die Bewertung.
+- **Formelblatt mit der App erstellen**: Ergänzung zum Spickzettel-Entwurf: Die App baut das erlaubte Formelblatt schrittweise aus den Karten mit dem Nutzer auf – das Erstellen ist selbst eine Wiederholung.
+- **Zielsicherheit passend zum Klausurtermin**: Weit vor der Klausur etwa 85 % (weniger Wiederholungen, mehr Zeit für neuen Stoff), in den letzten zwei bis drei Wochen automatisch 93–95 %. Als Schalter unter Lernalgorithmus.
+- **Lernschritte wählbar**: Statt fester Lernschritte (1 bzw. 10 Minuten) kürzere wählbar, z. B. 1 und 5 Minuten – passt besser zu kurzen Lernphasen unterwegs, ist aber etwas weniger wirksam.
+
 ## Einschätzung und Umsetzung (29.10.2026)
 
 Gut umsetzbar in Stufen. Der größte Aufwand und das größte Fehlerrisiko liegen in den Inhalten (gute Leitfragen), nicht im App-Code.

@@ -37,6 +37,19 @@ export const IDEAS_V2: IdeaGroup[] = [
     ],
   },
   {
+    title: 'Weitere Lernmethoden und Lernalgorithmus (22.11.2026)',
+    intro: 'Ergänzungen zu den Karteikarten, vor allem für den Rechenteil der Klausuren.',
+    ideas: [
+      { title: 'Lösungsbeispiele schrittweise ausblenden', text: 'Bei Rechenaufgaben zuerst der ganze Lösungsweg, bei jeder Wiederholung fehlt ein Schritt mehr (von hinten), bis die Aufgabe allein gelöst wird. Nutzt die vorhandenen Lösungsschritte (steps) der Pakete – für Rechenfächer eine der wirksamsten Methoden. Priorität 1.' },
+      { title: 'Fehlerbuch', text: 'Bei einer falsch gelösten Aufgabe kurz die Fehlerart wählen (Vorzeichen, Einheit, falscher Ansatz, Freischnitt vergessen …). Die App zeigt die häufigsten Fehlerarten und empfiehlt passende Aufgaben; die Muster gehen auch in den Auftrag für Claude. Priorität 2.' },
+      { title: 'Gemischtes Üben', text: 'Aufgaben verschiedener Themen gezielt durchmischen, damit der richtige Ansatz selbst erkannt werden muss – bisher wird erst in den letzten 14 Tagen gemischt. Z. B. als Schalter oder eigener Übungsmodus am Schreibtisch.' },
+      { title: 'Vorab-Fragen vor der Vorlesung', text: 'Ein paar Fragen zum kommenden Vorlesungsblock, bevor er gehört wird (Pakete mit „later“). Auch falsche Vermutungen machen den Stoff danach einprägsamer; die Fragen zählen nicht in die Bewertung.' },
+      { title: 'Formelblatt mit der App erstellen', text: 'Ergänzung zum Spickzettel-Entwurf: Die App baut das erlaubte Formelblatt schrittweise aus den Karten mit dem Nutzer auf – das Erstellen ist selbst eine Wiederholung.' },
+      { title: 'Zielsicherheit passend zum Klausurtermin', text: 'Weit vor der Klausur etwa 85 % (weniger Wiederholungen, mehr Zeit für neuen Stoff), in den letzten zwei bis drei Wochen automatisch 93–95 %. Als Schalter unter Lernalgorithmus.' },
+      { title: 'Lernschritte wählbar', text: 'Statt fester Lernschritte (1 bzw. 10 Minuten) kürzere wählbar, z. B. 1 und 5 Minuten – passt besser zu kurzen Lernphasen unterwegs, ist aber etwas weniger wirksam.' },
+    ],
+  },
+  {
     title: 'Einschätzung und Umsetzung (29.10.2026)',
     intro: 'Gut umsetzbar in Stufen. Der größte Aufwand und das größte Fehlerrisiko liegen in den Inhalten (gute Leitfragen), nicht im App-Code.',
     ideas: [
