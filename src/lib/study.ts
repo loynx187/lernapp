@@ -95,6 +95,7 @@ export async function loadStudyData(profile: Profile, now = Date.now()): Promise
     buffer: SEMESTER_KINDS[semesterKind(semester)].buffer,
     cards: planCards({ cards, blocks, recommendations }, now, profile.retention),
     dayFactors: dayFactors(profile, now, Math.max(1, ...exams.map((e) => daysUntil(e.date, now) + 1))),
+    fullQuota: !!profile.catchUp,
     done: doneToday(
       logs.filter((l) => examIds.has(l.examId)),
       now,

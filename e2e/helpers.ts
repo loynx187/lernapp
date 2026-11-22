@@ -133,6 +133,10 @@ export async function revealCard(page: Page) {
 
 export async function rate(page: Page, label: 'Nochmal' | 'Schwer' | 'Gut' | 'Einfach') {
   await page.locator('.ratings button', { hasText: label }).click()
+  await expect(page.locator('.ratings')).toHaveCount(0)
+  // Karten im Lernschritt warten ihre Zeit ab; die Tests ziehen sie vor, statt 10 Minuten zu warten.
+  const early = page.getByRole('button', { name: 'Jetzt schon wiederholen' })
+  if (await early.isVisible()) await early.click()
 }
 
 /** Anzahl der Datensätze in einer Tabelle der lokalen Datenbank. */

@@ -72,6 +72,8 @@ export interface PlanInput {
    * im Verhältnis dazu verteilt: an Tagen mit viel Zeit mehr, an freien Tagen nichts. Fehlt: jeder Tag gleich.
    */
   dayFactors?: number[]
+  /** Bei Rückstand das volle Tagesziel an neuen Kernstoff-Karten einplanen, auch über das Zeitbudget hinaus. */
+  fullQuota?: boolean
 }
 
 export interface ExamModePlan {
@@ -273,6 +275,8 @@ export function planDay(input: PlanInput): DayPlan {
       free,
       plans.map((p, i) => ({ cost: p.modes[m].quota * cost.newCard, weight: weight(i) })),
     )
+    // Aufholen: Der Kernstoff bekommt die Zeit für das volle Tagesziel, auch wenn sie das Budget übersteigt.
+    if (input.fullQuota && m === REQUIRED_MODE) plans.forEach((p, i) => (coreAlloc[i] = p.modes[m].quota * cost.newCard))
     const optAlloc = distribute(
       Math.max(0, free - coreAlloc.reduce((a, b) => a + b, 0)),
       plans.map((p, i) => ({ cost: p.modes[m].optionalQuota * cost.newCard, weight: weight(i) })),

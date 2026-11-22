@@ -41,6 +41,7 @@ Eigene Weiterentwicklungen in einem Fork sind willkommen – wie das geht und we
 
 ## Versionen
 
+- **1.34.0** – Rückstand aufholen und Lernschritte: Neuer Schalter unter Einstellungen → Lernplan plant bei Rückstand das volle Tagesziel an neuen Karten ein, auch über die eingestellten Minuten hinaus. Behoben: Karten im Lernschritt (z. B. „Nochmal – 10 min“) kamen in der Sitzung schon nach wenigen anderen Karten oder beim nächsten Start sofort wieder; jetzt erst nach der angezeigten Zeit. Ist sonst nichts mehr dran, zeigt die Sitzung, wann die nächste Karte kommt, und bietet „Jetzt schon wiederholen“ an.
 - **1.33.3** – Behoben: Kurz vor einer Klausur konnte „Schwer“ einen längeren Abstand anzeigen als „Gut“ oder „Einfach“. Termine, die über den Zieltag einer Karte vor der Klausur hinausgehen, werden jetzt alle auf diesen Tag gelegt – ein längerer Abstand ergibt nie einen früheren Termin.
 - **1.33.2** – Behoben: Die Abstände auf den Bewertungsknöpfen (z. B. „7 T“) konnten bei längeren Abständen um einige Tage vom tatsächlich geplanten Termin abweichen, weil FSRS einen kleinen Zufallsanteil abhängig vom genauen Zeitpunkt einrechnet. Die Bewertung rechnet jetzt mit dem Zeitpunkt der Vorschau – der angezeigte Abstand ist der geplante.
 - **1.33.1** – Rückstand zum heutigen Soll: Die Anzeige „X Karten Rückstand“ zählt nur noch die neuen Karten des Kernstoffs, die heute zum Tagesziel fehlen, weil das Zeitbudget nicht reicht – nicht mehr die Hochrechnung aller Karten bis zum Stichtag.

@@ -33,6 +33,8 @@ export interface Profile extends Synced {
   weekFactors?: number[]
   /** Freie Tage (YYYY-MM-DD): kein neuer Stoff, keine Lernzeit eingeplant. */
   freeDays?: string[]
+  /** Bei Rückstand das volle Tagesziel an neuen Karten einplanen, auch wenn es länger dauert als das Zeitbudget. Standard: aus. */
+  catchUp?: boolean
 }
 
 export interface Semester extends Synced {

@@ -144,6 +144,13 @@ export function Settings() {
           <span style={{ fontSize: 15 }}>Budget an die gemessene Lernzeit anpassen</span>
         </label>
         <label className="row" style={{ gap: 10, marginBottom: 4, alignItems: 'flex-start' }}>
+          <input type="checkbox" checked={!!profile.catchUp} onChange={(e) => update({ catchUp: e.target.checked })} style={{ marginTop: 3 }} />
+          <span style={{ fontSize: 15 }}>Rückstand aufholen</span>
+        </label>
+        <small style={{ display: 'block', marginBottom: 14 }}>
+          Plant bei Rückstand das volle Tagesziel an neuen Karten ein – auch wenn das länger dauert als die eingestellten Minuten. Ausgeschaltet bleibt die App im Zeitbudget und zeigt den Rückstand an.
+        </small>
+        <label className="row" style={{ gap: 10, marginBottom: 4, alignItems: 'flex-start' }}>
           <input type="checkbox" checked={!!profile.socratic} onChange={(e) => update({ socratic: e.target.checked })} style={{ marginTop: 3 }} />
           <span style={{ fontSize: 15 }}>Sokratisches Lernen (Test)</span>
         </label>
