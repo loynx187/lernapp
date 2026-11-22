@@ -22,6 +22,7 @@ import { Rich } from '../components/Rich'
 import { Icon, Progress } from '../components/ui'
 import { Hints, KeyPoints } from '../components/Socratic'
 import { suggestRating } from '../lib/socratic'
+import { nextCard, nextWaiting } from '../lib/sessionQueue'
 
 /** Karten, die innerhalb dieser Zeit wieder fällig sind, kommen noch in derselben Sitzung dran. */
 const REQUEUE_WITHIN = 30 * 60_000
@@ -65,6 +66,10 @@ export function Session() {
   const [answerInputs, setAnswerInputs] = useState<string[]>([])
   const [showSlide, setShowSlide] = useState(false)
   const [recommendations, setRecommendations] = useState<Map<string, TaskRecommendation>>(new Map())
+  /** Uhr für Lernschritte: Karten mit „Nochmal – 10 min“ kommen erst nach Ablauf der Zeit (siehe sessionQueue.ts). */
+  const [clock, setClock] = useState(Date.now())
+  /** Vorgezogene Karte (rückgängig gemacht oder „Jetzt schon wiederholen“), auch wenn ihr Lernschritt noch läuft. */
+  const [forcedId, setForcedId] = useState<string | undefined>()
   const started = useRef(Date.now())
   const sessionStart = useRef(Date.now())
 
@@ -90,7 +95,12 @@ export function Session() {
     // Die Sitzung wird einmal beim Öffnen zusammengestellt und danach nicht neu geladen.
   }, [])
 
-  const card = queue?.[0]
+  useEffect(() => {
+    const t = setInterval(() => setClock(Date.now()), 10_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const card = queue ? nextCard(queue, clock, forcedId) : undefined
   const exam = card ? exams.get(card.examId) : undefined
 
   const resetCardUi = () => {
@@ -130,9 +140,11 @@ export function Session() {
         const now = Date.now()
         const scheduleAt = previewAt && now - previewAt < PREVIEW_VALID ? previewAt : now
         const { updated, undo: u } = await recordReview(profile, exam, card, r, mode, now - started.current, now, scheduleAt)
-        const rest = queue.slice(1)
+        const rest = queue.filter((c) => c.id !== card.id)
         if (updated.s.due - now < REQUEUE_WITHIN) rest.splice(Math.min(rest.length, 4), 0, updated)
         setQueue(rest)
+        setForcedId(undefined)
+        setClock(Date.now())
         setUndo(u)
         setReviewed((n) => n + 1)
         resetCardUi()
@@ -150,6 +162,7 @@ export function Session() {
       await undoReview(undo)
       const restored = (await db.cards.get(undo.card.id)) ?? undo.card
       setQueue([restored, ...queue.filter((c) => c.id !== restored.id)])
+      setForcedId(restored.id)
       setReviewed((n) => Math.max(0, n - 1))
       setUndo(null)
       resetCardUi()
@@ -173,6 +186,7 @@ export function Session() {
     if (!card || !queue || busy) return
     if (!reported.has(card.id)) skipToday(card.id)
     setQueue(queue.filter((c) => c.id !== card.id))
+    setForcedId(undefined)
     resetCardUi()
   }
 
@@ -198,6 +212,7 @@ export function Session() {
     try {
       await deleteCard(card)
       setQueue(queue.filter((c) => c.id !== card.id))
+      setForcedId(undefined)
       // Eine rückgängig gemachte Bewertung würde die gelöschte Karte wieder in die Sitzung holen.
       if (undo?.card.id === card.id) setUndo(null)
       resetCardUi()
@@ -288,6 +303,27 @@ export function Session() {
       Hausaufgabe vorziehen ({laterHomework})
     </Link>
   )
+
+  const waiting = !card ? nextWaiting(queue, clock) : undefined
+  if (waiting) {
+    const left = queue.length
+    return (
+      <>
+        {top}
+        <div className="card empty stack">
+          <h2>Kurze Pause</h2>
+          <p className="muted">
+            {left === 1 ? 'Eine Karte ist' : `${left} Karten sind`} noch im Lernschritt. Die nächste kommt in{' '}
+            <b>{formatInterval(waiting.s.due - clock)}</b> wieder – so lange wie bei der Bewertung angezeigt.
+          </p>
+          <button className="btn block primary" onClick={() => setForcedId(waiting.id)}>
+            Jetzt schon wiederholen
+          </button>
+          <Link className="btn block" to="/">Später weitermachen</Link>
+        </div>
+      </>
+    )
+  }
 
   if (!card) {
     const minutes = Math.max(1, Math.round((Date.now() - sessionStart.current) / 60000))

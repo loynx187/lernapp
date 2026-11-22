@@ -56,6 +56,8 @@ test('Sokratisches Lernen: ausgeschaltet wie bisher, eingeschaltet mit Tipps, Ke
   await expect(page.locator('.suggestion')).toContainText('Vorschlag: Schwer – 2 von 2 Kernpunkten, 2 Tipps')
   await expect(page.locator('.ratings button.suggested')).toContainText('Schwer')
   await page.locator('.ratings button', { hasText: 'Gut' }).click()
+  // Die Karte ist noch im Lernschritt – vorziehen statt 10 Minuten zu warten
+  await page.getByRole('button', { name: 'Jetzt schon wiederholen' }).click()
 
   // Nächste Karte startet ohne Tipps und Häkchen
   await expect(page.locator('.hints')).toHaveCount(0)
